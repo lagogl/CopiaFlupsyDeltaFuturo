@@ -107,7 +107,8 @@ export function setupBasketsCacheInvalidation(app: any): void {
 }
 
 /**
- * Ottiene i cestelli con paginazione e cache
+ * Ottiene i cestelli con paginazione e cache ottimizzati con CTE
+ * OTTIMIZZAZIONE: Consolida 5 query separate in una singola CTE per ridurre i round-trip al DB
  */
 export async function getBasketsOptimized(options: BasketsOptions = {}) {
   const startTime = Date.now();
@@ -144,287 +145,289 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     return cachedData;
   }
   
-  console.log(`🔄 CESTELLI: Cache MISS - query database necessaria`);
-  
-  console.log(`Richiesta cestelli ottimizzata con opzioni:`, options);
+  console.log(`🔄 CESTELLI: Cache MISS - query CTE consolidata necessaria`);
+  console.log(`Richiesta cestelli ottimizzata con CTE per opzioni:`, options);
   
   try {
-    // Costruisci la query base con join strategici
-    let query = db.select({
-      id: baskets.id,
-      physicalNumber: baskets.physicalNumber,
-      flupsyId: baskets.flupsyId,
-      cycleCode: baskets.cycleCode,
-      state: baskets.state,
-      currentCycleId: baskets.currentCycleId,
-      nfcData: baskets.nfcData,
-      row: baskets.row,
-      position: baskets.position,
-      flupsyName: flupsys.name
-    })
-    .from(baskets)
-    .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id));
-    
-    // Applica i filtri
-    const whereConditions: any[] = [];
+    // Costruisci condizioni WHERE per i filtri
+    const filterConditions: string[] = [];
+    const filterParams: any[] = [];
+    let paramIndex = 1;
     
     if (state) {
-      whereConditions.push(eq(baskets.state, state));
+      filterConditions.push(`b.state = $${paramIndex}`);
+      filterParams.push(state);
+      paramIndex++;
     }
     
-    // Per la visualizzazione nei FLUPSY, il flupsyId è un parametro critico
-    // e deve essere gestito con attenzione per garantire che tutti i cestelli vengano mostrati
+    // Gestione flupsyId (numero, stringa, array)
     if (flupsyId) {
-      // Quando flupsyId è un numero, cerchiamo quel FLUPSY specifico
       if (typeof flupsyId === 'number') {
-        whereConditions.push(eq(baskets.flupsyId, flupsyId));
-      } 
-      // Se flupsyId è una stringa, potrebbe essere un singolo ID o una lista di ID separati da virgola
-      else if (typeof flupsyId === 'string') {
-        // Verifica se contiene virgole (formato: "id1,id2,id3")
+        filterConditions.push(`b.flupsy_id = $${paramIndex}`);
+        filterParams.push(flupsyId);
+        paramIndex++;
+      } else if (typeof flupsyId === 'string') {
         if (flupsyId.includes(',')) {
-          // Split string e converti in array di numeri
           const flupsyIds = flupsyId.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
-          
-          // OTTIMIZZAZIONE: Usa inArray per migliori performance con molti ID
-          console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY`);
-          
           if (flupsyIds.length > 0) {
-            whereConditions.push(inArray(baskets.flupsyId, flupsyIds));
-            console.log(`Query ottimizzata con inArray per ${flupsyIds.length} FLUPSY:`, flupsyIds);
+            filterConditions.push(`b.flupsy_id = ANY($${paramIndex})`);
+            filterParams.push(flupsyIds);
+            paramIndex++;
+            console.log(`CTE: Filtro per ${flupsyIds.length} FLUPSY:`, flupsyIds);
           }
         } else {
-          // Singolo ID come stringa
           const parsedId = parseInt(flupsyId, 10);
           if (!isNaN(parsedId)) {
-            whereConditions.push(eq(baskets.flupsyId, parsedId));
+            filterConditions.push(`b.flupsy_id = $${paramIndex}`);
+            filterParams.push(parsedId);
+            paramIndex++;
           }
         }
-      }
-      // Se flupsyId è un array, cerchiamo tutti i cestelli in quei FLUPSY
-      else if (Array.isArray(flupsyId) && flupsyId.length > 0) {
-        // Converte ogni elemento in numero (potrebbero arrivare come stringhe)
+      } else if (Array.isArray(flupsyId) && flupsyId.length > 0) {
         const flupsyIds = flupsyId.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id));
-        
-        // OTTIMIZZAZIONE: Usa inArray per migliori performance con molti ID
-        console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY (array)`);
-        
         if (flupsyIds.length > 0) {
-          whereConditions.push(inArray(baskets.flupsyId, flupsyIds));
-          console.log(`Query ottimizzata con inArray per ${flupsyIds.length} FLUPSY (array):`, flupsyIds);
+          filterConditions.push(`b.flupsy_id = ANY($${paramIndex})`);
+          filterParams.push(flupsyIds);
+          paramIndex++;
+          console.log(`CTE: Filtro per ${flupsyIds.length} FLUPSY (array):`, flupsyIds);
         }
       }
     }
     
     if (cycleId) {
-      whereConditions.push(eq(baskets.currentCycleId, cycleId));
+      filterConditions.push(`b.current_cycle_id = $${paramIndex}`);
+      filterParams.push(cycleId);
+      paramIndex++;
     }
     
-    // Non filtriamo i cestelli senza posizione quando includeAll=true
-    // perché è importante per la dashboard vedere tutti i cestelli
     if (!includeEmpty && !includeAll) {
-      // Escludi i cestelli senza posizione assegnata
-      whereConditions.push(not(and(
-        isNull(baskets.row),
-        isNull(baskets.position)
-      )));
+      filterConditions.push(`NOT (b.row IS NULL AND b.position IS NULL)`);
     }
     
-    // Applica i filtri alla query
-    if (whereConditions.length > 0) {
-      query = query.where(and(...whereConditions));
-    }
+    const whereClause = filterConditions.length > 0 ? `WHERE ${filterConditions.join(' AND ')}` : '';
     
-    // OTTIMIZZAZIONE: Conta il totale senza JOIN per permettere index-only scans
-    // Rimuoviamo il LEFT JOIN con flupsys per migliori performance
-    const countQuery = db.select({
-      count: sql`count(*)`
-    })
-    .from(baskets)
-    .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
-    
-    const [countResult] = await countQuery;
-    const totalItems = Number(countResult.count);
-    const totalPages = Math.ceil(totalItems / pageSize);
-    
-    // Ordina i risultati
+    // Determina ordinamento
+    let orderByClause = 'ORDER BY b.id ASC';
     if (sortBy === 'physicalNumber') {
-      query = query.orderBy(sortOrder === 'asc' ? asc(baskets.physicalNumber) : desc(baskets.physicalNumber));
+      orderByClause = `ORDER BY b.physical_number ${sortOrder.toUpperCase()}`;
     } else if (sortBy === 'flupsyName') {
-      query = query.orderBy(sortOrder === 'asc' ? asc(flupsys.name) : desc(flupsys.name));
-    } else {
-      // Default: ordina per ID
-      query = query.orderBy(sortOrder === 'asc' ? asc(baskets.id) : desc(baskets.id));
+      orderByClause = `ORDER BY f.name ${sortOrder.toUpperCase()}`;
+    } else if (sortBy === 'id') {
+      orderByClause = `ORDER BY b.id ${sortOrder.toUpperCase()}`;
     }
     
-    // Applica paginazione, a meno che non sia richiesto di recuperare tutti i dati
-    // Il parametro includeAll viene usato principalmente dalla dashboard e dal visualizzatore FLUPSY
-    const skipPagination = options.includeAll === true || pageSize > 1000;
+    // Paginazione
+    const skipPagination = includeAll === true || pageSize > 1000;
+    const limitClause = skipPagination ? '' : `LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     
     if (!skipPagination) {
       const offset = (page - 1) * pageSize;
-      query = query.limit(pageSize).offset(offset);
+      filterParams.push(pageSize, offset);
+      console.log("CTE: Applicazione paginazione");
     } else {
-      console.log("Recupero tutti i cestelli senza paginazione (richiesto da dashboard o visualizzatore FLUPSY)");
+      console.log("CTE: Recupero tutti i cestelli senza paginazione");
     }
     
-    // Esegui la query
-    const basketsResult = await query;
+    // QUERY CTE CONSOLIDATA: Unisce tutte le 5 query separate in una sola
+    const cteQuery = `
+      WITH base_baskets AS (
+        -- CTE 1: Cestelli base con filtri e paginazione
+        SELECT 
+          b.id, b.physical_number, b.flupsy_id, b.cycle_code, 
+          b.state, b.current_cycle_id, b.nfc_data, b.row, b.position,
+          f.name as flupsy_name,
+          COUNT(*) OVER() as total_count
+        FROM baskets b
+        LEFT JOIN flupsys f ON b.flupsy_id = f.id
+        ${whereClause}
+        ${orderByClause}
+        ${limitClause}
+      ),
+      current_positions AS (
+        -- CTE 2: Posizioni correnti (end_date IS NULL)
+        SELECT DISTINCT ON (basket_id)
+          basket_id,
+          id as pos_id,
+          flupsy_id as pos_flupsy_id,
+          row as pos_row,
+          position as pos_position,
+          start_date as pos_start_date,
+          operation_id as pos_operation_id
+        FROM basket_position_history bph
+        WHERE bph.basket_id IN (SELECT id FROM base_baskets)
+          AND bph.end_date IS NULL
+        ORDER BY basket_id, id DESC
+      ),
+      latest_operations AS (
+        -- CTE 3: Ultima operazione per ogni cestello
+        SELECT DISTINCT ON (basket_id)
+          basket_id,
+          id as op_id,
+          date as op_date,
+          type as op_type,
+          cycle_id as op_cycle_id,
+          size_id as op_size_id,
+          sgr_id as op_sgr_id,
+          lot_id as op_lot_id,
+          animal_count as op_animal_count,
+          total_weight as op_total_weight,
+          animals_per_kg as op_animals_per_kg,
+          average_weight as op_average_weight,
+          dead_count as op_dead_count,
+          mortality_rate as op_mortality_rate,
+          notes as op_notes,
+          metadata as op_metadata
+        FROM operations o
+        WHERE o.basket_id IN (SELECT id FROM base_baskets)
+        ORDER BY basket_id, id DESC
+      ),
+      basket_cycles AS (
+        -- CTE 4: Cicli correlati
+        SELECT 
+          id as cycle_id,
+          basket_id as cycle_basket_id,
+          lot_id as cycle_lot_id,
+          start_date as cycle_start_date,
+          end_date as cycle_end_date,
+          state as cycle_state
+        FROM cycles c
+        WHERE c.id IN (SELECT current_cycle_id FROM base_baskets WHERE current_cycle_id IS NOT NULL)
+      )
+      -- Query finale: Unisci tutti i dati
+      SELECT 
+        bb.*,
+        -- Dati posizione corrente
+        cp.pos_id,
+        cp.pos_flupsy_id,
+        cp.pos_row,
+        cp.pos_position,
+        cp.pos_start_date,
+        cp.pos_operation_id,
+        -- Dati ultima operazione
+        lo.op_id,
+        lo.op_date,
+        lo.op_type,
+        lo.op_cycle_id,
+        lo.op_size_id,
+        lo.op_sgr_id,
+        lo.op_lot_id,
+        lo.op_animal_count,
+        lo.op_total_weight,
+        lo.op_animals_per_kg,
+        lo.op_average_weight,
+        lo.op_dead_count,
+        lo.op_mortality_rate,
+        lo.op_notes,
+        lo.op_metadata,
+        -- Dati ciclo
+        bc.cycle_lot_id,
+        bc.cycle_start_date,
+        bc.cycle_end_date,
+        bc.cycle_state
+      FROM base_baskets bb
+      LEFT JOIN current_positions cp ON bb.id = cp.basket_id
+      LEFT JOIN latest_operations lo ON bb.id = lo.basket_id
+      LEFT JOIN basket_cycles bc ON bb.current_cycle_id = bc.cycle_id
+    `;
     
-    // Arricchisci i cestelli con dettagli aggiuntivi in modo efficiente
-    // Recupera le informazioni sui cicli per tutti i cestelli in una singola query
-    const cycleIds = basketsResult
-      .map(basket => basket.currentCycleId)
-      .filter(id => id !== null);
+    // Esegui la query CTE consolidata
+    console.log(`🚀 CTE: Esecuzione query consolidata con ${filterParams.length} parametri`);
+    const startQueryTime = Date.now();
     
-    let cyclesMap: any = {};
-    if (cycleIds.length > 0) {
-      // OTTIMIZZAZIONE: Usa query Drizzle sicura invece di interpolazione raw SQL
-      const cyclesResult = await db.select({
-        id: cycles.id,
-        basket_id: cycles.basketId,
-        start_date: cycles.startDate,
-        end_date: cycles.endDate,
-        state: cycles.state
-      })
-      .from(cycles)
-      .where(inArray(cycles.id, cycleIds));
-      
-      cyclesMap = cyclesResult.reduce((map: any, cycle: any) => {
-        // Converti i nomi delle colonne in camelCase per compatibilità
-        const formattedCycle = {
-          id: cycle.id,
-          basketId: cycle.basket_id,
-          startDate: cycle.start_date,
-          endDate: cycle.end_date,
-          state: cycle.state
-        };
-        map[formattedCycle.id] = formattedCycle;
-        return map;
-      }, {});
-    }
+    const result = await db.execute(sql.raw(cteQuery, filterParams));
+    const queryTime = Date.now() - startQueryTime;
+    console.log(`🚀 CTE: Query completata in ${queryTime}ms`);
     
-    // Recupera le posizioni attuali dei cestelli in una singola query
-    const basketIds = basketsResult.map(basket => basket.id);
-    
-    // Verifica che ci siano cestelli da cercare
-    let positionsMap: any = {};
-    if (basketIds.length > 0) {
-      // OTTIMIZZAZIONE: Usa query Drizzle sicura invece di interpolazione raw SQL
-      const positionsResult = await db.select({
-        id: basketPositionHistory.id,
-        basket_id: basketPositionHistory.basketId,
-        flupsy_id: basketPositionHistory.flupsyId,
-        row: basketPositionHistory.row,
-        position: basketPositionHistory.position,
-        start_date: basketPositionHistory.startDate,
-        end_date: basketPositionHistory.endDate,
-        operation_id: basketPositionHistory.operationId
-      })
-      .from(basketPositionHistory)
-      .where(and(
-        inArray(basketPositionHistory.basketId, basketIds),
-        isNull(basketPositionHistory.endDate)
-      ));
-      
-      // Quando usiamo db.execute, il risultato è un array di oggetti con proprietà in snake_case
-      // dobbiamo convertire i nomi delle colonne da snake_case a camelCase
-      positionsMap = positionsResult.reduce((map: any, pos: any) => {
-        // Converti i nomi delle colonne in camelCase per compatibilità
-        const position = {
-          id: pos.id,
-          basketId: pos.basket_id,
-          flupsyId: pos.flupsy_id,
-          row: pos.row,
-          position: pos.position,
-          startDate: pos.start_date,
-          endDate: pos.end_date,
-          operationId: pos.operation_id
-        };
-        map[position.basketId] = position;
-        return map;
-      }, {});
-    }
-    
-    // Recupera l'ultima operazione per ogni cestello in una singola query
-    let operationsMap: any = {};
-    if (basketIds.length > 0) {
-      // OTTIMIZZAZIONE: Usa inArray di Drizzle per sicurezza e compatibilità
-      // Evita l'errore "op ANY/ALL requires array" quando basketIds è vuoto
-      const operationsResult = await db.select({
-        id: operations.id,
-        date: operations.date,
-        type: operations.type,
-        basket_id: operations.basketId,
-        cycle_id: operations.cycleId,
-        size_id: operations.sizeId,
-        sgr_id: operations.sgrId,
-        lot_id: operations.lotId,
-        animal_count: operations.animalCount,
-        total_weight: operations.totalWeight,
-        animals_per_kg: operations.animalsPerKg,
-        average_weight: operations.averageWeight,
-        dead_count: operations.deadCount,
-        mortality_rate: operations.mortalityRate,
-        notes: operations.notes,
-        metadata: operations.metadata
-      })
-      .from(operations)
-      .where(inArray(operations.basketId, basketIds))
-      .orderBy(desc(operations.id));
-
-      // Raggruppa per basket_id prendendo solo l'operazione più recente per cestello
-      const latestOperationsMap = new Map();
-      operationsResult.forEach(op => {
-        if (!latestOperationsMap.has(op.basket_id)) {
-          latestOperationsMap.set(op.basket_id, op);
+    if (result.rows.length === 0) {
+      console.log('CTE: Nessun cestello trovato');
+      const emptyResult = {
+        baskets: [],
+        pagination: {
+          page,
+          pageSize,
+          totalItems: 0,
+          totalPages: 0
         }
-      });
+      };
       
-      // Converti da Map a oggetto per compatibilità
-      const latestOperations = Array.from(latestOperationsMap.values());
-      
-      operationsMap = latestOperations.reduce((map: any, op: any) => {
-        // I dati sono già in camelCase dalla query Drizzle
-        const operation = {
-          id: op.id,
-          date: op.date,
-          type: op.type,
-          basketId: op.basket_id,
-          cycleId: op.cycle_id,
-          sizeId: op.size_id,
-          sgrId: op.sgr_id,
-          lotId: op.lot_id,
-          animalCount: op.animal_count,
-          totalWeight: op.total_weight,
-          animalsPerKg: op.animals_per_kg,
-          averageWeight: op.average_weight,
-          deadCount: op.dead_count,
-          mortalityRate: op.mortality_rate,
-          notes: op.notes,
-          metadata: op.metadata
-        };
-        map[operation.basketId] = operation;
-        return map;
-      }, {});
+      // Salva anche il risultato vuoto in cache
+      BasketsCache.set(cacheKey, emptyResult, 300);
+      return emptyResult;
     }
-
-    // Combina tutti i dati
-    const enrichedBaskets = basketsResult.map(basket => {
-      const cycle = basket.currentCycleId ? cyclesMap[basket.currentCycleId] : null;
-      const position = positionsMap[basket.id];
-      const lastOperation = operationsMap[basket.id] || null;
+    
+    // Processa i risultati della CTE
+    const totalItems = result.rows.length > 0 ? Number(result.rows[0].total_count) : 0;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    
+    console.log(`🚀 CTE: Processando ${result.rows.length} righe con ${totalItems} totali`);
+    
+    const enrichedBaskets = result.rows.map((row: any) => {
+      // Costruisci oggetto cestello
+      const basket = {
+        id: row.id,
+        physicalNumber: row.physical_number,
+        flupsyId: row.flupsy_id,
+        cycleCode: row.cycle_code,
+        state: row.state,
+        currentCycleId: row.current_cycle_id,
+        nfcData: row.nfc_data,
+        row: row.row,
+        position: row.position,
+        flupsyName: row.flupsy_name
+      };
+      
+      // Costruisci oggetto posizione corrente
+      const currentPosition = row.pos_id ? {
+        id: row.pos_id,
+        basketId: row.id,
+        flupsyId: row.pos_flupsy_id,
+        row: row.pos_row,
+        position: row.pos_position,
+        startDate: row.pos_start_date,
+        endDate: null,
+        operationId: row.pos_operation_id
+      } : null;
+      
+      // Costruisci oggetto ultima operazione
+      const lastOperation = row.op_id ? {
+        id: row.op_id,
+        date: row.op_date,
+        type: row.op_type,
+        basketId: row.id,
+        cycleId: row.op_cycle_id,
+        sizeId: row.op_size_id,
+        sgrId: row.op_sgr_id,
+        lotId: row.op_lot_id,
+        animalCount: row.op_animal_count,
+        totalWeight: row.op_total_weight,
+        animalsPerKg: row.op_animals_per_kg,
+        averageWeight: row.op_average_weight,
+        deadCount: row.op_dead_count,
+        mortalityRate: row.op_mortality_rate,
+        notes: row.op_notes,
+        metadata: row.op_metadata
+      } : null;
+      
+      // Costruisci oggetto ciclo
+      const cycle = row.current_cycle_id ? {
+        id: row.current_cycle_id,
+        basketId: row.id,
+        lotId: row.cycle_lot_id,
+        startDate: row.cycle_start_date,
+        endDate: row.cycle_end_date,
+        state: row.cycle_state
+      } : null;
       
       return {
         ...basket,
         cycle,
-        currentPosition: position || null,
+        currentPosition,
         lastOperation
       };
     });
     
     // Costruisci il risultato paginato
-    const result = {
+    const finalResult = {
       baskets: enrichedBaskets,
       pagination: {
         page,
@@ -434,17 +437,24 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
       }
     };
     
-    // Salva in cache con TTL corto - invalidazione immediata via WebSocket
-    BasketsCache.set(cacheKey, result, 300); // 5 minuti TTL (invalidazione via WebSocket)
-    console.log(`🚀 CESTELLI: Cache SAVED (${enrichedBaskets.length} cestelli) - WebSocket sync attivo`)
+    // Salva in cache
+    BasketsCache.set(cacheKey, finalResult, 300);
+    console.log(`🚀 CESTELLI CTE: Cache SAVED (${enrichedBaskets.length} cestelli)`);
     
     const duration = Date.now() - startTime;
-    console.log(`Query cestelli completata in ${duration}ms: ${enrichedBaskets.length} risultati su ${totalItems} totali`);
-    console.log(`Risposta API paginata: pagina ${page}/${totalPages}, ${enrichedBaskets.length} elementi su ${totalItems} totali`);
+    console.log(`🚀 CTE CONSOLIDATA: Query cestelli completata in ${duration}ms (target: <2000ms)`);
+    console.log(`Risposta CTE: pagina ${page}/${totalPages}, ${enrichedBaskets.length} elementi su ${totalItems} totali`);
     
-    return result;
+    // Performance warning se supera i 2 secondi
+    if (duration > 2000) {
+      console.warn(`⚠️ PERFORMANCE CTE: Query cestelli lenta (${duration}ms > 2000ms target)`);
+    } else {
+      console.log(`✅ PERFORMANCE CTE: Query cestelli ottimizzata (${duration}ms < 2000ms target)`);
+    }
+    
+    return finalResult;
   } catch (error) {
-    console.error('Errore durante il recupero ottimizzato dei cestelli:', error);
+    console.error('Errore durante il recupero CTE ottimizzato dei cestelli:', error);
     throw error;
   }
 }
