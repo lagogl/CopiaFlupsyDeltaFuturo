@@ -178,6 +178,30 @@ export default function Dashboard() {
     return new Date(op.date).toISOString().split('T')[0] === today;
   });
   const activeLots = lots?.filter(l => l.state === 'active') || [];
+  
+  // Calcola statistiche sui lotti attivi
+  const lotStats = useMemo(() => {
+    if (!activeLots || activeLots.length === 0) {
+      return {
+        totalAnimals: 0,
+        totalWeight: 0,
+        totalMortality: 0,
+        averageAnimalsPerLot: 0
+      };
+    }
+    
+    const totalAnimals = activeLots.reduce((sum, lot) => sum + (lot.animalCount || 0), 0);
+    const totalWeight = activeLots.reduce((sum, lot) => sum + (lot.weight || 0), 0);
+    const totalMortality = activeLots.reduce((sum, lot) => sum + (lot.totalMortality || 0), 0);
+    const averageAnimalsPerLot = totalAnimals > 0 ? Math.round(totalAnimals / activeLots.length) : 0;
+    
+    return {
+      totalAnimals,
+      totalWeight: Math.round(totalWeight), // Peso in grammi, arrotondato
+      totalMortality,
+      averageAnimalsPerLot
+    };
+  }, [activeLots]);
 
   // Calcola il numero totale di animali nelle ceste attive
   const totalAnimalsInActiveBaskets = activeBaskets.reduce((total, basket) => {
@@ -380,13 +404,14 @@ export default function Dashboard() {
             <StatCard 
               title="Lotti Attivi" 
               value={activeLots.length} 
+              secondaryInfo={`${lotStats.totalAnimals.toLocaleString()} animali`}
               icon={<div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>}
-              changeText="Stabile da 2 settimane"
-              changeType="warning"
+              changeText={`Peso: ${(lotStats.totalWeight / 1000).toFixed(1)}kg • Mortalità: ${lotStats.totalMortality.toLocaleString()} • Media: ${lotStats.averageAnimalsPerLot.toLocaleString()}/lotto`}
+              changeType="info"
               linkTo="/lots"
               cardColor="from-orange-50 to-orange-100 border-l-4 border-orange-500"
             />
