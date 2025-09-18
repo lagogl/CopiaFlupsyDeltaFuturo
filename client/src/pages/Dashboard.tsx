@@ -234,6 +234,69 @@ export default function Dashboard() {
   // Previous month comparison for baskets - removed hardcoded values
   const lastMonthBaskets = 0; // No comparison data available
 
+  // Calcola statistiche sui cicli attivi
+  const cycleStats = useMemo(() => {
+    if (!activeCycles || activeCycles.length === 0) {
+      return {
+        totalDays: 0,
+        averageDays: 0,
+        oldestCycleDays: 0,
+        newestCycleDays: 0
+      };
+    }
+    
+    const today = new Date();
+    const cycleDurations = activeCycles.map(cycle => {
+      const startDate = new Date(cycle.startDate);
+      const diffTime = Math.abs(today.getTime() - startDate.getTime());
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // giorni
+    });
+    
+    const totalDays = cycleDurations.reduce((sum, days) => sum + days, 0);
+    const averageDays = Math.round(totalDays / activeCycles.length);
+    const oldestCycleDays = Math.max(...cycleDurations);
+    const newestCycleDays = Math.min(...cycleDurations);
+    
+    return {
+      totalDays,
+      averageDays,
+      oldestCycleDays,
+      newestCycleDays
+    };
+  }, [activeCycles]);
+
+  // Calcola statistiche sulle operazioni di oggi
+  const operationStats = useMemo(() => {
+    if (!todayOperations || todayOperations.length === 0) {
+      return {
+        totalWeight: 0,
+        operationTypes: {},
+        totalAnimalsProcessed: 0,
+        mostCommonOperation: null
+      };
+    }
+    
+    const totalWeight = todayOperations.reduce((sum, op) => sum + (op.totalWeight || 0), 0);
+    const totalAnimalsProcessed = todayOperations.reduce((sum, op) => sum + (op.animalCount || 0), 0);
+    
+    // Conta le tipologie di operazioni
+    const operationTypes: { [key: string]: number } = {};
+    todayOperations.forEach(op => {
+      operationTypes[op.type] = (operationTypes[op.type] || 0) + 1;
+    });
+    
+    // Trova l'operazione più comune
+    const mostCommonOperation = Object.entries(operationTypes)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    
+    return {
+      totalWeight: Math.round(totalWeight), // peso in grammi
+      operationTypes,
+      totalAnimalsProcessed,
+      mostCommonOperation
+    };
+  }, [todayOperations]);
+
   // Loading state
   if (basketsLoading || cyclesLoading || operationsLoading || lotsLoading) {
     return <div className="flex justify-center items-center h-full">Caricamento dashboard...</div>;
@@ -352,13 +415,14 @@ export default function Dashboard() {
             <StatCard 
               title="Cicli Attivi" 
               value={activeCycles.length} 
+              secondaryInfo={cycleStats.averageDays > 0 ? `${cycleStats.averageDays} giorni media` : "Nessun ciclo"}
               icon={<div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </div>}
-              changeText="Nessun dato storico"
-              changeType="success"
+              changeText={activeCycles.length > 0 ? `Totale: ${cycleStats.totalDays} giorni • Più vecchio: ${cycleStats.oldestCycleDays} giorni • Più nuovo: ${cycleStats.newestCycleDays} giorni` : "Nessun ciclo attivo"}
+              changeType={activeCycles.length > 0 ? "success" : "info"}
               linkTo="/cycles"
               cardColor="from-green-50 to-green-100 border-l-4 border-green-500"
             />
@@ -378,13 +442,14 @@ export default function Dashboard() {
             <StatCard 
               title="Operazioni Oggi" 
               value={todayOperations.length} 
+              secondaryInfo={operationStats.totalAnimalsProcessed > 0 ? `${operationStats.totalAnimalsProcessed.toLocaleString()} animali` : "Nessuna operazione"}
               icon={<div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
               </div>}
-              changeText="Meno di ieri (12)"
-              changeType="info"
+              changeText={todayOperations.length > 0 ? `Peso: ${(operationStats.totalWeight / 1000).toFixed(1)}kg • Più comune: ${operationStats.mostCommonOperation || 'N/D'} • Tipi: ${Object.keys(operationStats.operationTypes).length}` : "Nessuna operazione oggi"}
+              changeType={todayOperations.length > 0 ? "success" : "info"}
               linkTo="/operations"
               cardColor="from-purple-50 to-purple-100 border-l-4 border-purple-500"
             />
