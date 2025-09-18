@@ -351,9 +351,7 @@ export default function DraggableFlupsyVisualizer() {
             Object.keys(response).length === 0 || 
             (response.success === true && Object.keys(response).length === 1)) {
           console.log("Risposta di successo con dati minimi, refresh dei dati...");
-          // Invalidare tutte le query pertinenti per aggiornare l'interfaccia
-          queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+          // Non serve invalidare qui, il WebSocket aggiornerà la cache
           return { success: true, message: "Cestello spostato con successo" };
         }
         
@@ -388,17 +386,8 @@ export default function DraggableFlupsyVisualizer() {
           });
         }
       } else {
-        // Normale successo - aggiornamento posizione completato
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-        
-        // Aggiorna immediatamente tutte le query rilevanti senza ricaricare la pagina
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-        
-        // Forza un refetch attivo per ottenere subito i dati aggiornati
-        setTimeout(() => {
-          refetchBaskets();
-        }, 50);
+        // Normale successo - il WebSocket gestirà l'aggiornamento della cache
+        // Non serve invalidare nulla qui
         
         toast({
           title: "Posizione aggiornata",
@@ -549,16 +538,8 @@ export default function DraggableFlupsyVisualizer() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-      
-      // Aggiorna immediatamente tutte le query rilevanti senza ricaricare la pagina
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-      
-      // Forza un refetch attivo per ottenere subito i dati aggiornati
-      setTimeout(() => {
-        refetchBaskets();
-      }, 50);
+      // Il WebSocket gestirà l'aggiornamento della cache
+      // Non serve invalidare nulla qui
       
       toast({
         title: "Scambio completato",

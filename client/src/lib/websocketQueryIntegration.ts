@@ -20,6 +20,8 @@ const messageTypeToQueryKeys: Record<string, string[]> = {
   
   // Statistiche
   'statistics_updated': ['/api/statistics/cycles/comparison', '/api/size-predictions'],
+  
+  // Cestelli - Non includiamo basket_moved e basket_updated qui perché li gestiamo separatamente
 };
 
 /**
@@ -64,6 +66,68 @@ export function useWebSocketQueryIntegration() {
   
   // Registra handler per 'statistics_updated'
   useWebSocketMessage('statistics_updated', createHandler('statistics_updated'));
+  
+  // Handler ottimizzato per basket_moved: aggiorna direttamente la cache senza invalidare
+  useWebSocketMessage('basket_moved', useCallback((data: any) => {
+    if (data?.basket) {
+      const updatedBasket = data.basket;
+      
+      // Aggiorna direttamente la cache dei cestelli senza invalidare
+      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        // Se è un array di cestelli, aggiorna quello modificato
+        if (Array.isArray(oldData)) {
+          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
+        }
+        
+        // Se è una risposta paginata
+        if (oldData.baskets && Array.isArray(oldData.baskets)) {
+          return {
+            ...oldData,
+            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
+          };
+        }
+        
+        return oldData;
+      });
+      
+      // Invalida solo la cache delle posizioni per questo specifico cestello
+      queryClient.invalidateQueries({ queryKey: [`/api/baskets/${updatedBasket.id}/positions`] });
+      
+      console.log(`Cestello ${updatedBasket.id} aggiornato via WebSocket (ottimizzato)`);
+    }
+  }, []));
+  
+  // Handler ottimizzato per basket_updated: aggiorna direttamente la cache senza invalidare
+  useWebSocketMessage('basket_updated', useCallback((data: any) => {
+    if (data?.basket) {
+      const updatedBasket = data.basket;
+      
+      // Aggiorna direttamente la cache dei cestelli senza invalidare
+      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        // Se è un array di cestelli, aggiorna quello modificato
+        if (Array.isArray(oldData)) {
+          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
+        }
+        
+        // Se è una risposta paginata
+        if (oldData.baskets && Array.isArray(oldData.baskets)) {
+          return {
+            ...oldData,
+            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
+          };
+        }
+        
+        return oldData;
+      });
+      
+      // Non serve invalidare nulla, abbiamo già i dati aggiornati
+      console.log(`Cestello ${updatedBasket.id} aggiornato via WebSocket (cache diretta)`);
+    }
+  }, []));
   
   return null;
 }

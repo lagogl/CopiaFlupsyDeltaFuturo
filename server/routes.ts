@@ -1226,27 +1226,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint dedicato per lo spostamento dei cestelli
+  // Endpoint ottimizzato per lo spostamento dei cestelli
   app.post("/api/baskets/:id/move", async (req, res) => {
     try {
-      console.log("===== ENDPOINT MOVE BASKET - INIZIO =====");
-      console.log("Request body:", JSON.stringify(req.body));
-      
+      const startTime = Date.now();
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
-        console.log("ID cesta non valido:", req.params.id);
         return res.status(400).json({ message: "Invalid basket ID" });
       }
 
-      console.log("Verifica esistenza cestello ID:", id);
-      // Verify the basket exists
-      const basket = await storage.getBasket(id);
-      if (!basket) {
-        console.log("Cestello non trovato con ID:", id);
-        return res.status(404).json({ message: "Basket not found" });
-      }
-      console.log("Cestello trovato:", JSON.stringify(basket));
-      
       // Parse and validate the update data
       const moveSchema = z.object({
         flupsyId: z.number(),
@@ -1254,38 +1242,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         position: z.number(),
       });
 
-      console.log("Validazione dati spostamento...");
       const parsedData = moveSchema.safeParse(req.body);
       if (!parsedData.success) {
         const errorMessage = fromZodError(parsedData.error).message;
-        console.log("Validazione fallita:", errorMessage);
         return res.status(400).json({ message: errorMessage });
       }
       
       // Estrai i valori validati
       let { flupsyId, row, position } = parsedData.data;
-      
-      // Validazione e normalizzazione della fila (row) per evitare valori null
       row = validateBasketRow(row);
       position = validateBasketPosition(position);
       
-      console.log(`API - SPOSTAMENTO CESTELLO ${id} in flupsyId=${flupsyId}, row=${row}, position=${position}`);
+      // Esegui verifiche e aggiornamenti in parallelo dove possibile
+      const [basket, basketAtPosition] = await Promise.all([
+        storage.getBasket(id),
+        // Ottimizzazione: cerca direttamente solo il cestello nella posizione target
+        // invece di recuperare tutti i cestelli del FLUPSY
+        db.select()
+          .from(baskets)
+          .where(and(
+            eq(baskets.flupsyId, flupsyId),
+            eq(baskets.row, row),
+            eq(baskets.position, position)
+          ))
+          .limit(1)
+          .then(results => results[0])
+      ]);
+
+      if (!basket) {
+        return res.status(404).json({ message: "Basket not found" });
+      }
       
-      // Get all baskets for this FLUPSY
-      console.log("Verifica conflitto posizione - recupero cestelli per FLUPSY:", flupsyId);
-      const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
-      console.log(`Trovati ${flupsyBaskets.length} cestelli nel FLUPSY ${flupsyId}`);
-      
-      // Check if there's already a different basket at this position
-      const basketAtPosition = flupsyBaskets.find(b => 
-        b.id !== id && 
-        b.row === row && 
-        b.position === position
-      );
-      
-      if (basketAtPosition) {
-        console.log("Posizione già occupata dal cestello:", basketAtPosition);
-        // Returning information about the occupying basket to allow for a potential switch
+      // Verifica se la posizione è già occupata da un altro cestello
+      if (basketAtPosition && basketAtPosition.id !== id) {
+        // Ritorna informazioni sul cestello occupante per permettere uno switch
         return res.status(200).json({
           positionOccupied: true,
           basketAtPosition: {
@@ -1299,120 +1289,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log("Posizione libera, procedo con lo spostamento...");
+      // Esegui l'operazione di spostamento in una transazione ottimizzata
+      const currentDate = new Date().toISOString().split('T')[0];
       
-      // Esegui l'intera operazione in una transazione
-      try {
-        // 1. Chiusura della posizione corrente se esiste
-        console.log("Recupero posizione attuale per cestello:", id);
-        const currentPosition = await storage.getCurrentBasketPosition(id);
-        if (currentPosition) {
-          console.log("Chiusura posizione corrente:", JSON.stringify(currentPosition));
-          const currentDate = new Date();
-          const formattedDate = currentDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-          
+      // Esegui operazioni in parallelo dove possibile
+      const [currentPosition] = await Promise.all([
+        storage.getCurrentBasketPosition(id),
+        // Pre-invalida la cache delle posizioni
+        (async () => {
           try {
-            await storage.closeBasketPositionHistory(id, formattedDate);
-            console.log("Posizione precedente chiusa con successo");
-          } catch (closeError) {
-            console.error("Errore durante la chiusura della posizione corrente:", closeError);
-            throw new Error(`Errore durante la chiusura della posizione: ${(closeError as Error).message}`);
+            const { positionCache } = await import('./position-cache-service');
+            positionCache.invalidate(id);
+          } catch (error) {
+            // Non bloccare se la cache fallisce
           }
-        } else {
-          console.log("Nessuna posizione attuale trovata per il cestello", id);
-        }
-        
-        // 2. Creazione della nuova entry nella cronologia posizioni
-        console.log("Creazione nuova posizione:", { basketId: id, flupsyId, row, position });
-        let newPosition;
-        try {
-          newPosition = await storage.createBasketPositionHistory({
-            basketId: id,
-            flupsyId: flupsyId,
-            row: row,
-            position: position,
-            startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
-            operationId: null
-          });
-          console.log("Nuova posizione creata:", JSON.stringify(newPosition));
-        } catch (createPosError) {
-          console.error("Errore durante la creazione della nuova posizione:", createPosError);
-          throw new Error(`Errore durante la creazione della nuova posizione: ${(createPosError as Error).message}`);
-        }
-        
-        // 3. Aggiornamento del record nel cestello
-        const updateData = {
+        })()
+      ]);
+      
+      // Esegui aggiornamenti in sequenza (devono essere in ordine)
+      if (currentPosition) {
+        await storage.closeBasketPositionHistory(id, currentDate);
+      }
+      
+      // Crea nuova posizione e aggiorna cestello in parallelo
+      const [newPosition, updatedBasket] = await Promise.all([
+        storage.createBasketPositionHistory({
+          basketId: id,
+          flupsyId: flupsyId,
+          row: row,
+          position: position,
+          startDate: currentDate,
+          operationId: null
+        }),
+        storage.updateBasket(id, {
           flupsyId,
           row,
           position
-        };
-        
-        let updatedBasket;
-        try {
-          console.log("Aggiornamento record cestello con nuova posizione:", JSON.stringify(updateData));
-          updatedBasket = await storage.updateBasket(id, updateData);
-          console.log("Cestello aggiornato (dati parziali):", updatedBasket ? JSON.stringify(updatedBasket) : "no data");
-        } catch (updateError) {
-          console.error("Errore durante l'aggiornamento del cestello:", updateError);
-          throw new Error(`Errore durante l'aggiornamento del cestello: ${(updateError as Error).message}`);
-        }
-        
-        // 4. Recupero del cestello completo aggiornato
-        let completeBasket;
-        try {
-          console.log("Recupero dati completi cestello aggiornato...");
-          completeBasket = await storage.getBasket(id);
-          console.log("Basket spostato, dati completi:", completeBasket ? JSON.stringify(completeBasket) : "not found");
-        } catch (getBasketError) {
-          console.error("Errore durante il recupero del cestello aggiornato:", getBasketError);
-          // Non fare fallire l'operazione, abbiamo già i dati parziali
-          completeBasket = null;
-        }
-        
-        // 5. Invalidate position cache for this basket
-        try {
-          const { positionCache } = await import('./position-cache-service');
-          positionCache.invalidate(id);
-          console.log(`Cache posizioni invalidata per cestello ${id}`);
-        } catch (error) {
-          console.warn('Failed to invalidate position cache:', error);
-        }
-
-        // 6. Notifica WebSocket
-        if (typeof (global as any).broadcastUpdate === 'function' && (completeBasket || updatedBasket)) {
-          console.log("Invio notifica WebSocket per aggiornamento cestello");
-          const basketForBroadcast = completeBasket || updatedBasket;
-          (global as any).broadcastUpdate('basket_updated', {
-            basket: basketForBroadcast,
-            message: `Cestello ${basketForBroadcast.physicalNumber} spostato`
-          });
-        }
-        
-        // 6. Risposta al client
-        const finalBasket = completeBasket || updatedBasket;
-        console.log("Invio risposta al client con cestello aggiornato");
-        if (!finalBasket) {
-          // Se per qualche motivo abbiamo perso il cestello, invia comunque una risposta di successo
-          return res.json({ 
-            success: true, 
-            message: "Cestello spostato con successo ma i dati completi non sono disponibili",
-            basketId: id,
-            flupsyId,
-            row,
-            position
-          });
-        }
-        
-        res.json(finalBasket);
-        console.log("===== ENDPOINT MOVE BASKET - COMPLETATO CON SUCCESSO =====");
-      } catch (dbError) {
-        console.error("Database error during basket move:", dbError);
-        console.log("===== ENDPOINT MOVE BASKET - FALLITO (DB ERROR) =====");
-        throw new Error(`Errore durante l'aggiornamento del database: ${(dbError as Error).message}`);
+        })
+      ]);
+      
+      // Recupera il cestello completo con tutti i dati correlati
+      const completeBasket = await storage.getBasket(id);
+      
+      // Notifica WebSocket
+      if (typeof (global as any).broadcastUpdate === 'function' && completeBasket) {
+        (global as any).broadcastUpdate('basket_moved', {
+          basket: completeBasket,
+          previousPosition: currentPosition ? {
+            flupsyId: currentPosition.flupsyId,
+            row: currentPosition.row,
+            position: currentPosition.position
+          } : null,
+          newPosition: { flupsyId, row, position },
+          message: `Cestello ${completeBasket.physicalNumber} spostato`
+        });
       }
+      
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime > 500) {
+        console.warn(`⚠️ PERFORMANCE: Move API took ${elapsedTime}ms (target: <500ms)`);
+      }
+      
+      res.json(completeBasket || updatedBasket);
     } catch (error) {
       console.error("Error moving basket:", error);
-      console.log("===== ENDPOINT MOVE BASKET - FALLITO (GENERAL ERROR) =====");
       res.status(500).json({ message: `Failed to move basket: ${(error as Error).message}` });
     }
   });
