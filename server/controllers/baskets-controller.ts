@@ -5,8 +5,8 @@
 
 import { BasketsCache } from '../baskets-cache-service.js';
 import { db } from '../db.js';
-import { baskets, flupsys, cycles, basketPositionHistory } from '../../shared/schema.js';
-import { eq, and, desc, asc, isNull, sql, or, not } from 'drizzle-orm';
+import { baskets, flupsys, cycles, basketPositionHistory, operations } from '../../shared/schema.js';
+import { eq, and, desc, asc, isNull, sql, or, not, inArray } from 'drizzle-orm';
 
 interface BasketsOptions {
   page?: number;
@@ -42,7 +42,24 @@ export async function setupBasketsIndexes(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_baskets_physical_number ON baskets (physical_number);
     `);
     
-    console.log('Indici per cestelli configurati con successo!');
+    // OTTIMIZZAZIONE: Indici per migliorare le performance delle query cestelli
+    
+    // Indice per operations(basket_id, id) per query di ultima operazione
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_operations_basket_id_id ON operations (basket_id, id);
+    `);
+    
+    // Indice per basket_position_history(basket_id, end_date, start_date) per posizioni attuali
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_basket_position_history_basket_end_start ON basket_position_history (basket_id, end_date, start_date);
+    `);
+    
+    // Indice composito per baskets(flupsy_id, state, current_cycle_id) per filtri combinati
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_baskets_flupsy_state_cycle ON baskets (flupsy_id, state, current_cycle_id);
+    `);
+    
+    console.log('Indici per cestelli ottimizzati configurati con successo!');
   } catch (error) {
     console.error('Errore durante la configurazione degli indici per i cestelli:', error);
     throw error;
@@ -169,15 +186,12 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
           // Split string e converti in array di numeri
           const flupsyIds = flupsyId.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
           
-          // IMPORTANTE: Non usare OR per molti ID perché può causare problemi di performance
-          // Usa SQL nativo per gestire una lista di ID
+          // OTTIMIZZAZIONE: Usa inArray per migliori performance con molti ID
           console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY`);
           
-          // Utilizziamo una serie di condizioni OR per gestire correttamente multiple ID
           if (flupsyIds.length > 0) {
-            const orConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
-            whereConditions.push(or(...orConditions));
-            console.log(`Query con condizioni OR per ${flupsyIds.length} FLUPSY:`, flupsyIds);
+            whereConditions.push(inArray(baskets.flupsyId, flupsyIds));
+            console.log(`Query ottimizzata con inArray per ${flupsyIds.length} FLUPSY:`, flupsyIds);
           }
         } else {
           // Singolo ID come stringa
@@ -192,15 +206,12 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
         // Converte ogni elemento in numero (potrebbero arrivare come stringhe)
         const flupsyIds = flupsyId.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id));
         
-        // IMPORTANTE: Non usare OR per molti ID perché può causare problemi di performance
-        // Usa SQL nativo per gestire una lista di ID
+        // OTTIMIZZAZIONE: Usa inArray per migliori performance con molti ID
         console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY (array)`);
         
-        // Utilizziamo condizioni OR per gestire correttamente multiple ID
         if (flupsyIds.length > 0) {
-          const orConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
-          whereConditions.push(or(...orConditions));
-          console.log(`Query con condizioni OR per ${flupsyIds.length} FLUPSY (array):`, flupsyIds);
+          whereConditions.push(inArray(baskets.flupsyId, flupsyIds));
+          console.log(`Query ottimizzata con inArray per ${flupsyIds.length} FLUPSY (array):`, flupsyIds);
         }
       }
     }
@@ -224,13 +235,12 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
       query = query.where(and(...whereConditions));
     }
     
-    // Conta il totale dei record
-    // Assicuriamoci che usiamo gli stessi filtri della query principale
+    // OTTIMIZZAZIONE: Conta il totale senza JOIN per permettere index-only scans
+    // Rimuoviamo il LEFT JOIN con flupsys per migliori performance
     const countQuery = db.select({
       count: sql`count(*)`
     })
     .from(baskets)
-    .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
     .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
     
     const [countResult] = await countQuery;
@@ -269,10 +279,16 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     
     let cyclesMap: any = {};
     if (cycleIds.length > 0) {
-      // Usa una query SQL nativa con IN per migliorare le prestazioni
-      const cyclesResult = await db.execute(sql`
-        SELECT * FROM cycles WHERE id IN ${cycleIds}
-      `);
+      // OTTIMIZZAZIONE: Usa query Drizzle sicura invece di interpolazione raw SQL
+      const cyclesResult = await db.select({
+        id: cycles.id,
+        basket_id: cycles.basketId,
+        start_date: cycles.startDate,
+        end_date: cycles.endDate,
+        state: cycles.state
+      })
+      .from(cycles)
+      .where(inArray(cycles.id, cycleIds));
       
       cyclesMap = cyclesResult.reduce((map: any, cycle: any) => {
         // Converti i nomi delle colonne in camelCase per compatibilità
@@ -294,11 +310,22 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     // Verifica che ci siano cestelli da cercare
     let positionsMap: any = {};
     if (basketIds.length > 0) {
-      // Usa la query SQL nativa per accedere alla tabella con il suo nome corretto
-      const positionsResult = await db.execute(sql`
-        SELECT * FROM basket_position_history 
-        WHERE basket_id IN ${basketIds} AND end_date IS NULL
-      `);
+      // OTTIMIZZAZIONE: Usa query Drizzle sicura invece di interpolazione raw SQL
+      const positionsResult = await db.select({
+        id: basketPositionHistory.id,
+        basket_id: basketPositionHistory.basketId,
+        flupsy_id: basketPositionHistory.flupsyId,
+        row: basketPositionHistory.row,
+        position: basketPositionHistory.position,
+        start_date: basketPositionHistory.startDate,
+        end_date: basketPositionHistory.endDate,
+        operation_id: basketPositionHistory.operationId
+      })
+      .from(basketPositionHistory)
+      .where(and(
+        inArray(basketPositionHistory.basketId, basketIds),
+        isNull(basketPositionHistory.endDate)
+      ));
       
       // Quando usiamo db.execute, il risultato è un array di oggetti con proprietà in snake_case
       // dobbiamo convertire i nomi delle colonne da snake_case a camelCase
@@ -322,11 +349,14 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     // Recupera l'ultima operazione per ogni cestello in una singola query
     let operationsMap: any = {};
     if (basketIds.length > 0) {
-      // Recupera l'ultima operazione per ogni cestello usando DISTINCT ON (compatibile con Postgres)
+      // OTTIMIZZAZIONE: Usa query sicura con placeholder per evitare SQL injection
       const operationsResult = await db.execute(sql`
-        SELECT DISTINCT ON (o.basket_id) o.*
+        SELECT DISTINCT ON (o.basket_id) 
+          o.id, o.date, o.type, o.basket_id, o.cycle_id, o.size_id, o.sgr_id, o.lot_id,
+          o.animal_count, o.total_weight, o.animals_per_kg, o.average_weight, 
+          o.dead_count, o.mortality_rate, o.notes, o.metadata
         FROM operations o 
-        WHERE o.basket_id IN ${basketIds}
+        WHERE o.basket_id = ANY(${basketIds})
         ORDER BY o.basket_id, o.id DESC
       `);
       
