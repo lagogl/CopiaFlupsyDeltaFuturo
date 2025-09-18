@@ -338,7 +338,21 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     const queryTime = Date.now() - startQueryTime;
     console.log(`🚀 CTE: Query completata in ${queryTime}ms`);
     
-    if (result.rows.length === 0) {
+    // Validate Drizzle result array
+    if (!result || !Array.isArray(result)) {
+      console.warn(`⚠️ CTE Query returned invalid result, returning empty array`);
+      return {
+        baskets: [],
+        pagination: {
+          page,
+          pageSize,
+          totalItems: 0,
+          totalPages: 0
+        }
+      };
+    }
+    
+    if (result.length === 0) {
       console.log('CTE: Nessun cestello trovato');
       const emptyResult = {
         baskets: [],
@@ -356,12 +370,12 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     }
     
     // Processa i risultati della CTE
-    const totalItems = result.rows.length > 0 ? Number(result.rows[0].total_count) : 0;
+    const totalItems = result.length > 0 ? Number(result[0].total_count) : 0;
     const totalPages = Math.ceil(totalItems / pageSize);
     
-    console.log(`🚀 CTE: Processando ${result.rows.length} righe con ${totalItems} totali`);
+    console.log(`🚀 CTE: Processando ${result.length} righe con ${totalItems} totali`);
     
-    const enrichedBaskets = result.rows.map((row: any) => {
+    const enrichedBaskets = result.map((row: any) => {
       // Costruisci oggetto cestello
       const basket = {
         id: row.id,

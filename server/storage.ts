@@ -156,6 +156,10 @@ export interface IStorage {
   
   // Basket position history methods
   getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]>;
+  getBasketPositionHistoryOptimized(basketId: number): Promise<{
+    basketExists: boolean;
+    positions: BasketPositionHistory[];
+  }>;
   getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined>;
   createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory>;
   closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined>;

@@ -1160,6 +1160,53 @@ export class DbStorage implements IStorage {
       .orderBy(desc(basketPositionHistory.startDate));
   }
 
+  // OPTIMIZED: Single query that verifies basket existence AND gets position history
+  async getBasketPositionHistoryOptimized(basketId: number): Promise<{
+    basketExists: boolean;
+    positions: BasketPositionHistory[];
+  }> {
+    // Single query with LEFT JOIN to check basket existence and get positions
+    const result = await db
+      .select({
+        basketId: baskets.id,
+        basketExists: sql<boolean>`${baskets.id} IS NOT NULL`,
+        positionId: basketPositionHistory.id,
+        positionBasketId: basketPositionHistory.basketId,
+        flupsyId: basketPositionHistory.flupsyId,
+        row: basketPositionHistory.row,
+        position: basketPositionHistory.position,
+        startDate: basketPositionHistory.startDate,
+        endDate: basketPositionHistory.endDate,
+        operationId: basketPositionHistory.operationId
+      })
+      .from(baskets)
+      .leftJoin(basketPositionHistory, eq(baskets.id, basketPositionHistory.basketId))
+      .where(eq(baskets.id, basketId))
+      .orderBy(desc(basketPositionHistory.startDate));
+    
+    if (result.length === 0) {
+      return { basketExists: false, positions: [] };
+    }
+    
+    const basketExists = result[0].basketExists;
+    
+    // Extract positions from result, filtering out null position records
+    const positions: BasketPositionHistory[] = result
+      .filter(row => row.positionId !== null)
+      .map(row => ({
+        id: row.positionId!,
+        basketId: row.positionBasketId!,
+        flupsyId: row.flupsyId!,
+        row: row.row!,
+        position: row.position!,
+        startDate: row.startDate!,
+        endDate: row.endDate,
+        operationId: row.operationId
+      }));
+    
+    return { basketExists, positions };
+  }
+
   async getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined> {
     if (!basketId || basketId <= 0) {
       console.error("getCurrentBasketPosition - ID cesta non valido:", basketId);

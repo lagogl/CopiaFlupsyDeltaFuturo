@@ -1203,6 +1203,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Invalidate position cache for this basket
+      try {
+        const { positionCache } = await import('./position-cache-service');
+        positionCache.invalidate(newBasket.id);
+      } catch (error) {
+        console.warn('Failed to invalidate position cache:', error);
+      }
+
       // Broadcast basket creation event via WebSockets
       if (typeof (global as any).broadcastUpdate === 'function') {
         (global as any).broadcastUpdate('basket_created', {
@@ -1361,7 +1369,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           completeBasket = null;
         }
         
-        // 5. Notifica WebSocket
+        // 5. Invalidate position cache for this basket
+        try {
+          const { positionCache } = await import('./position-cache-service');
+          positionCache.invalidate(id);
+          console.log(`Cache posizioni invalidata per cestello ${id}`);
+        } catch (error) {
+          console.warn('Failed to invalidate position cache:', error);
+        }
+
+        // 6. Notifica WebSocket
         if (typeof (global as any).broadcastUpdate === 'function' && (completeBasket || updatedBasket)) {
           console.log("Invio notifica WebSocket per aggiornamento cestello");
           const basketForBroadcast = completeBasket || updatedBasket;
@@ -1714,24 +1731,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Basket position history endpoints
+  // OPTIMIZED Basket position history endpoints with caching
   app.get("/api/baskets/:id/positions", async (req, res) => {
+    const startTime = Date.now();
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid basket ID" });
       }
 
-      // Verify the basket exists
-      const basket = await storage.getBasket(id);
-      if (!basket) {
+      // Import cache service
+      const { positionCache } = await import('./position-cache-service');
+
+      // Check cache first
+      const cachedData = positionCache.get(id);
+      if (cachedData) {
+        if (!cachedData.basketExists) {
+          return res.status(404).json({ message: "Basket not found" });
+        }
+        const duration = Date.now() - startTime;
+        console.log(`✅ POSITIONS CACHE HIT: Basket ${id} returned in ${duration}ms`);
+        return res.json(cachedData.positions);
+      }
+
+      // Cache miss - use optimized single-query method
+      const result = await storage.getBasketPositionHistoryOptimized(id);
+      
+      if (!result.basketExists) {
+        // Cache negative result too
+        positionCache.set(id, { basketExists: false, positions: [] });
         return res.status(404).json({ message: "Basket not found" });
       }
       
-      // Get position history
-      const positionHistory = await storage.getBasketPositionHistory(id);
+      // Cache positive result
+      positionCache.set(id, { basketExists: true, positions: result.positions });
       
-      res.json(positionHistory);
+      const duration = Date.now() - startTime;
+      console.log(`🚀 POSITIONS OPTIMIZED: Basket ${id} returned in ${duration}ms (target: <500ms)`);
+      
+      if (duration > 500) {
+        console.warn(`⚠️ PERFORMANCE: Position query for basket ${id} took ${duration}ms (above 500ms target)`);
+      }
+      
+      res.json(result.positions);
     } catch (error) {
       console.error("Error fetching basket position history:", error);
       res.status(500).json({ message: "Failed to fetch basket position history" });
