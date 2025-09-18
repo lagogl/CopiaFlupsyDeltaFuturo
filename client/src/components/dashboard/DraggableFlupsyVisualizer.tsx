@@ -462,7 +462,7 @@ export default function DraggableFlupsyVisualizer() {
     console.log("targetBasket trovato:", targetBasket);
     
     if (targetBasket) {
-      console.log("SCAMBIO con cestello ID:", targetBasket.id);
+      console.log("Posizione occupata - SCAMBIO con cestello ID:", targetBasket.id);
       // Scambio tra due cestelli
       setPendingBasketMove({
         basketId: item.id,
@@ -474,7 +474,7 @@ export default function DraggableFlupsyVisualizer() {
         targetBasketId: targetBasket.id
       });
     } else {
-      console.log("SPOSTAMENTO in posizione libera");
+      console.log("Posizione libera - SPOSTAMENTO semplice");
       // Spostamento normale
       setPendingBasketMove({
         basketId: item.id,
@@ -486,6 +486,8 @@ export default function DraggableFlupsyVisualizer() {
       });
     }
     
+    // Log per debug del tipo di operazione che verrà mostrata nel dialogo
+    console.log(`Dialogo di conferma: ${targetBasket ? 'SCAMBIO' : 'SPOSTAMENTO'}`);
     setConfirmDialogOpen(true);
   }, [baskets, isLoadingBaskets]);
 
