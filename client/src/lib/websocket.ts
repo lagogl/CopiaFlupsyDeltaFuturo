@@ -43,6 +43,141 @@ let wsConnectionFailed = false; // Flag per tenere traccia dei tentativi falliti
 // Lista dei gestori di messaggi registrati
 const messageHandlers: Record<string, Set<(data: any) => void>> = {};
 
+// Funzione helper per costruire URL WebSocket robusto
+function buildWebSocketUrl(): string | null {
+  try {
+    // Determina il protocollo appropriato
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    
+    // Ottieni hostname che è sempre definito
+    const hostname = window.location.hostname;
+    
+    // Gestisci la porta in modo sicuro
+    const port = window.location.port;
+    
+    // Debug: log delle variabili per diagnostica
+    console.log("Debug WebSocket URL construction:", {
+      protocol: window.location.protocol,
+      hostname: hostname,
+      port: port,
+      host: window.location.host,
+      href: window.location.href
+    });
+    
+    // Verifica che l'hostname sia valido
+    if (!hostname || hostname === 'undefined' || hostname.trim() === '') {
+      console.error("Hostname non valido per WebSocket:", {
+        hostname,
+        locationHost: window.location.host,
+        fullLocation: window.location.href
+      });
+      return null;
+    }
+    
+    // Costruisci l'URL in modo sicuro
+    let wsUrl: string;
+    
+    if (port && port !== 'undefined' && port.trim() !== '') {
+      // Porta esplicitamente definita
+      wsUrl = `${protocol}//${hostname}:${port}/ws`;
+    } else {
+      // Porta non definita o standard - usa solo hostname
+      wsUrl = `${protocol}//${hostname}/ws`;
+    }
+    
+    // Validazione finale dell'URL costruito
+    if (wsUrl.includes('undefined') || wsUrl.includes(':undefined')) {
+      console.error("URL WebSocket contiene ancora 'undefined':", wsUrl);
+      return null;
+    }
+    
+    // Test che l'URL sia sintatticamente valido
+    try {
+      const urlTest = new URL(wsUrl);
+      // Verifica che sia un protocollo WebSocket
+      if (!urlTest.protocol.startsWith('ws')) {
+        throw new Error('Protocollo non WebSocket');
+      }
+    } catch (e) {
+      console.error("URL WebSocket sintatticamente non valido:", wsUrl, e);
+      return null;
+    }
+    
+    return wsUrl;
+  } catch (error) {
+    console.error("Errore nella costruzione URL WebSocket:", error);
+    return null;
+  }
+}
+
+// Funzione di fallback con multiple strategie
+function attemptWebSocketFallback(originalError: any): WebSocket {
+  const fallbackStrategies = [
+    // Strategia 1: Usa localhost esplicito se hostname non è disponibile
+    () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const port = window.location.port;
+      
+      if (port && port !== 'undefined') {
+        return `${protocol}//localhost:${port}/ws`;
+      } else {
+        return `${protocol}//localhost/ws`;
+      }
+    },
+    
+    // Strategia 2: Usa 127.0.0.1 se localhost non funziona
+    () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const port = window.location.port;
+      
+      if (port && port !== 'undefined') {
+        return `${protocol}//127.0.0.1:${port}/ws`;
+      } else {
+        return `${protocol}//127.0.0.1/ws`;
+      }
+    },
+    
+    // Strategia 3: Prova con porta 5000 esplicitamente (porto comune per dev)
+    () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//localhost:5000/ws`;
+    }
+  ];
+  
+  for (let i = 0; i < fallbackStrategies.length; i++) {
+    try {
+      const wsUrl = fallbackStrategies[i]();
+      
+      // Valida l'URL di fallback
+      if (wsUrl.includes('undefined') || wsUrl.includes(':undefined')) {
+        console.warn(`Strategia di fallback ${i + 1} genera URL con 'undefined':`, wsUrl);
+        continue;
+      }
+      
+      // Test URL
+      new URL(wsUrl);
+      
+      console.log(`Tentativo di fallback ${i + 1} WebSocket:`, wsUrl);
+      
+      const fallbackSocket = new WebSocket(wsUrl);
+      
+      // Imposta il nuovo socket e configura i gestori
+      socket = fallbackSocket;
+      configureSocketHandlers();
+      
+      return socket;
+    } catch (fallbackError) {
+      console.warn(`Fallback strategia ${i + 1} fallita:`, fallbackError);
+      continue;
+    }
+  }
+  
+  // Se tutti i fallback falliscono, crea socket dummy
+  console.error("Tutti i tentativi di fallback WebSocket sono falliti. Errore originale:", originalError);
+  socket = createDummySocket();
+  return socket;
+}
+
 // Crea la connessione WebSocket
 export function initializeWebSocket() {
   // Chiudi la connessione esistente, se presente
@@ -52,52 +187,11 @@ export function initializeWebSocket() {
   }
   
   try {
-    // Determina il protocollo appropriato
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
+    // Costruisci l'URL in modo sicuro
+    const wsUrl = buildWebSocketUrl();
     
-    // Debug: log delle variabili di ambiente
-    console.log("Debug WebSocket URL construction:", {
-      protocol: window.location.protocol,
-      host: window.location.host,
-      hostname: window.location.hostname,
-      port: window.location.port,
-      href: window.location.href
-    });
-    
-    // Verifica che l'host sia definito correttamente
-    if (!host || host === 'undefined' || host.includes('undefined')) {
-      console.error("Errore di inizializzazione WebSocket: host non valido", {
-        locationProtocol: window.location.protocol,
-        locationHost: window.location.host,
-        fullLocation: window.location.href
-      });
-      // Imposta un socket finto per evitare errori
-      socket = createDummySocket();
-      return socket;
-    }
-    
-    // Costruisci l'URL WebSocket correttamente
-    let wsUrl = `${protocol}//${host}/ws`;
-    
-    // Validazione aggiuntiva per evitare URL malformati
-    if (wsUrl.includes('undefined') || wsUrl.includes('localhost:undefined')) {
-      console.error("URL WebSocket contiene 'undefined':", wsUrl);
-      socket = createDummySocket();
-      return socket;
-    }
-    
-    // Verifica che wsUrl sia un URL WebSocket valido
-    try {
-      // Test esplicito per verificare che l'URL sia valido
-      if (!wsUrl || wsUrl.includes('undefined')) {
-        throw new Error(`URL non valido: ${wsUrl}`);
-      }
-      
-      new URL(wsUrl);
-    } catch (e) {
-      console.error("URL WebSocket non valido:", wsUrl, e);
-      // Fallback al socket dummy
+    if (!wsUrl) {
+      console.error("Impossibile costruire un URL WebSocket valido");
       socket = createDummySocket();
       return socket;
     }
@@ -115,36 +209,8 @@ export function initializeWebSocket() {
   } catch (err) {
     console.error("Errore nella creazione WebSocket:", err);
     
-    try {
-      // Seconda opzione: prova alla radice
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      
-      // Verifica che l'host sia definito
-      if (!host || host === 'undefined') {
-        console.error("Host non definito durante il tentativo di fallback WebSocket");
-        socket = createDummySocket();
-        return socket;
-      }
-      
-      const altWsUrl = `${protocol}//${host}/ws`;
-      
-      console.log("Tentativo alternativo WebSocket:", altWsUrl);
-      
-      socket = new WebSocket(altWsUrl);
-      
-      // Se arriviamo qui, impostiamo i gestori eventi
-      configureSocketHandlers();
-      
-      return socket;
-    } catch (secondError) {
-      console.error("Secondo tentativo fallito:", secondError);
-      
-      // In caso di errore, crea un socket "finto" che non fa nulla
-      // ma evita errori nel resto dell'applicazione
-      socket = createDummySocket();
-      return socket;
-    }
+    // Prova strategie di fallback
+    return attemptWebSocketFallback(err);
   }
 }
 

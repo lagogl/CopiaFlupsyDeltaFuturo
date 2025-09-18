@@ -349,21 +349,43 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     // Recupera l'ultima operazione per ogni cestello in una singola query
     let operationsMap: any = {};
     if (basketIds.length > 0) {
-      // OTTIMIZZAZIONE: Usa query sicura con placeholder per evitare SQL injection
-      const operationsResult = await db.execute(sql`
-        SELECT DISTINCT ON (o.basket_id) 
-          o.id, o.date, o.type, o.basket_id, o.cycle_id, o.size_id, o.sgr_id, o.lot_id,
-          o.animal_count, o.total_weight, o.animals_per_kg, o.average_weight, 
-          o.dead_count, o.mortality_rate, o.notes, o.metadata
-        FROM operations o 
-        WHERE o.basket_id = ANY(${basketIds})
-        ORDER BY o.basket_id, o.id DESC
-      `);
+      // OTTIMIZZAZIONE: Usa inArray di Drizzle per sicurezza e compatibilità
+      // Evita l'errore "op ANY/ALL requires array" quando basketIds è vuoto
+      const operationsResult = await db.select({
+        id: operations.id,
+        date: operations.date,
+        type: operations.type,
+        basket_id: operations.basketId,
+        cycle_id: operations.cycleId,
+        size_id: operations.sizeId,
+        sgr_id: operations.sgrId,
+        lot_id: operations.lotId,
+        animal_count: operations.animalCount,
+        total_weight: operations.totalWeight,
+        animals_per_kg: operations.animalsPerKg,
+        average_weight: operations.averageWeight,
+        dead_count: operations.deadCount,
+        mortality_rate: operations.mortalityRate,
+        notes: operations.notes,
+        metadata: operations.metadata
+      })
+      .from(operations)
+      .where(inArray(operations.basketId, basketIds))
+      .orderBy(desc(operations.id));
+
+      // Raggruppa per basket_id prendendo solo l'operazione più recente per cestello
+      const latestOperationsMap = new Map();
+      operationsResult.forEach(op => {
+        if (!latestOperationsMap.has(op.basket_id)) {
+          latestOperationsMap.set(op.basket_id, op);
+        }
+      });
       
-      const latestOperations = operationsResult;
+      // Converti da Map a oggetto per compatibilità
+      const latestOperations = Array.from(latestOperationsMap.values());
       
       operationsMap = latestOperations.reduce((map: any, op: any) => {
-        // Converti i nomi delle colonne da snake_case a camelCase
+        // I dati sono già in camelCase dalla query Drizzle
         const operation = {
           id: op.id,
           date: op.date,
