@@ -708,7 +708,7 @@ export default function Settings() {
                           id="reset-password-lot-sequence" 
                           type="password" 
                           placeholder="Inserisci la password di sicurezza"
-                          value={resetPassword || "admin123"}
+                          value={resetPassword || "Gianluigi"}
                           onChange={(e) => setResetPassword(e.target.value)}
                         />
                       </div>
