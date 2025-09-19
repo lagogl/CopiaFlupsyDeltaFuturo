@@ -1428,11 +1428,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await Promise.all(closeOperations);
       }
       
-      // OTTIMIZZAZIONE 3: Posizione temporanea null per cestello 2 (evita conflitti)
-      await storage.updateBasket(basket2Id, {
-        row: null,
-        position: null
-      });
+      // OTTIMIZZAZIONE 3: Posizione temporanea null per cestello 2 SOLO se ha posizione attuale (evita conflitti)
+      if (currentPosition2) {
+        await storage.updateBasket(basket2Id, {
+          row: null,
+          position: null
+        });
+      }
       
       // OTTIMIZZAZIONE 4: Crea le nuove cronologie in parallelo
       await Promise.all([
