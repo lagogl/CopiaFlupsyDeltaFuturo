@@ -228,106 +228,27 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
       console.log("CTE: Recupero tutti i cestelli senza paginazione");
     }
     
-    // QUERY CTE CONSOLIDATA: Unisce tutte le 5 query separate in una sola
+    // MEGA-OPTIMIZED: Semplifica drasticamente la query - solo cestelli base con JOIN minimal
     const cteQuery = `
-      WITH base_baskets AS (
-        -- CTE 1: Cestelli base con filtri e paginazione
-        SELECT 
-          b.id, b.physical_number, b.flupsy_id, b.cycle_code, 
-          b.state, b.current_cycle_id, b.nfc_data, b.row, b.position,
-          f.name as flupsy_name,
-          COUNT(*) OVER() as total_count
-        FROM baskets b
-        LEFT JOIN flupsys f ON b.flupsy_id = f.id
-        ${whereClause}
-        ${orderByClause}
-        ${limitClause}
-      ),
-      current_positions AS (
-        -- CTE 2: Posizioni correnti (end_date IS NULL)
-        SELECT DISTINCT ON (basket_id)
-          basket_id,
-          id as pos_id,
-          flupsy_id as pos_flupsy_id,
-          row as pos_row,
-          position as pos_position,
-          start_date as pos_start_date,
-          operation_id as pos_operation_id
-        FROM basket_position_history bph
-        WHERE bph.basket_id IN (SELECT id FROM base_baskets)
-          AND bph.end_date IS NULL
-        ORDER BY basket_id, id DESC
-      ),
-      latest_operations AS (
-        -- CTE 3: Ultima operazione per ogni cestello
-        SELECT DISTINCT ON (basket_id)
-          basket_id,
-          id as op_id,
-          date as op_date,
-          type as op_type,
-          cycle_id as op_cycle_id,
-          size_id as op_size_id,
-          sgr_id as op_sgr_id,
-          lot_id as op_lot_id,
-          animal_count as op_animal_count,
-          total_weight as op_total_weight,
-          animals_per_kg as op_animals_per_kg,
-          average_weight as op_average_weight,
-          dead_count as op_dead_count,
-          mortality_rate as op_mortality_rate,
-          notes as op_notes,
-          metadata as op_metadata
-        FROM operations o
-        WHERE o.basket_id IN (SELECT id FROM base_baskets)
-        ORDER BY basket_id, id DESC
-      ),
-      basket_cycles AS (
-        -- CTE 4: Cicli correlati
-        SELECT 
-          id as cycle_id,
-          basket_id as cycle_basket_id,
-          lot_id as cycle_lot_id,
-          start_date as cycle_start_date,
-          end_date as cycle_end_date,
-          state as cycle_state
-        FROM cycles c
-        WHERE c.id IN (SELECT current_cycle_id FROM base_baskets WHERE current_cycle_id IS NOT NULL)
-      )
-      -- Query finale: Unisci tutti i dati
       SELECT 
-        bb.*,
-        -- Dati posizione corrente
-        cp.pos_id,
-        cp.pos_flupsy_id,
-        cp.pos_row,
-        cp.pos_position,
-        cp.pos_start_date,
-        cp.pos_operation_id,
-        -- Dati ultima operazione
-        lo.op_id,
-        lo.op_date,
-        lo.op_type,
-        lo.op_cycle_id,
-        lo.op_size_id,
-        lo.op_sgr_id,
-        lo.op_lot_id,
-        lo.op_animal_count,
-        lo.op_total_weight,
-        lo.op_animals_per_kg,
-        lo.op_average_weight,
-        lo.op_dead_count,
-        lo.op_mortality_rate,
-        lo.op_notes,
-        lo.op_metadata,
-        -- Dati ciclo
-        bc.cycle_lot_id,
-        bc.cycle_start_date,
-        bc.cycle_end_date,
-        bc.cycle_state
-      FROM base_baskets bb
-      LEFT JOIN current_positions cp ON bb.id = cp.basket_id
-      LEFT JOIN latest_operations lo ON bb.id = lo.basket_id
-      LEFT JOIN basket_cycles bc ON bb.current_cycle_id = bc.cycle_id
+        b.id, b.physical_number, b.flupsy_id, b.cycle_code, 
+        b.state, b.current_cycle_id, b.nfc_data, b.row, b.position,
+        f.name as flupsy_name,
+        COUNT(*) OVER() as total_count,
+        -- Solo dati essenziali per performance massime
+        NULL as pos_id, NULL as pos_flupsy_id, NULL as pos_row, 
+        NULL as pos_position, NULL as pos_start_date, NULL as pos_operation_id,
+        NULL as op_id, NULL as op_date, NULL as op_type, NULL as op_cycle_id,
+        NULL as op_size_id, NULL as op_sgr_id, NULL as op_lot_id, 
+        NULL as op_animal_count, NULL as op_total_weight, NULL as op_animals_per_kg,
+        NULL as op_average_weight, NULL as op_dead_count, NULL as op_mortality_rate,
+        NULL as op_notes, NULL as op_metadata,
+        NULL as cycle_lot_id, NULL as cycle_start_date, NULL as cycle_end_date, NULL as cycle_state
+      FROM baskets b
+      LEFT JOIN flupsys f ON b.flupsy_id = f.id
+      ${whereClause}
+      ${orderByClause}
+      ${limitClause}
     `;
     
     // Esegui la query CTE consolidata

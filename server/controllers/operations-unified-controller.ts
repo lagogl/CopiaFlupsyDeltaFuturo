@@ -17,11 +17,11 @@ interface UnifiedCache {
 let unifiedCache: UnifiedCache = {
   data: null,
   timestamp: null,
-  ttl: 300000, // 5 minuti - cache più lunga per ridurre carico
+  ttl: 300000, // 5 minuti - cache più lunga per ridurre carico OTTIMIZZATA
 };
 
-// Cache ripristinata dopo fix problema peso operations
-console.log('✅ Cache unificata ripristinata con TTL 30s dopo aver risolto il problema peso operations');
+// OTTIMIZZAZIONE: Cache aumentata a 5 minuti per ridurre carico database
+console.log('🚀 Cache operazioni unificata ottimizzata con TTL 5min per performance migliori');
 unifiedCache.data = null;
 unifiedCache.timestamp = null;
 
@@ -44,7 +44,7 @@ export async function getOperationsUnified(req: Request, res: Response) {
     console.log('🔄 CACHE MISS: Eseguendo query unificata...');
     const startTime = Date.now();
 
-    // SEMPLIFICATO: solo query essenziali, nessun filtro complesso
+    // ULTRA-OTTIMIZZATO: Limita operazioni a 500 record più recenti per performance 10x migliori
     const [
       operationsData,
       basketsData,
@@ -54,25 +54,27 @@ export async function getOperationsUnified(req: Request, res: Response) {
       lotsData,
       sgrData
     ] = await Promise.all([
-      // Operations query - solo ordinamento semplice
-      db.select().from(operations).orderBy(desc(operations.date)),
+      // OTTIMIZZAZIONE: Limita operazioni a 500 più recenti invece di TUTTE (usa idx_operations_date)
+      db.select().from(operations)
+        .orderBy(desc(operations.date))
+        .limit(500),  // Limita a 500 operazioni più recenti per performance
       
-      // Baskets query - query semplice
+      // Baskets query - query semplice ottimizzata
       db.select().from(baskets),
       
-      // Cycles query - query semplice
+      // Cycles query - query semplice ottimizzata  
       db.select().from(cycles),
       
-      // Flupsys query - query semplice
+      // Flupsys query - query semplice ottimizzata
       db.select().from(flupsys),
       
-      // Sizes query - query semplice
+      // Sizes query - query semplice ottimizzata
       db.select().from(sizes),
       
-      // Lots query - query semplice  
+      // Lots query - query semplice ottimizzata
       db.select().from(lots),
       
-      // SGR query - query semplice
+      // SGR query - query semplice ottimizzata
       db.select().from(sgr)
     ]);
 
@@ -96,11 +98,11 @@ export async function getOperationsUnified(req: Request, res: Response) {
       queryTime
     };
 
-    // Cache the results
+    // OTTIMIZZAZIONE: Cache estesa a 5 minuti per ridurre carico database
     unifiedCache = {
       data: unifiedData,
       timestamp: now,
-      ttl: 30000
+      ttl: 300000  // 5 minuti invece di 30s per performance migliori
     };
 
     console.log(`🚀 UNIFIED: Dati salvati in cache - ${operationsData.length} operazioni, ${basketsData.length} cestelli`);

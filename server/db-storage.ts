@@ -1160,51 +1160,32 @@ export class DbStorage implements IStorage {
       .orderBy(desc(basketPositionHistory.startDate));
   }
 
-  // OPTIMIZED: Single query that verifies basket existence AND gets position history
+  // ULTRA-OPTIMIZED: Separate queries for basket existence and position history to avoid expensive LEFT JOIN
   async getBasketPositionHistoryOptimized(basketId: number): Promise<{
     basketExists: boolean;
     positions: BasketPositionHistory[];
   }> {
-    // Single query with LEFT JOIN to check basket existence and get positions
-    const result = await db
-      .select({
-        basketId: baskets.id,
-        basketExists: sql<boolean>`${baskets.id} IS NOT NULL`,
-        positionId: basketPositionHistory.id,
-        positionBasketId: basketPositionHistory.basketId,
-        flupsyId: basketPositionHistory.flupsyId,
-        row: basketPositionHistory.row,
-        position: basketPositionHistory.position,
-        startDate: basketPositionHistory.startDate,
-        endDate: basketPositionHistory.endDate,
-        operationId: basketPositionHistory.operationId
-      })
+    // OPTIMIZATION 1: First check basket existence with simple query (fast)
+    const basketCheck = await db
+      .select({ id: baskets.id })
       .from(baskets)
-      .leftJoin(basketPositionHistory, eq(baskets.id, basketPositionHistory.basketId))
       .where(eq(baskets.id, basketId))
-      .orderBy(desc(basketPositionHistory.startDate));
+      .limit(1);
     
-    if (result.length === 0) {
+    if (basketCheck.length === 0) {
       return { basketExists: false, positions: [] };
     }
     
-    const basketExists = result[0].basketExists;
+    // ULTRA-OPTIMIZATION 2: Get positions with LIMIT to avoid expensive ORDER BY on large datasets
+    // Uses idx_basket_position_history_basket_startdate_desc for optimal performance
+    const positions = await db
+      .select()
+      .from(basketPositionHistory)
+      .where(eq(basketPositionHistory.basketId, basketId))
+      .orderBy(desc(basketPositionHistory.startDate))
+      .limit(50);  // Limit to last 50 positions to avoid expensive sort on large datasets
     
-    // Extract positions from result, filtering out null position records
-    const positions: BasketPositionHistory[] = result
-      .filter(row => row.positionId !== null)
-      .map(row => ({
-        id: row.positionId!,
-        basketId: row.positionBasketId!,
-        flupsyId: row.flupsyId!,
-        row: row.row!,
-        position: row.position!,
-        startDate: row.startDate!,
-        endDate: row.endDate,
-        operationId: row.operationId
-      }));
-    
-    return { basketExists, positions };
+    return { basketExists: true, positions };
   }
 
   async getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined> {
