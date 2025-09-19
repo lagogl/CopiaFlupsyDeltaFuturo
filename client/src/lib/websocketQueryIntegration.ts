@@ -25,6 +25,63 @@ const messageTypeToQueryKeys: Record<string, string[]> = {
 };
 
 /**
+ * OTTIMIZZAZIONE: Funzione unificata per aggiornare i cestelli nella cache
+ * Evita duplicazioni tra basket_moved e basket_updated
+ */
+function handleBasketUpdate(updatedBasket: any, action: string) {
+  // OTTIMIZZAZIONE: Aggiorna tutte le varianti di query key baskets per evitare cache stale
+  
+  // 1. Query principale del visualizer
+  queryClient.setQueriesData({ queryKey: ['/api/baskets?includeAll=true'] }, (oldData: any) => {
+    if (!oldData) return oldData;
+    
+    if (Array.isArray(oldData)) {
+      return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
+    }
+    
+    if (oldData.baskets && Array.isArray(oldData.baskets)) {
+      return {
+        ...oldData,
+        baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
+      };
+    }
+    
+    return oldData;
+  });
+  
+  // 2. Query base senza parametri
+  queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
+    if (!oldData) return oldData;
+    
+    if (Array.isArray(oldData)) {
+      return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
+    }
+    
+    if (oldData.baskets && Array.isArray(oldData.baskets)) {
+      return {
+        ...oldData,
+        baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
+      };
+    }
+    
+    return oldData;
+  });
+  
+  // 3. Query con includeAll come parametro separato
+  queryClient.setQueriesData({ queryKey: ['/api/baskets', 'includeAll'] }, (oldData: any) => {
+    if (!oldData) return oldData;
+    
+    if (Array.isArray(oldData)) {
+      return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
+    }
+    
+    return oldData;
+  });
+  
+  console.log(`🔄 Cestello ${updatedBasket.id} ${action}: tutte le cache sincronizzate`);
+}
+
+/**
  * Hook che configura l'integrazione tra WebSocket e React Query.
  * Quando arriva un messaggio WebSocket, invalida le query appropriate.
  */
@@ -67,101 +124,17 @@ export function useWebSocketQueryIntegration() {
   // Registra handler per 'statistics_updated'
   useWebSocketMessage('statistics_updated', createHandler('statistics_updated'));
   
-  // Handler ottimizzato per basket_moved: aggiorna direttamente la cache senza invalidare
+  // OTTIMIZZAZIONE: basket_moved ora usa la stessa logica ottimizzata di basket_updated
   useWebSocketMessage('basket_moved', useCallback((data: any) => {
     if (data?.basket) {
-      const updatedBasket = data.basket;
-      
-      // FIX CRITICO: Aggiorna la query key corretta usata dal visualizzatore
-      // Il DraggableFlupsyVisualizer usa '/api/baskets?includeAll=true' non '/api/baskets'
-      queryClient.setQueriesData({ queryKey: ['/api/baskets?includeAll=true'] }, (oldData: any) => {
-        if (!oldData) return oldData;
-        
-        // Se è un array di cestelli, aggiorna quello modificato
-        if (Array.isArray(oldData)) {
-          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
-        }
-        
-        // Se è una risposta paginata
-        if (oldData.baskets && Array.isArray(oldData.baskets)) {
-          return {
-            ...oldData,
-            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
-          };
-        }
-        
-        return oldData;
-      });
-      
-      // Aggiorna anche la cache base per compatibilità con altre parti dell'app
-      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
-        if (!oldData) return oldData;
-        
-        if (Array.isArray(oldData)) {
-          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
-        }
-        
-        if (oldData.baskets && Array.isArray(oldData.baskets)) {
-          return {
-            ...oldData,
-            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
-          };
-        }
-        
-        return oldData;
-      });
-      
-      // Invalida solo la cache delle posizioni per questo specifico cestello
-      queryClient.invalidateQueries({ queryKey: [`/api/baskets/${updatedBasket.id}/positions`] });
-      
-      console.log(`🔄 Cestello ${updatedBasket.id} spostato: posizione visuale aggiornata via WebSocket`);
+      handleBasketUpdate(data.basket, 'spostato');
     }
   }, []));
   
   // Handler ottimizzato per basket_updated: aggiorna direttamente la cache senza invalidare
   useWebSocketMessage('basket_updated', useCallback((data: any) => {
     if (data?.basket) {
-      const updatedBasket = data.basket;
-      
-      // FIX CRITICO: Aggiorna la query key corretta usata dal visualizzatore
-      queryClient.setQueriesData({ queryKey: ['/api/baskets?includeAll=true'] }, (oldData: any) => {
-        if (!oldData) return oldData;
-        
-        // Se è un array di cestelli, aggiorna quello modificato
-        if (Array.isArray(oldData)) {
-          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
-        }
-        
-        // Se è una risposta paginata
-        if (oldData.baskets && Array.isArray(oldData.baskets)) {
-          return {
-            ...oldData,
-            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
-          };
-        }
-        
-        return oldData;
-      });
-      
-      // Aggiorna anche la cache base per compatibilità
-      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
-        if (!oldData) return oldData;
-        
-        if (Array.isArray(oldData)) {
-          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
-        }
-        
-        if (oldData.baskets && Array.isArray(oldData.baskets)) {
-          return {
-            ...oldData,
-            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
-          };
-        }
-        
-        return oldData;
-      });
-      
-      console.log(`🔄 Cestello ${updatedBasket.id} aggiornato: cache diretta sincronizzata`);
+      handleBasketUpdate(data.basket, 'aggiornato');
     }
   }, []));
   
