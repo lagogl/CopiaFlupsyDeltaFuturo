@@ -1501,6 +1501,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Invalidate position cache for both baskets involved in the switch
+      (async () => {
+        try {
+          const { positionCache } = await import('./position-cache-service');
+          positionCache.invalidate(basket1Id);
+          positionCache.invalidate(basket2Id);
+          console.log(`🗑️ CACHE: Position cache invalidated for baskets ${basket1Id} and ${basket2Id}`);
+        } catch (error) {
+          console.warn('Failed to invalidate position cache:', error);
+        }
+      })();
+      
       // Restituisci i cestelli completi al client
       res.json({
         basket1: updatedBasket1,
