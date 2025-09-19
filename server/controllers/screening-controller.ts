@@ -361,8 +361,8 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       
       // 7. Aggiorna i cestelli di destinazione (assegna ciclo e posizione)
       await Promise.all(destinationBasketData.map(async (destBasket) => {
-        // Chiudi la posizione attuale del cestello, se presente
-        await closeBasketPositionHistory(destBasket.basketId, date || new Date().toISOString().split('T')[0], tx);
+        // Sistema cronologia posizioni rimosso per performance
+        // La gestione delle posizioni avviene ora direttamente tramite i campi della tabella baskets
         
         // Handle different destination types
         if (destBasket.destinationType === 'sold') {
@@ -387,29 +387,18 @@ export async function executeScreeningOperation(req: Request, res: Response) {
             })
             .where(eq(baskets.id, destBasket.basketId));
             
-          // Crea un nuovo record nella cronologia delle posizioni solo per cestelli posizionati
-          if (safeFlupsyId && destBasket.row && safePosition) {
-            await tx.insert(basketPositionHistory).values({
-              basketId: destBasket.basketId,
-              flupsyId: safeFlupsyId,
-              row: destBasket.row,
-              position: safePosition,
-              startDate: date || new Date().toISOString().split('T')[0],
-              endDate: null,
-              operationId: destOperations.find(op => op.basketId === destBasket.basketId)?.id || null
-            });
-          }
+          // Sistema cronologia posizioni rimosso per performance
+          // Le posizioni vengono ora gestite direttamente tramite i campi flupsyId, row, position della tabella baskets
         }
       }));
       
       // 8. Aggiorna i cestelli di origine (liberali dal ciclo attivo)
       await Promise.all(sourceBasketData.map(async (sourceBasket) => {
-        // Chiudi la posizione attuale del cestello
-        await closeBasketPositionHistory(sourceBasket.id, date || new Date().toISOString().split('T')[0], tx);
+        // Sistema cronologia posizioni rimosso per performance
+        // La gestione delle posizioni avviene ora direttamente tramite i campi della tabella baskets
         
         // Aggiorna il cestello come disponibile (libero)
         // Non modificiamo row e position perché sono campi non-nullable nella tabella baskets
-        // La posizione viene gestita tramite basketPositionHistory
         await tx.update(baskets)
           .set({
             currentCycleId: null
@@ -566,29 +555,7 @@ async function findAvailablePositions() {
 }
 
 /**
- * Chiude la posizione attuale di un cestello nel registro storico
+ * Sistema cronologia posizioni rimosso per performance
+ * La funzione closeBasketPositionHistory è stata rimossa per ottimizzare le performance delle API di posizionamento.
+ * La gestione delle posizioni dei cestelli avviene ora direttamente tramite i campi row e position nella tabella baskets.
  */
-async function closeBasketPositionHistory(basketId: number, endDate: string, transaction: any = db) {
-  try {
-    // Cerca la posizione attuale (dove endDate è null)
-    const currentPosition = await transaction.select()
-      .from(basketPositionHistory)
-      .where(
-        and(
-          eq(basketPositionHistory.basketId, basketId),
-          isNull(basketPositionHistory.endDate)
-        )
-      )
-      .limit(1);
-    
-    // Se esiste una posizione attiva, chiudila
-    if (currentPosition && currentPosition.length > 0) {
-      await transaction.update(basketPositionHistory)
-        .set({ endDate })
-        .where(eq(basketPositionHistory.id, currentPosition[0].id));
-    }
-  } catch (error) {
-    console.error(`Errore durante la chiusura della posizione per il cestello ${basketId}:`, error);
-    throw error;
-  }
-}

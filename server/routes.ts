@@ -855,8 +855,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Ottieni la posizione corrente
-      const currentPosition = await storage.getCurrentBasketPosition(basketId);
+      // Sistema cronologia posizioni rimosso per performance
+      // La posizione corrente viene ora gestita direttamente tramite i campi row e position del cestello
+      const currentPosition = null; // basketPositionHistory rimosso per ottimizzazione
       
       // Componi i dati completi del cestello
       const basketDetails = {
@@ -1274,41 +1275,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Esegui l'operazione di spostamento in una transazione ottimizzata
       const currentDate = new Date().toISOString().split('T')[0];
       
-      // Esegui operazioni in parallelo dove possibile
-      const [currentPosition] = await Promise.all([
-        storage.getCurrentBasketPosition(id),
-        // Pre-invalida la cache delle posizioni
-        (async () => {
-          try {
-            const { positionCache } = await import('./position-cache-service');
-            positionCache.invalidate(id);
-          } catch (error) {
-            // Non bloccare se la cache fallisce
-          }
-        })()
-      ]);
+      // Sistema cronologia posizioni rimosso per performance
+      // La gestione delle posizioni avviene ora direttamente tramite i campi della tabella baskets
+      const currentPosition = null;
       
-      // Esegui aggiornamenti in sequenza (devono essere in ordine)
-      if (currentPosition) {
-        await storage.closeBasketPositionHistory(id, currentDate);
+      // Pre-invalida la cache delle posizioni
+      try {
+        const { positionCache } = await import('./position-cache-service');
+        positionCache.invalidate(id);
+      } catch (error) {
+        // Non bloccare se la cache fallisce
       }
       
-      // Crea nuova posizione e aggiorna cestello in parallelo
-      const [newPosition, updatedBasket] = await Promise.all([
-        storage.createBasketPositionHistory({
-          basketId: id,
-          flupsyId: flupsyId,
-          row: row,
-          position: position,
-          startDate: currentDate,
-          operationId: null
-        }),
-        storage.updateBasket(id, {
-          flupsyId,
-          row,
-          position
-        })
-      ]);
+      // Aggiorna direttamente il cestello senza cronologia posizioni
+      const updatedBasket = await storage.updateBasket(id, {
+        flupsyId,
+        row,
+        position
+      });
       
       // Recupera il cestello completo con tutti i dati correlati
       const completeBasket = await storage.getBasket(id);
@@ -1402,7 +1386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const formattedDate = currentDate.toISOString().split('T')[0];
       
       // OPTIMIZATION: Use pre-imported modules instead of dynamic imports
-      // Already imported at top: db, basketPositionHistory, baskets, eq, sql, and, isNull
+      // Sistema cronologia posizioni rimosso per performance
       const prepTime = Date.now() - prepStart;
       console.log(`🚀 SWITCH PROFILING - Data prep: ${prepTime}ms`);
       
@@ -1607,23 +1591,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
           
-          // Close the current position if exists
-          const currentPosition = await storage.getCurrentBasketPosition(id);
-          if (currentPosition) {
-            const currentDate = new Date();
-            const formattedDate = currentDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-            await storage.closeBasketPositionHistory(id, formattedDate);
-          }
-          
-          // Create a new position history entry
-          await storage.createBasketPositionHistory({
-            basketId: id,
-            flupsyId: flupsyId,
-            row: parsedData.data.row,
-            position: parsedData.data.position,
-            startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
-            operationId: null
-          });
+          // Sistema cronologia posizioni rimosso per performance
+          // La gestione delle posizioni avviene ora direttamente tramite i campi della tabella baskets
+          console.log(`Sistema ottimizzato - aggiornamento diretto posizione cestello ${id}`);
         }
       }
       

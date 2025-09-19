@@ -212,43 +212,13 @@ async function checkOrphanedBaskets(fix: boolean): Promise<number> {
   return orphanedBaskets.length;
 }
 
-// 4. Posizioni cestelli senza cestelli o FLUPSY validi
+// 4. Sistema cronologia posizioni rimosso per performance
+// La funzione checkOrphanedBasketPositions è stata rimossa perché basketPositionHistory
+// è stato rimosso per ottimizzare le performance delle API di posizionamento.
+// Le posizioni dei cestelli sono ora gestite direttamente tramite i campi row e position nella tabella baskets.
 async function checkOrphanedBasketPositions(fix: boolean): Promise<number> {
-  console.log('\n4. Controllo posizioni cestelli orfane...');
-  
-  // Trova posizioni con riferimenti a cestelli non esistenti
-  const orphanedPositions1 = await db.select()
-    .from(basketPositionHistory)
-    .leftJoin(baskets, eq(basketPositionHistory.basketId, baskets.id))
-    .where(isNull(baskets.id));
-  
-  // Trova posizioni con riferimenti a FLUPSY non esistenti
-  const orphanedPositions2 = await db.select()
-    .from(basketPositionHistory)
-    .leftJoin(flupsys, eq(basketPositionHistory.flupsyId, flupsys.id))
-    .where(isNull(flupsys.id));
-  
-  const totalOrphaned = orphanedPositions1.length + orphanedPositions2.length;
-  console.log(`Trovate ${totalOrphaned} posizioni cestelli orfane`);
-  console.log(`- ${orphanedPositions1.length} senza cestello valido`);
-  console.log(`- ${orphanedPositions2.length} senza FLUPSY valido`);
-  
-  if (fix && totalOrphaned > 0) {
-    console.log('Eliminazione posizioni cestelli orfane...');
-    // Elimina posizioni con cestelli non validi
-    for (const pos of orphanedPositions1) {
-      await db.delete(basketPositionHistory)
-        .where(eq(basketPositionHistory.id, pos.basket_position_history.id));
-    }
-    // Elimina posizioni con FLUPSY non validi
-    for (const pos of orphanedPositions2) {
-      await db.delete(basketPositionHistory)
-        .where(eq(basketPositionHistory.id, pos.basket_position_history.id));
-    }
-    console.log(`Eliminate ${totalOrphaned} posizioni cestelli orfane`);
-  }
-  
-  return totalOrphaned;
+  console.log('\n4. Controllo posizioni cestelli orfane... (SALTATO - sistema cronologia rimosso)');
+  return 0; // Non ci sono più posizioni da controllare
 }
 
 // 5. Record di vagliatura orfani (source baskets)
@@ -521,20 +491,17 @@ async function checkDanglingLotReferences(fix: boolean): Promise<number> {
 async function checkBasketsWithoutPositions(): Promise<number> {
   console.log('\n12. Controllo cestelli senza posizioni assegnate...');
   
-  // Trova cestelli che hanno un FLUPSY ma nessuna posizione assegnata
+  // Sistema cronologia posizioni rimosso per performance
+  // Ora verifichiamo cestelli che hanno flupsyId ma nessuna row/position
   const basketsWithoutPositions = await db.select()
     .from(baskets)
-    .leftJoin(
-      basketPositionHistory,
-      and(
-        eq(baskets.id, basketPositionHistory.basketId),
-        isNull(basketPositionHistory.endDate)
-      )
-    )
     .where(
       and(
         sql`${baskets.flupsyId} IS NOT NULL`,
-        isNull(basketPositionHistory.id)
+        or(
+          isNull(baskets.row),
+          isNull(baskets.position)
+        )
       )
     );
   

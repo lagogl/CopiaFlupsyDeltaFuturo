@@ -154,15 +154,9 @@ export interface IStorage {
   updateLot(id: number, lot: Partial<Lot>): Promise<Lot | undefined>;
   deleteLot(id: number): Promise<boolean>;
   
-  // Basket position history methods
-  getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]>;
-  getBasketPositionHistoryOptimized(basketId: number): Promise<{
-    basketExists: boolean;
-    positions: BasketPositionHistory[];
-  }>;
-  getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined>;
-  createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory>;
-  closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined>;
+  // Basket position history methods - REMOVED FOR PERFORMANCE OPTIMIZATION
+  // Le funzioni basketPositionHistory sono state rimosse per ottimizzare le performance delle API di posizionamento.
+  // La gestione delle posizioni dei cestelli avviene ora direttamente tramite i campi row e position nella tabella baskets.
   
   // Mortality Rate methods
   getMortalityRates(): Promise<MortalityRate[]>;
@@ -1027,56 +1021,9 @@ export class MemStorage implements IStorage {
     return this.lots.delete(id);
   }
   
-  // Basket position history methods
-  async getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]> {
-    return Array.from(this.basketPositions.values())
-      .filter(position => position.basketId === basketId)
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  }
-  
-  async getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined> {
-    // Find position history entries for this basket with no end date (current position)
-    return Array.from(this.basketPositions.values())
-      .find(position => position.basketId === basketId && position.endDate === null);
-  }
-  
-  async createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory> {
-    // Close any current position for this basket
-    await this.closeBasketPositionHistory(positionHistory.basketId, new Date(positionHistory.startDate));
-    
-    // Create the new position history entry
-    const id = this.positionHistoryId++;
-    const newPositionHistory: BasketPositionHistory = { 
-      ...positionHistory, 
-      id,
-      endDate: null
-    };
-    
-    this.basketPositions.set(id, newPositionHistory);
-    
-    // Also update the basket with the new position
-    await this.updateBasket(positionHistory.basketId, {
-      row: positionHistory.row,
-      position: positionHistory.position
-    });
-    
-    return newPositionHistory;
-  }
-  
-  async closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined> {
-    // Find the current position (with no end date)
-    const currentPosition = await this.getCurrentBasketPosition(basketId);
-    if (!currentPosition) return undefined;
-    
-    // Update with end date
-    const updatedPosition = { 
-      ...currentPosition, 
-      endDate
-    };
-    
-    this.basketPositions.set(currentPosition.id, updatedPosition);
-    return updatedPosition;
-  }
+  // Basket position history methods - REMOVED FOR PERFORMANCE OPTIMIZATION
+  // Le funzioni basketPositionHistory sono state rimosse per ottimizzare le performance delle API di posizionamento.
+  // La gestione delle posizioni dei cestelli avviene ora direttamente tramite i campi row e position nella tabella baskets.
   
   // SGR Giornalieri methods
   async getSgrGiornalieri(): Promise<SgrGiornaliero[]> {

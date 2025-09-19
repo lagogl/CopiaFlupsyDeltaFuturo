@@ -353,23 +353,10 @@ export class DbStorage implements IStorage {
       throw new Error("Non è possibile eliminare un cestello con un ciclo attivo. Terminare prima il ciclo corrente.");
     }
     
-    // Chiudi la posizione nella tabella di cronologia posizioni
-    try {
-      // Verifica se il cestello ha una posizione attiva
-      const currentPosition = await this.getCurrentBasketPosition(id);
-      if (currentPosition) {
-        console.log(`deleteBasket - Chiusura posizione attiva per cestello ${id} prima dell'eliminazione`);
-        // Usa la data corrente come data di fine
-        const currentDate = new Date().toISOString().split('T')[0];
-        await this.closeBasketPositionHistory(id, currentDate);
-      }
-      
-      // Cronologia posizioni rimossa per performance
-      console.log(`deleteBasket - Sistema ottimizzato senza cronologia posizioni`);
-    } catch (error) {
-      console.error(`deleteBasket - Errore durante la chiusura/eliminazione delle posizioni:`, error);
-      // Non blocchiamo l'eliminazione per questo errore
-    }
+    // Sistema cronologia posizioni rimosso per performance
+    // La cronologia delle posizioni basketPositionHistory è stata rimossa per ottimizzare le performance
+    // Le posizioni dei cestelli vengono ora gestite direttamente tramite i campi row e position nella tabella baskets
+    console.log(`deleteBasket - Sistema ottimizzato senza cronologia posizioni per cestello ${id}`);
     
     // Elimina il cestello
     console.log(`deleteBasket - Eliminazione cestello ${id}`);
@@ -844,36 +831,10 @@ export class DbStorage implements IStorage {
         if (basketId) {
           console.log(`Aggiornamento stato cestello ID: ${basketId} a disponibile`);
           
-          // 3.1. Chiudi qualsiasi posizione attiva nella cronologia
-          try {
-            // Cerca posizioni attive (senza data di fine)
-            const activePositions = await db.select()
-              .from(basketPositionHistory)
-              .where(and(
-                eq(basketPositionHistory.basketId, basketId),
-                isNull(basketPositionHistory.endDate)
-              ));
-            
-            if (activePositions && activePositions.length > 0) {
-              console.log(`Trovate ${activePositions.length} posizioni attive per il cestello ${basketId}`);
-              
-              // Imposta la data di fine alla data corrente per tutte le posizioni attive
-              const currentDate = new Date().toISOString().split('T')[0];
-              
-              for (const position of activePositions) {
-                console.log(`Chiusura della posizione attiva ID: ${position.id} per il cestello ${basketId}`);
-                await db.update(basketPositionHistory)
-                  .set({
-                    endDate: currentDate
-                  })
-                  .where(eq(basketPositionHistory.id, position.id));
-              }
-            } else {
-              console.log(`Nessuna posizione attiva trovata per il cestello ${basketId}`);
-            }
-          } catch (error) {
-            console.error(`Errore durante la gestione della cronologia posizioni per il cestello ${basketId}:`, error);
-          }
+          // 3.1. Sistema cronologia posizioni rimosso per performance
+          // La cronologia delle posizioni basketPositionHistory è stata rimossa per ottimizzare le performance
+          // Le posizioni dei cestelli vengono ora gestite direttamente tramite i campi row e position nella tabella baskets
+          console.log(`Sistema cronologia posizioni rimosso - aggiornamento diretto stato cestello ${basketId}`);
           
           // 3.2. Aggiorna lo stato del cestello
           // IMPORTANTE: Manteniamo la posizione fisica (row, position) del cestello
@@ -1223,114 +1184,10 @@ export class DbStorage implements IStorage {
   }
   
   // BASKET POSITION HISTORY REMOVED FOR PERFORMANCE OPTIMIZATION
+  // Le funzioni createBasketPositionHistory, closeBasketPositionHistory e getCurrentBasketPosition 
+  // sono state rimosse per ottimizzare le performance delle API di posizionamento.
+  // La gestione delle posizioni dei cestelli avviene ora direttamente tramite i campi row e position nella tabella baskets.
 
-  async createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory> {
-    // Assicuriamoci che tutti i campi necessari siano presenti
-    if (!positionHistory.basketId || !positionHistory.flupsyId || !positionHistory.row || positionHistory.position === undefined) {
-      console.error("Dati di posizione incompleti:", positionHistory);
-      throw new Error("Dati di posizione incompleti. Tutti i campi basketId, flupsyId, row e position sono obbligatori.");
-    }
-
-    // Formatta la data se è un oggetto Date
-    let formattedStartDate: string;
-    if (typeof positionHistory.startDate === 'string') {
-      formattedStartDate = positionHistory.startDate;
-    } else if (positionHistory.startDate instanceof Date) {
-      formattedStartDate = positionHistory.startDate.toISOString().split('T')[0]; 
-    } else {
-      // Se la data non è fornita, usa la data corrente
-      formattedStartDate = new Date().toISOString().split('T')[0];
-      console.warn("startDate non fornito, usando la data corrente:", formattedStartDate);
-    }
-    
-    console.log("createBasketPositionHistory - Creo nuovo record:", {
-      basketId: positionHistory.basketId,
-      flupsyId: positionHistory.flupsyId,
-      row: positionHistory.row,
-      position: positionHistory.position,
-      startDate: formattedStartDate,
-      operationId: positionHistory.operationId || null
-    });
-    
-    try {
-      const results = await db.insert(basketPositionHistory).values({
-        basketId: positionHistory.basketId,
-        flupsyId: positionHistory.flupsyId, 
-        row: positionHistory.row,
-        position: positionHistory.position,
-        startDate: formattedStartDate,
-        endDate: null,
-        operationId: positionHistory.operationId || null
-      }).returning();
-      
-      if (!results || results.length === 0) {
-        throw new Error("Nessun risultato restituito durante la creazione della cronologia di posizione");
-      }
-      
-      console.log("createBasketPositionHistory - Record creato con successo:", results[0]);
-      return results[0];
-    } catch (error) {
-      console.error("createBasketPositionHistory - Errore durante l'inserimento:", error);
-      throw new Error(`Errore durante la creazione della cronologia di posizione: ${(error as Error).message}`);
-    }
-  }
-
-  async closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined> {
-    // Verifica che l'ID della cesta sia valido
-    if (!basketId || basketId <= 0) {
-      console.error("closeBasketPositionHistory - ID cesta non valido:", basketId);
-      throw new Error("ID cesta non valido per la chiusura della posizione");
-    }
-
-    // Converti la data in formato stringa
-    let endDateStr: string;
-    if (typeof endDate === 'string') {
-      endDateStr = endDate;
-    } else if (endDate instanceof Date) {
-      endDateStr = endDate.toISOString().split('T')[0];
-    } else {
-      // Se la data non è valida, usa la data corrente
-      endDateStr = new Date().toISOString().split('T')[0];
-      console.warn("closeBasketPositionHistory - Data di fine non valida, usando la data corrente:", endDateStr);
-    }
-    
-    console.log(`closeBasketPositionHistory - Chiusura posizione per cesta ${basketId} con data fine ${endDateStr}`);
-    
-    try {
-      // Ottieni la posizione attuale attiva
-      const currentPosition = await this.getCurrentBasketPosition(basketId);
-      if (!currentPosition) {
-        console.warn(`closeBasketPositionHistory - Nessuna posizione attiva trovata per la cesta ${basketId}`);
-        return undefined;
-      }
-      
-      console.log(`closeBasketPositionHistory - Trovata posizione attiva ID: ${currentPosition.id}, FLUPSY: ${currentPosition.flupsyId}, Riga: ${currentPosition.row}, Posizione: ${currentPosition.position}`);
-      
-      try {
-        // Chiudi la posizione
-        const results = await db.update(basketPositionHistory)
-          .set({
-            endDate: endDateStr
-          })
-          .where(eq(basketPositionHistory.id, currentPosition.id))
-          .returning();
-        
-        if (!results || results.length === 0) {
-          console.error(`closeBasketPositionHistory - Aggiornamento fallito per la posizione ID: ${currentPosition.id}`);
-          throw new Error("Impossibile chiudere la posizione attuale");
-        }
-        
-        console.log(`closeBasketPositionHistory - Posizione chiusa con successo, ID: ${results[0].id}`);
-        return results[0];
-      } catch (updateError) {
-        console.error("closeBasketPositionHistory - Errore specifico durante l'aggiornamento:", updateError);
-        throw new Error(`Errore durante l'aggiornamento del record: ${(updateError as Error).message}`);
-      }
-    } catch (error) {
-      console.error("closeBasketPositionHistory - Errore durante la chiusura della posizione:", error);
-      throw new Error(`Errore durante la chiusura della posizione: ${(error as Error).message}`);
-    }
-  }
   
   // SGR Giornalieri methods
   async getSgrGiornalieri(): Promise<SgrGiornaliero[]> {
