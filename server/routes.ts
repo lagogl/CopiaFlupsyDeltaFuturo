@@ -1410,77 +1410,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbStart = Date.now();
       console.log(`🚀 SWITCH PROFILING - DB transaction starting...`);
       
-      // FINAL SOLUTION: Sequential operations without transactions to avoid SQL type errors
-      console.log(`🚀 SWITCH PROFILING - Using sequential operations approach...`);
+      // 🚀 ATOMIC CTE SOLUTION: Single SQL operation replacing 6 sequential queries
+      console.log(`🚀 SWITCH PROFILING - Using ATOMIC CTE approach for <500ms target...`);
       
-      // STEP 1: Close current positions for both baskets
-      const step1Start = Date.now();
-      await db
-        .update(schema.basketPositionHistory)
-        .set({ endDate: formattedDate })
-        .where(and(
-          eq(schema.basketPositionHistory.basketId, basket1Id),
-          isNull(schema.basketPositionHistory.endDate)
-        ));
+      // Execute the atomic CTE query with proper parameter binding using Drizzle sql`` template
+      const atomicResult = await db.execute(sql`
+        WITH
+        -- Step 1: Close current positions for both baskets atomically
+        close_positions AS (
+          UPDATE basket_position_history 
+          SET end_date = ${formattedDate}
+          WHERE basket_id IN (${basket1Id}, ${basket2Id}) 
+            AND end_date IS NULL
+          RETURNING basket_id, id as closed_position_id
+        ),
+        -- Step 2: Insert new positions for both baskets atomically
+        insert_positions AS (
+          INSERT INTO basket_position_history (basket_id, flupsy_id, row, position, start_date, end_date, operation_id)
+          VALUES 
+            (${basket1Id}, ${flupsyId2}, ${position2Row}, ${position2Number}, ${formattedDate}, NULL, NULL),
+            (${basket2Id}, ${flupsyId1}, ${position1Row}, ${position1Number}, ${formattedDate}, NULL, NULL)
+          RETURNING basket_id, id as new_position_id, flupsy_id, row, position
+        ),
+        -- Step 3: Update baskets with new positions atomically
+        update_baskets AS (
+          UPDATE baskets 
+          SET 
+            flupsy_id = CASE 
+              WHEN id = ${basket1Id} THEN ${flupsyId2}
+              WHEN id = ${basket2Id} THEN ${flupsyId1}
+            END,
+            row = CASE 
+              WHEN id = ${basket1Id} THEN ${position2Row}
+              WHEN id = ${basket2Id} THEN ${position1Row}
+            END,
+            position = CASE 
+              WHEN id = ${basket1Id} THEN ${position2Number}
+              WHEN id = ${basket2Id} THEN ${position1Number}
+            END
+          WHERE id IN (${basket1Id}, ${basket2Id})
+          RETURNING id, physical_number, flupsy_id, cycle_code, state, current_cycle_id, nfc_data, row, position
+        )
+        -- Return updated baskets for response
+        SELECT * FROM update_baskets ORDER BY id;
+      `);
       
-      await db
-        .update(schema.basketPositionHistory)
-        .set({ endDate: formattedDate })
-        .where(and(
-          eq(schema.basketPositionHistory.basketId, basket2Id),
-          isNull(schema.basketPositionHistory.endDate)
-        ));
-      console.log(`🚀 SWITCH PROFILING - Step 1 (close positions): ${Date.now() - step1Start}ms`);
-      
-      // STEP 2: Insert new positions
-      const step2Start = Date.now();
-      await db
-        .insert(schema.basketPositionHistory)
-        .values({
-          basketId: basket1Id,
-          flupsyId: flupsyId2,
-          row: position2Row,
-          position: position2Number,
-          startDate: formattedDate,
-          endDate: null,
-          operationId: null
-        });
-      
-      await db
-        .insert(schema.basketPositionHistory)
-        .values({
-          basketId: basket2Id,
-          flupsyId: flupsyId1,
-          row: position1Row,
-          position: position1Number,
-          startDate: formattedDate,
-          endDate: null,
-          operationId: null
-        });
-      console.log(`🚀 SWITCH PROFILING - Step 2 (insert positions): ${Date.now() - step2Start}ms`);
-      
-      // STEP 3: Update baskets
-      const step3Start = Date.now();
-      const [updatedBasket1] = await db
-        .update(schema.baskets)
-        .set({ 
-          flupsyId: flupsyId2, 
-          row: position2Row, 
-          position: position2Number 
-        })
-        .where(eq(schema.baskets.id, basket1Id))
-        .returning();
-        
-      const [updatedBasket2] = await db
-        .update(schema.baskets)
-        .set({ 
-          flupsyId: flupsyId1, 
-          row: position1Row, 
-          position: position1Number 
-        })
-        .where(eq(schema.baskets.id, basket2Id))
-        .returning();
-      console.log(`🚀 SWITCH PROFILING - Step 3 (update baskets): ${Date.now() - step3Start}ms`);
+      // Extract results from atomic operation
+      const [updatedBasket1, updatedBasket2] = atomicResult;
+      console.log(`🚀 ATOMIC CTE: Switch completed in single operation`);
       
       const dbTime = Date.now() - dbStart;
       console.log(`🚀 SWITCH PROFILING - DB transaction: ${dbTime}ms`);
