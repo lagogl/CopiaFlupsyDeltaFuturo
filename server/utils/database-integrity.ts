@@ -19,8 +19,7 @@ import {
   screeningBasketHistory,
   lots,
   sgr as sgrRates,
-  sgrGiornalieri as growthForecasts,
-  basketPositionHistory
+  sgrGiornalieri as growthForecasts
 } from '../../shared/schema';
 
 // Interfaccia per i risultati dei controlli di integrità

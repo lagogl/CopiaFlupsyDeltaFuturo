@@ -1695,77 +1695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // OPTIMIZED Basket position history endpoints with caching
-  app.get("/api/baskets/:id/positions", async (req, res) => {
-    const startTime = Date.now();
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid basket ID" });
-      }
-
-      // Import cache service
-      const { positionCache } = await import('./position-cache-service');
-
-      // Check cache first
-      const cachedData = positionCache.get(id);
-      if (cachedData) {
-        if (!cachedData.basketExists) {
-          return res.status(404).json({ message: "Basket not found" });
-        }
-        const duration = Date.now() - startTime;
-        console.log(`✅ POSITIONS CACHE HIT: Basket ${id} returned in ${duration}ms`);
-        return res.json(cachedData.positions);
-      }
-
-      // Cache miss - use optimized single-query method
-      const result = await storage.getBasketPositionHistoryOptimized(id);
-      
-      if (!result.basketExists) {
-        // Cache negative result too
-        positionCache.set(id, { basketExists: false, positions: [] });
-        return res.status(404).json({ message: "Basket not found" });
-      }
-      
-      // Cache positive result
-      positionCache.set(id, { basketExists: true, positions: result.positions });
-      
-      const duration = Date.now() - startTime;
-      console.log(`🚀 POSITIONS OPTIMIZED: Basket ${id} returned in ${duration}ms (target: <500ms)`);
-      
-      if (duration > 500) {
-        console.warn(`⚠️ PERFORMANCE: Position query for basket ${id} took ${duration}ms (above 500ms target)`);
-      }
-      
-      res.json(result.positions);
-    } catch (error) {
-      console.error("Error fetching basket position history:", error);
-      res.status(500).json({ message: "Failed to fetch basket position history" });
-    }
-  });
-  
-  app.get("/api/baskets/:id/current-position", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid basket ID" });
-      }
-
-      // Verify the basket exists
-      const basket = await storage.getBasket(id);
-      if (!basket) {
-        return res.status(404).json({ message: "Basket not found" });
-      }
-      
-      // Get current position
-      const currentPosition = await storage.getCurrentBasketPosition(id);
-      
-      res.json(currentPosition || { message: "Basket has no position history" });
-    } catch (error) {
-      console.error("Error fetching current basket position:", error);
-      res.status(500).json({ message: "Failed to fetch current basket position" });
-    }
-  });
+  // Position history endpoints removed for performance optimization
 
   // === Operation routes ===
   app.get("/api/operations-optimized", async (req, res) => {

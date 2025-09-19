@@ -321,17 +321,7 @@ export const lots = pgTable("lots", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Position History (Cronologia delle posizioni delle ceste)
-export const basketPositionHistory = pgTable("basket_position_history", {
-  id: serial("id").primaryKey(),
-  basketId: integer("basket_id").notNull(), // reference to the basket
-  flupsyId: integer("flupsy_id").notNull(), // reference to the FLUPSY
-  row: text("row").notNull(), // fila (DX o SX)
-  position: integer("position").notNull(), // posizione numerica
-  startDate: date("start_date").notNull(), // data inizio in questa posizione
-  endDate: date("end_date"), // data fine in questa posizione (null se è la posizione attuale)
-  operationId: integer("operation_id"), // operazione che ha causato il cambio di posizione
-});
+// Position History removed for performance optimization
 
 // Mortality Rate (Tasso di mortalità previsto per taglia e mese)
 export const mortalityRates = pgTable("mortality_rates", {
@@ -396,10 +386,6 @@ export const insertLotSchema = createInsertSchema(lots).omit({
   state: true 
 });
 
-export const insertBasketPositionHistorySchema = createInsertSchema(basketPositionHistory).omit({
-  id: true,
-  endDate: true
-});
 
 export const insertMortalityRateSchema = createInsertSchema(mortalityRates).omit({
   id: true
@@ -507,8 +493,6 @@ export type InsertSgrGiornaliero = z.infer<typeof insertSgrGiornalieriSchema>;
 export type Lot = typeof lots.$inferSelect;
 export type InsertLot = z.infer<typeof insertLotSchema>;
 
-export type BasketPositionHistory = typeof basketPositionHistory.$inferSelect;
-export type InsertBasketPositionHistory = z.infer<typeof insertBasketPositionHistorySchema>;
 
 export type MortalityRate = typeof mortalityRates.$inferSelect;
 export type InsertMortalityRate = z.infer<typeof insertMortalityRateSchema>;
@@ -565,9 +549,6 @@ export const lotSchema = insertLotSchema.extend({
   supplierLotNumber: z.string().optional()
 });
 
-export const basketPositionHistorySchema = insertBasketPositionHistorySchema.extend({
-  startDate: z.coerce.date()
-});
 
 export const sgrGiornalieriSchema = insertSgrGiornalieriSchema.extend({
   recordDate: z.coerce.date()

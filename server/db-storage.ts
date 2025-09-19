@@ -5,7 +5,7 @@ import {
   Flupsy, InsertFlupsy, flupsys,
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
-  operations, sgr, sizes, basketPositionHistory, BasketPositionHistory, InsertBasketPositionHistory,
+  operations, sgr, sizes,
   SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri, MortalityRate, InsertMortalityRate, mortalityRates,
   TargetSizeAnnotation, InsertTargetSizeAnnotation, targetSizeAnnotations,
   // Modulo di vagliatura
@@ -209,10 +209,7 @@ export class DbStorage implements IStorage {
           
           // 4.2 Eliminazione della cronologia delle posizioni
           // FIX: Utilizziamo inArray invece di sql template con join per la clausola IN
-          console.log(`deleteFlupsy - Eliminazione cronologia posizioni per ${basketIds.length} ceste`);
-          await tx
-            .delete(basketPositionHistory)
-            .where(inArray(basketPositionHistory.basketId, basketIds))
+          console.log(`deleteFlupsy - Cronologia posizioni rimossa per performance`);
           
           // 4.3 Controlla e pulisci eventuali riferimenti nelle tabelle di screening
           try {
@@ -367,9 +364,8 @@ export class DbStorage implements IStorage {
         await this.closeBasketPositionHistory(id, currentDate);
       }
       
-      // Elimina tutte le posizioni nella cronologia per questo cestello
-      await db.delete(basketPositionHistory).where(eq(basketPositionHistory.basketId, id));
-      console.log(`deleteBasket - Posizioni eliminate dalla cronologia per cestello ${id}`);
+      // Cronologia posizioni rimossa per performance
+      console.log(`deleteBasket - Sistema ottimizzato senza cronologia posizioni`);
     } catch (error) {
       console.error(`deleteBasket - Errore durante la chiusura/eliminazione delle posizioni:`, error);
       // Non blocchiamo l'eliminazione per questo errore
@@ -1226,76 +1222,7 @@ export class DbStorage implements IStorage {
     }
   }
   
-  // BASKET POSITION HISTORY
-  async getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]> {
-    return await db.select()
-      .from(basketPositionHistory)
-      .where(eq(basketPositionHistory.basketId, basketId))
-      .orderBy(desc(basketPositionHistory.startDate));
-  }
-
-  // ULTRA-OPTIMIZED: Separate queries for basket existence and position history to avoid expensive LEFT JOIN
-  async getBasketPositionHistoryOptimized(basketId: number): Promise<{
-    basketExists: boolean;
-    positions: BasketPositionHistory[];
-  }> {
-    // OPTIMIZATION 1: First check basket existence with simple query (fast)
-    const basketCheck = await db
-      .select({ id: baskets.id })
-      .from(baskets)
-      .where(eq(baskets.id, basketId))
-      .limit(1);
-    
-    if (basketCheck.length === 0) {
-      return { basketExists: false, positions: [] };
-    }
-    
-    // ULTRA-OPTIMIZATION 2: Get positions with LIMIT to avoid expensive ORDER BY on large datasets
-    // Uses idx_basket_position_history_basket_startdate_desc for optimal performance
-    const positions = await db
-      .select()
-      .from(basketPositionHistory)
-      .where(eq(basketPositionHistory.basketId, basketId))
-      .orderBy(desc(basketPositionHistory.startDate))
-      .limit(50);  // Limit to last 50 positions to avoid expensive sort on large datasets
-    
-    return { basketExists: true, positions };
-  }
-
-  async getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined> {
-    if (!basketId || basketId <= 0) {
-      console.error("getCurrentBasketPosition - ID cesta non valido:", basketId);
-      throw new Error("ID cesta non valido per il recupero della posizione corrente");
-    }
-    
-    console.log(`getCurrentBasketPosition - Ricerca posizione corrente per cesta ID: ${basketId}`);
-    
-    try {
-      const results = await db.select()
-        .from(basketPositionHistory)
-        .where(and(
-          eq(basketPositionHistory.basketId, basketId),
-          isNull(basketPositionHistory.endDate)
-        ))
-        .orderBy(desc(basketPositionHistory.startDate)) // Ordina per data di inizio decrescente
-        .limit(1); // Prendi solo il record più recente
-      
-      if (results.length === 0) {
-        console.log(`getCurrentBasketPosition - Nessuna posizione attiva trovata per la cesta ${basketId}`);
-        return undefined;
-      }
-      
-      console.log(`getCurrentBasketPosition - Trovata posizione attiva per cesta ${basketId}:`, 
-        `ID: ${results[0].id}, FLUPSY: ${results[0].flupsyId}, ` +
-        `Riga: ${results[0].row}, Posizione: ${results[0].position}, ` +
-        `Data inizio: ${results[0].startDate}`);
-      
-      return results[0];
-    } catch (error) {
-      console.error(`getCurrentBasketPosition - Errore durante la ricerca della posizione per la cesta ${basketId}:`, error);
-      throw new Error(`Errore durante il recupero della posizione corrente: ${(error as Error).message}`);
-    }
-  }
+  // BASKET POSITION HISTORY REMOVED FOR PERFORMANCE OPTIMIZATION
 
   async createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory> {
     // Assicuriamoci che tutti i campi necessari siano presenti

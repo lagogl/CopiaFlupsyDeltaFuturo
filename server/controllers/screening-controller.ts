@@ -9,7 +9,6 @@ import {
   operationTypes,
   cycles,
   baskets,
-  basketPositionHistory,
   flupsys,
   sizes
 } from "../../shared/schema";
