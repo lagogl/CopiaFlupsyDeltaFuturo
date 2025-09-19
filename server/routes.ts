@@ -1430,8 +1430,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // OTTIMIZZAZIONE 3: Posizione temporanea null per cestello 2 (evita conflitti)
       await storage.updateBasket(basket2Id, {
-        row: undefined,
-        position: undefined
+        row: null,
+        position: null
       });
       
       // OTTIMIZZAZIONE 4: Crea le nuove cronologie in parallelo
