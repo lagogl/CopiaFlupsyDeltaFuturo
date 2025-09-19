@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useFlupsys } from "@/hooks/useFlupsys";
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
@@ -267,11 +268,8 @@ export default function DraggableFlupsyVisualizer() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingBasketMove, setPendingBasketMove] = useState<PendingBasketMove | null>(null);
 
-  // Data queries
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
-    queryKey: ['/api/flupsys'],
-    queryFn: getQueryFn({ on401: "throw" })
-  });
+  // Data queries (ottimizzato - hook centralizzato)
+  const { data: flupsys, isLoading: isLoadingFlupsys } = useFlupsys();
   
   // Quando i dati dei FLUPSY sono caricati, seleziona automaticamente tutti i FLUPSY
   // solo se l'utente non ha esplicitamente deselezionato tutto

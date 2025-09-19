@@ -16,18 +16,20 @@ const obscuredDbUrl = dbUrlParts.length > 1
   
 console.log(`Tentativo di connessione a database: ${obscuredDbUrl}`);
 
-// Create a PostgreSQL connection with simplified options
+// Create a PostgreSQL connection with optimized options for high-performance Switch API
 export const queryClient = postgres(process.env.DATABASE_URL, {
-  max: 10, // Reduce max connections for stability
-  prepare: false,
+  max: 25, // Increased connection pool for better performance
+  prepare: true, // Enable prepared statements for better performance
   debug: false,
-  idle_timeout: 20, // Shorter idle timeout
-  connect_timeout: 30, // Longer connection timeout for stability
+  idle_timeout: 30, // Increased idle timeout to avoid reconnections
+  connect_timeout: 10, // Optimized connection timeout
+  connection_timeout_millis: 10000,
   transform: {
     undefined: null,
   },
   connection: {
-    application_name: 'flupsy-app',
+    application_name: 'flupsy-app-optimized',
+    statement_timeout: '5s', // Prevent stuck queries
   },
 });
 

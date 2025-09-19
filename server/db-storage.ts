@@ -1,5 +1,6 @@
 import { and, eq, isNull, desc, gte, lte, sql, inArray, or, count, sum, countDistinct, max } from 'drizzle-orm';
 import { db } from './db';
+import bcrypt from 'bcrypt';
 import { 
   Flupsy, InsertFlupsy, flupsys,
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
@@ -45,7 +46,16 @@ export class DbStorage implements IStorage {
   }
   
   async createUser(user: InsertUser): Promise<User> {
-    const [result] = await db.insert(users).values(user).returning();
+    // Hash the password before storing
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(user.password, saltRounds);
+    
+    const userWithHashedPassword = {
+      ...user,
+      password: hashedPassword
+    };
+    
+    const [result] = await db.insert(users).values(userWithHashedPassword).returning();
     return result;
   }
   
@@ -57,12 +67,76 @@ export class DbStorage implements IStorage {
   
   async validateUser(username: string, password: string): Promise<User | null> {
     const user = await this.getUserByUsername(username);
-    if (user && user.password === password) {
-      // In una applicazione reale, qui dovresti usare bcrypt.compare()
+    if (!user) {
+      return null;
+    }
+    
+    let isPasswordValid = false;
+    
+    // Check if password is already hashed (starts with $2b$ or $2a$ which are bcrypt prefixes)
+    if (user.password.startsWith('$2b$') || user.password.startsWith('$2a$')) {
+      // Password is hashed, use bcrypt.compare()
+      isPasswordValid = await bcrypt.compare(password, user.password);
+    } else {
+      // Password is still in plain text (legacy), do direct comparison
+      // This provides backward compatibility during migration
+      isPasswordValid = user.password === password;
+      
+      // If plain text password matches, hash it for future use
+      if (isPasswordValid) {
+        const saltRounds = 12;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        await db.update(users)
+          .set({ password: hashedPassword })
+          .where(eq(users.id, user.id));
+        console.log(`Password hashed for user: ${username}`);
+      }
+    }
+    
+    if (isPasswordValid) {
       await this.updateUserLastLogin(user.id);
       return user;
     }
+    
     return null;
+  }
+  
+  // MIGRATION: Hash existing plain text passwords
+  async hashExistingPasswords(): Promise<{ migrated: number; alreadyHashed: number; errors: number }> {
+    const allUsers = await this.getUsers();
+    let migrated = 0;
+    let alreadyHashed = 0;
+    let errors = 0;
+    
+    console.log(`Starting password migration for ${allUsers.length} users`);
+    
+    for (const user of allUsers) {
+      try {
+        // Check if password is already hashed
+        if (user.password.startsWith('$2b$') || user.password.startsWith('$2a$')) {
+          alreadyHashed++;
+          continue;
+        }
+        
+        // Hash the plain text password
+        const saltRounds = 12;
+        const hashedPassword = await bcrypt.hash(user.password, saltRounds);
+        
+        // Update the user's password
+        await db.update(users)
+          .set({ password: hashedPassword })
+          .where(eq(users.id, user.id));
+          
+        migrated++;
+        console.log(`Password hashed for user ID ${user.id} (${user.username})`);
+      } catch (error) {
+        console.error(`Error hashing password for user ID ${user.id} (${user.username}):`, error);
+        errors++;
+      }
+    }
+    
+    console.log(`Password migration completed: ${migrated} migrated, ${alreadyHashed} already hashed, ${errors} errors`);
+    return { migrated, alreadyHashed, errors };
   }
   
   // FLUPSY

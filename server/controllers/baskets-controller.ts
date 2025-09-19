@@ -170,7 +170,7 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
         if (flupsyId.includes(',')) {
           const flupsyIds = flupsyId.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
           if (flupsyIds.length > 0) {
-            filterConditions.push(`b.flupsy_id = ANY($${paramIndex})`);
+            filterConditions.push(`b.flupsy_id = ANY($${paramIndex}::integer[])`);
             filterParams.push(flupsyIds);
             paramIndex++;
             console.log(`CTE: Filtro per ${flupsyIds.length} FLUPSY:`, flupsyIds);
@@ -186,7 +186,7 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
       } else if (Array.isArray(flupsyId) && flupsyId.length > 0) {
         const flupsyIds = flupsyId.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id));
         if (flupsyIds.length > 0) {
-          filterConditions.push(`b.flupsy_id = ANY($${paramIndex})`);
+          filterConditions.push(`b.flupsy_id = ANY($${paramIndex}::integer[])`);
           filterParams.push(flupsyIds);
           paramIndex++;
           console.log(`CTE: Filtro per ${flupsyIds.length} FLUPSY (array):`, flupsyIds);

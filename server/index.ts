@@ -6,6 +6,8 @@ import { registerScreeningNotificationHandler } from "./screening-notification-h
 import { testDatabaseConnection } from "./debug-db";
 import { setupPerformanceOptimizations } from "./index-setup";
 import { ensureDatabaseConsistency } from "./database-consistency-service";
+import { createSecureApiLogger, secureLogger } from "./utils/secure-logging";
+import { createSmartCacheMiddleware, createReplitPreviewCacheMiddleware } from "./utils/smart-cache";
 
 const app = express();
 app.use(express.json());
@@ -14,45 +16,20 @@ app.use(express.urlencoded({ extended: false }));
 // Rendi disponibile globalmente per l'uso nei controller
 globalThis.app = app;
 
-// Middleware per cache-busting nella preview di Replit
-app.use((req, res, next) => {
-  // Forza no-cache per tutte le risorse nella preview di Replit
-  res.header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-  res.header('Pragma', 'no-cache');
-  res.header('Expires', '0');
-  res.header('ETag', Date.now().toString());
-  next();
-});
+// Smart cache middleware - secure for production, flexible for development
+if (process.env.REPL_ID && process.env.NODE_ENV !== 'production') {
+  // Replit preview environment - minimal caching for development
+  app.use(createReplitPreviewCacheMiddleware());
+  secureLogger.info('Cache middleware: Replit preview mode (minimal caching)');
+} else {
+  // Production or local development - smart caching
+  app.use(createSmartCacheMiddleware());
+  secureLogger.info(`Cache middleware: Smart caching mode (env: ${process.env.NODE_ENV})`);
+}
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
+// Secure API logging middleware - environment-gated with PII protection
+app.use(createSecureApiLogger());
+secureLogger.info('Logging middleware: Secure API logger initialized with PII protection');
 
 (async () => {
   // Test di connessione database

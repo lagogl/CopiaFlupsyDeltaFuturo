@@ -21,7 +21,7 @@ const messageTypeToQueryKeys: Record<string, string[]> = {
   // Statistiche
   'statistics_updated': ['/api/statistics/cycles/comparison', '/api/size-predictions'],
   
-  // Cestelli - Non includiamo basket_moved e basket_updated qui perché li gestiamo separatamente
+  // Cestelli - Non includiamo basket_moved, basket_updated e baskets_switched qui perché li gestiamo separatamente
 };
 
 /**
@@ -136,6 +136,25 @@ export function useWebSocketQueryIntegration() {
     if (data?.basket) {
       handleBasketUpdate(data.basket, 'aggiornato');
     }
+  }, []));
+  
+  // CRITICAL FIX: Handler per baskets_switched - gestisce lo switch di posizioni
+  useWebSocketMessage('baskets_switched', useCallback((data: any) => {
+    console.log('🔄 WebSocket: ricevuto baskets_switched', data);
+    
+    if (data?.basket1) {
+      handleBasketUpdate(data.basket1, 'scambiato (1/2)');
+    }
+    
+    if (data?.basket2) {
+      handleBasketUpdate(data.basket2, 'scambiato (2/2)');
+    }
+    
+    // Invalida anche le query correlate per garantire sincronizzazione completa
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets?includeAll=true'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    
+    console.log('✅ Switch WebSocket: cache aggiornata per entrambi i cestelli');
   }, []));
   
   return null;
