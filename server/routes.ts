@@ -1415,66 +1415,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentDate = new Date();
       const formattedDate = currentDate.toISOString().split('T')[0];
       
-      // OTTIMIZZAZIONE 2: Chiudi entrambe le posizioni correnti in parallelo
-      const closeOperations = [];
-      if (currentPosition1) {
-        closeOperations.push(storage.closeBasketPositionHistory(basket1Id, formattedDate));
-      }
-      if (currentPosition2) {
-        closeOperations.push(storage.closeBasketPositionHistory(basket2Id, formattedDate));
-      }
+      // TRANSAZIONE DB ATOMICA: Tutte le operazioni switch in una singola transazione
+      const { db } = await import('./db');
+      const { basketPositionHistory, baskets } = await import('../shared/schema');
+      const { eq } = await import('drizzle-orm');
       
-      if (closeOperations.length > 0) {
-        await Promise.all(closeOperations);
-      }
-      
-      // OTTIMIZZAZIONE 3: Posizione temporanea null per cestello 2 SOLO se ha posizione attuale (evita conflitti)
-      if (currentPosition2) {
-        await storage.updateBasket(basket2Id, {
-          row: null,
-          position: null
-        });
-      }
-      
-      // OTTIMIZZAZIONE 4: Crea le nuove cronologie in parallelo
-      await Promise.all([
-        storage.createBasketPositionHistory({
-          basketId: basket1Id,
-          flupsyId: flupsyId2,
-          row: position2Row,
-          position: position2Number,
-          startDate: formattedDate,
-          operationId: null
-        }),
-        storage.createBasketPositionHistory({
-          basketId: basket2Id,
-          flupsyId: flupsyId1,
-          row: position1Row,
-          position: position1Number,
-          startDate: formattedDate,
-          operationId: null
-        })
-      ]);
-      
-      // OTTIMIZZAZIONE 5: Aggiorna entrambi i cestelli in parallelo con le nuove posizioni
-      await Promise.all([
-        storage.updateBasket(basket1Id, {
-          flupsyId: flupsyId2,
-          row: position2Row,
-          position: position2Number
-        }),
-        storage.updateBasket(basket2Id, {
-          flupsyId: flupsyId1,
-          row: position1Row,
-          position: position1Number
-        })
-      ]);
-      
-      // OTTIMIZZAZIONE 6: Recupera i cestelli aggiornati in parallelo
-      const [updatedBasket1, updatedBasket2] = await Promise.all([
-        storage.getBasket(basket1Id),
-        storage.getBasket(basket2Id)
-      ]);
+      const [updatedBasket1, updatedBasket2] = await db.transaction(async (tx) => {
+        // 1. Chiudi posizioni correnti se esistono (in parallelo)
+        if (currentPosition1 || currentPosition2) {
+          await Promise.all([
+            ...(currentPosition1 ? [tx.update(basketPositionHistory)
+              .set({ endDate: formattedDate })
+              .where(eq(basketPositionHistory.id, currentPosition1.id))] : []),
+            ...(currentPosition2 ? [tx.update(basketPositionHistory)
+              .set({ endDate: formattedDate })
+              .where(eq(basketPositionHistory.id, currentPosition2.id))] : [])
+          ]);
+        }
+        
+        // 2. Posizione temporanea null per cestello 2 (se necessario)
+        if (currentPosition2) {
+          await tx.update(baskets)
+            .set({ row: null, position: null })
+            .where(eq(baskets.id, basket2Id));
+        }
+        
+        // 3. Crea nuove cronologie (in parallelo)
+        await Promise.all([
+          tx.insert(basketPositionHistory).values({
+            basketId: basket1Id,
+            flupsyId: flupsyId2,
+            row: position2Row,
+            position: position2Number,
+            startDate: formattedDate,
+            endDate: null,
+            operationId: null
+          }),
+          tx.insert(basketPositionHistory).values({
+            basketId: basket2Id,
+            flupsyId: flupsyId1,
+            row: position1Row,
+            position: position1Number,
+            startDate: formattedDate,
+            endDate: null,
+            operationId: null
+          })
+        ]);
+        
+        // 4. Aggiorna entrambi i cestelli con le nuove posizioni (in parallelo)
+        await Promise.all([
+          tx.update(baskets).set({
+            flupsyId: flupsyId2,
+            row: position2Row,
+            position: position2Number
+          }).where(eq(baskets.id, basket1Id)),
+          tx.update(baskets).set({
+            flupsyId: flupsyId1,
+            row: position1Row,
+            position: position1Number
+          }).where(eq(baskets.id, basket2Id))
+        ]);
+        
+        // 5. Recupera i cestelli aggiornati con query diretta ottimizzata (in parallelo)
+        const [result1, result2] = await Promise.all([
+          tx.select().from(baskets).where(eq(baskets.id, basket1Id)).limit(1),
+          tx.select().from(baskets).where(eq(baskets.id, basket2Id)).limit(1)
+        ]);
+        
+        return [result1[0], result2[0]];
+      });
       
       const executionTime = Date.now() - startTime;
       
@@ -1484,21 +1493,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🚀 SWITCH OPTIMIZED: Switch completed in ${executionTime}ms (target: <500ms)`);
       }
       
-      // Broadcast basket update events via WebSockets
+      // OTTIMIZZAZIONE BROADCAST: Un singolo messaggio per evitare chiamate duplicate
       if (typeof (global as any).broadcastUpdate === 'function') {
-        if (updatedBasket1) {
-          (global as any).broadcastUpdate('basket_updated', {
-            basket: updatedBasket1,
-            message: `Cestello ${updatedBasket1.physicalNumber} spostato`
-          });
-        }
-        
-        if (updatedBasket2) {
-          (global as any).broadcastUpdate('basket_updated', {
-            basket: updatedBasket2,
-            message: `Cestello ${updatedBasket2.physicalNumber} spostato`
-          });
-        }
+        (global as any).broadcastUpdate('baskets_switched', {
+          basket1: updatedBasket1,
+          basket2: updatedBasket2,
+          message: `Cestelli ${updatedBasket1?.physicalNumber} ↔ ${updatedBasket2?.physicalNumber} scambiati`
+        });
       }
       
       // Invalidate position cache for both baskets involved in the switch

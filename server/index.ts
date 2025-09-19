@@ -66,12 +66,11 @@ app.use((req, res, next) => {
   }
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
   
-  // Configura le ottimizzazioni di prestazioni (ridotte per startup veloce)
-  console.log("🔧 Configurazione ottimizzazioni prestazioni di base...");
+  // Configura le ottimizzazioni di prestazioni (indici database critici)
+  console.log("🔧 Configurazione ottimizzazioni prestazioni e indici database...");
   try {
-    // Configurazione semplificata senza setup pesanti
-    // await setupPerformanceOptimizations(app);
-    console.log("✅ Avvio rapido - ottimizzazioni complete in background");
+    await setupPerformanceOptimizations(app);
+    console.log("✅ Ottimizzazioni complete - indici database attivi");
   } catch (error) {
     console.error("⚠️ Errore durante configurazione ottimizzazioni:", error);
   }
