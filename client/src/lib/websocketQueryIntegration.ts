@@ -72,8 +72,9 @@ export function useWebSocketQueryIntegration() {
     if (data?.basket) {
       const updatedBasket = data.basket;
       
-      // Aggiorna direttamente la cache dei cestelli senza invalidare
-      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
+      // FIX CRITICO: Aggiorna la query key corretta usata dal visualizzatore
+      // Il DraggableFlupsyVisualizer usa '/api/baskets?includeAll=true' non '/api/baskets'
+      queryClient.setQueriesData({ queryKey: ['/api/baskets?includeAll=true'] }, (oldData: any) => {
         if (!oldData) return oldData;
         
         // Se è un array di cestelli, aggiorna quello modificato
@@ -82,6 +83,24 @@ export function useWebSocketQueryIntegration() {
         }
         
         // Se è una risposta paginata
+        if (oldData.baskets && Array.isArray(oldData.baskets)) {
+          return {
+            ...oldData,
+            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
+          };
+        }
+        
+        return oldData;
+      });
+      
+      // Aggiorna anche la cache base per compatibilità con altre parti dell'app
+      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        if (Array.isArray(oldData)) {
+          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
+        }
+        
         if (oldData.baskets && Array.isArray(oldData.baskets)) {
           return {
             ...oldData,
@@ -95,7 +114,7 @@ export function useWebSocketQueryIntegration() {
       // Invalida solo la cache delle posizioni per questo specifico cestello
       queryClient.invalidateQueries({ queryKey: [`/api/baskets/${updatedBasket.id}/positions`] });
       
-      console.log(`Cestello ${updatedBasket.id} aggiornato via WebSocket (ottimizzato)`);
+      console.log(`🔄 Cestello ${updatedBasket.id} spostato: posizione visuale aggiornata via WebSocket`);
     }
   }, []));
   
@@ -104,8 +123,8 @@ export function useWebSocketQueryIntegration() {
     if (data?.basket) {
       const updatedBasket = data.basket;
       
-      // Aggiorna direttamente la cache dei cestelli senza invalidare
-      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
+      // FIX CRITICO: Aggiorna la query key corretta usata dal visualizzatore
+      queryClient.setQueriesData({ queryKey: ['/api/baskets?includeAll=true'] }, (oldData: any) => {
         if (!oldData) return oldData;
         
         // Se è un array di cestelli, aggiorna quello modificato
@@ -124,8 +143,25 @@ export function useWebSocketQueryIntegration() {
         return oldData;
       });
       
-      // Non serve invalidare nulla, abbiamo già i dati aggiornati
-      console.log(`Cestello ${updatedBasket.id} aggiornato via WebSocket (cache diretta)`);
+      // Aggiorna anche la cache base per compatibilità
+      queryClient.setQueriesData({ queryKey: ['/api/baskets'] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        if (Array.isArray(oldData)) {
+          return oldData.map(b => b.id === updatedBasket.id ? updatedBasket : b);
+        }
+        
+        if (oldData.baskets && Array.isArray(oldData.baskets)) {
+          return {
+            ...oldData,
+            baskets: oldData.baskets.map((b: any) => b.id === updatedBasket.id ? updatedBasket : b)
+          };
+        }
+        
+        return oldData;
+      });
+      
+      console.log(`🔄 Cestello ${updatedBasket.id} aggiornato: cache diretta sincronizzata`);
     }
   }, []));
   
