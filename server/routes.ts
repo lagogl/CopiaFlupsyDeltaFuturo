@@ -1357,8 +1357,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint per lo scambio di posizione tra cestelli
+  // Endpoint per lo scambio di posizione tra cestelli (OTTIMIZZATO)
   app.post("/api/baskets/switch-positions", async (req, res) => {
+    const startTime = Date.now();
     try {
       // Parse and validate the update data
       const switchSchema = z.object({
@@ -1395,86 +1396,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       position1Number = validateBasketPosition(position1Number);
       position2Number = validateBasketPosition(position2Number);
       
-      console.log(`API - SWITCH CESTELLI: Cestello ${basket1Id} (FLUPSY ${flupsyId1}) <-> Cestello ${basket2Id} (FLUPSY ${flupsyId2})`);
+      // OTTIMIZZAZIONE 1: Verifica esistenza e recupera posizioni attuali in parallelo
+      const [basket1, basket2, currentPosition1, currentPosition2] = await Promise.all([
+        storage.getBasket(basket1Id),
+        storage.getBasket(basket2Id),
+        storage.getCurrentBasketPosition(basket1Id),
+        storage.getCurrentBasketPosition(basket2Id)
+      ]);
       
-      // Verifica che entrambi i cestelli esistano
-      const basket1 = await storage.getBasket(basket1Id);
       if (!basket1) {
         return res.status(404).json({ message: "Basket 1 not found" });
       }
       
-      const basket2 = await storage.getBasket(basket2Id);
       if (!basket2) {
         return res.status(404).json({ message: "Basket 2 not found" });
       }
       
-      // STEP 1: Sposta il cestello 2 in una posizione temporanea (null)
-      // Prima chiudi la cronologia di posizione attuale
-      const currentPosition2 = await storage.getCurrentBasketPosition(basket2Id);
-      if (currentPosition2) {
-        const currentDate = new Date();
-        const formattedDate = currentDate.toISOString().split('T')[0];
-        await storage.closeBasketPositionHistory(basket2Id, formattedDate);
-      }
+      const currentDate = new Date();
+      const formattedDate = currentDate.toISOString().split('T')[0];
       
-      // Aggiorna il cestello 2 con posizione temporanea null ma mantieni il flupsyId originale
-      await storage.updateBasket(basket2Id, {
-        row: null,
-        position: null
-      });
-      
-      // STEP 2: Sposta il cestello 1 nella posizione che era del cestello 2
-      // Prima chiudi la cronologia di posizione attuale
-      const currentPosition1 = await storage.getCurrentBasketPosition(basket1Id);
+      // OTTIMIZZAZIONE 2: Chiudi entrambe le posizioni correnti in parallelo
+      const closeOperations = [];
       if (currentPosition1) {
-        const currentDate = new Date();
-        const formattedDate = currentDate.toISOString().split('T')[0];
-        await storage.closeBasketPositionHistory(basket1Id, formattedDate);
+        closeOperations.push(storage.closeBasketPositionHistory(basket1Id, formattedDate));
+      }
+      if (currentPosition2) {
+        closeOperations.push(storage.closeBasketPositionHistory(basket2Id, formattedDate));
       }
       
-      // Crea una nuova voce di cronologia posizione per il cestello 1
-      await storage.createBasketPositionHistory({
-        basketId: basket1Id,
-        flupsyId: flupsyId2,  // Usa il FLUPSY ID del cestello 2
-        row: position2Row,
-        position: position2Number,
-        startDate: new Date().toISOString().split('T')[0],
-        operationId: null
-      });
+      if (closeOperations.length > 0) {
+        await Promise.all(closeOperations);
+      }
       
-      // Aggiorna il cestello 1 con la posizione e il FLUPSY del cestello 2
-      await storage.updateBasket(basket1Id, {
-        flupsyId: flupsyId2,  // Usa il FLUPSY ID del cestello 2
-        row: position2Row,
-        position: position2Number
-      });
-      
-      // STEP 3: Sposta il cestello 2 nella posizione originale del cestello 1
-      // Crea una nuova voce di cronologia posizione per il cestello 2
-      await storage.createBasketPositionHistory({
-        basketId: basket2Id,
-        flupsyId: flupsyId1,  // Usa il FLUPSY ID del cestello 1
-        row: position1Row,
-        position: position1Number,
-        startDate: new Date().toISOString().split('T')[0],
-        operationId: null
-      });
-      
-      // Aggiorna il cestello 2 con la posizione e il FLUPSY originali del cestello 1
+      // OTTIMIZZAZIONE 3: Posizione temporanea null per cestello 2 (evita conflitti)
       await storage.updateBasket(basket2Id, {
-        flupsyId: flupsyId1,  // Usa il FLUPSY ID del cestello 1
-        row: position1Row,
-        position: position1Number
+        row: undefined,
+        position: undefined
       });
       
-      // Ottieni i cestelli aggiornati completi
-      const updatedBasket1 = await storage.getBasket(basket1Id);
-      const updatedBasket2 = await storage.getBasket(basket2Id);
+      // OTTIMIZZAZIONE 4: Crea le nuove cronologie in parallelo
+      await Promise.all([
+        storage.createBasketPositionHistory({
+          basketId: basket1Id,
+          flupsyId: flupsyId2,
+          row: position2Row,
+          position: position2Number,
+          startDate: formattedDate,
+          operationId: null
+        }),
+        storage.createBasketPositionHistory({
+          basketId: basket2Id,
+          flupsyId: flupsyId1,
+          row: position1Row,
+          position: position1Number,
+          startDate: formattedDate,
+          operationId: null
+        })
+      ]);
       
-      console.log("Switch completato con successo:", {
-        basket1: updatedBasket1,
-        basket2: updatedBasket2
-      });
+      // OTTIMIZZAZIONE 5: Aggiorna entrambi i cestelli in parallelo con le nuove posizioni
+      await Promise.all([
+        storage.updateBasket(basket1Id, {
+          flupsyId: flupsyId2,
+          row: position2Row,
+          position: position2Number
+        }),
+        storage.updateBasket(basket2Id, {
+          flupsyId: flupsyId1,
+          row: position1Row,
+          position: position1Number
+        })
+      ]);
+      
+      // OTTIMIZZAZIONE 6: Recupera i cestelli aggiornati in parallelo
+      const [updatedBasket1, updatedBasket2] = await Promise.all([
+        storage.getBasket(basket1Id),
+        storage.getBasket(basket2Id)
+      ]);
+      
+      const executionTime = Date.now() - startTime;
+      
+      if (executionTime > 500) {
+        console.log(`⚠️ PERFORMANCE: Switch API took ${executionTime}ms (target: <500ms)`);
+      } else {
+        console.log(`🚀 SWITCH OPTIMIZED: Switch completed in ${executionTime}ms (target: <500ms)`);
+      }
       
       // Broadcast basket update events via WebSockets
       if (typeof (global as any).broadcastUpdate === 'function') {
@@ -1501,7 +1507,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
     } catch (error) {
-      console.error("Error switching basket positions:", error);
+      const executionTime = Date.now() - startTime;
+      console.error(`Error switching basket positions (${executionTime}ms):`, error);
       res.status(500).json({ message: "Failed to switch basket positions" });
     }
   });
