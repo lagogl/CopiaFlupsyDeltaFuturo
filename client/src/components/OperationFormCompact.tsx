@@ -462,7 +462,13 @@ export default function OperationFormCompact({
   useEffect(() => {
     if (defaultValues) {
       console.log("🔄 RESET FORM with defaultValues:", defaultValues);
-      form.reset(defaultValues);
+      // Usa setValue per ogni campo invece di reset per garantire che i Select si aggiornino
+      Object.keys(defaultValues).forEach((key) => {
+        const value = defaultValues[key as keyof typeof defaultValues];
+        if (value !== undefined && value !== null) {
+          form.setValue(key as any, value);
+        }
+      });
     }
   }, [defaultValues, form]);
 
