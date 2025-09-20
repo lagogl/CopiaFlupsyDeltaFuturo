@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useWebSocketMessage } from '@/lib/websocket';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as XLSX from 'xlsx';
@@ -219,6 +220,13 @@ export default function Baskets() {
         variant: "destructive",
       });
     }
+  });
+
+  // WebSocket listener for real-time updates when a basket is created
+  useWebSocketMessage('basket_created', () => {
+    console.log('🔄 BASKETS PAGE: Nuovo cestello creato, aggiorno lista automaticamente');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
   });
 
   // Export to Excel function
