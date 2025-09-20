@@ -1,0 +1,47 @@
+Console.js:61 Stato iniziale operazioni: (3) [{…}, {…}, {…}]
+Console.js:61 IDs operazioni: (3) [2, 3, 4]
+Console.js:61 PESO operations count: 0
+Console.js:61 Mapping operazioni: (3) [{…}, {…}, {…}]
+Console.js:61 Lotti disponibili: []
+Console.js:61 Cestello trovato per operazione 2: ID 7, physicalNumber 2
+Console.js:61 Cestello trovato per operazione 3: ID 4, physicalNumber 2
+Console.js:61 Cestello trovato per operazione 4: ID 7, physicalNumber 2
+Console.js:61 🔍 FILTER: Processing 3 operations
+Console.js:61 Operazione di esempio: {id: 2, date: '2025-09-20', type: 'prima-attivazione', basketId: 7, cycleId: 2, …}
+Console.js:61 🔍 FILTER: Filtered from 3 to 2 operations
+Console.js:61 🔍 FILTER: Returning 2 sorted operations
+Console.js:61 🔍 FILTER: Applied filters: {searchTerm: '', typeFilter: 'all', flupsyFilter: 'all', cycleFilter: '2', cycleStateFilter: 'active'}
+Console.js:61  Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Mt.forEach.n.<computed> @ Console.js:61
+(anonymous) @ Dialog.tsx:540
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+Console.js:61 Stato iniziale operazioni: (3) [{…}, {…}, {…}]
+Console.js:61 IDs operazioni: (3) [2, 3, 4]
+Console.js:61 PESO operations count: 0
+Console.js:61 Mapping operazioni: (3) [{…}, {…}, {…}]
+Console.js:61 Lotti disponibili: []
+Console.js:61 Cestello trovato per operazione 2: ID 7, physicalNumber 2
+Console.js:61 Cestello trovato per operazione 3: ID 4, physicalNumber 2
+Console.js:61 Cestello trovato per operazione 4: ID 7, physicalNumber 2
+Console.js:61 🔍 FILTER: Processing 3 operations
+Console.js:61 Operazione di esempio: {id: 2, date: '2025-09-20', type: 'prima-attivazione', basketId: 7, cycleId: 2, …}
+Console.js:61 🔍 FILTER: Filtered from 3 to 2 operations
+Console.js:61 🔍 FILTER: Returning 2 sorted operations
+Console.js:61 🔍 FILTER: Applied filters: {searchTerm: '', typeFilter: 'all', flupsyFilter: 'all', cycleFilter: '2', cycleStateFilter: 'active'}
+Console.js:61 Test mutation button clicked
+Console.js:61 API Request: PATCH /api/operations/4
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 🔕 Nessuna notifica, aumento intervallo a 300s
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
