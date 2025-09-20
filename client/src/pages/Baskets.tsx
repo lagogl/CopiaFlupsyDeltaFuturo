@@ -225,8 +225,13 @@ export default function Baskets() {
   // WebSocket listener for real-time updates when a basket is created
   useWebSocketMessage('basket_created', () => {
     console.log('🔄 BASKETS PAGE: Nuovo cestello creato, aggiorno lista automaticamente');
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    // Invalida TUTTE le query dei cestelli (anche quelle con parametri complessi)
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        return query.queryKey[0] === '/api/baskets' || 
+               (typeof query.queryKey[0] === 'string' && query.queryKey[0].includes('/api/baskets'));
+      }
+    });
   });
 
   // Export to Excel function
