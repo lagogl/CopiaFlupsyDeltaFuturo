@@ -32,6 +32,16 @@ export async function apiRequest<T = any>(
       };
     }
   }
+
+  // CRITICAL FIX: Method-override workaround for Replit proxy blocking PATCH/PUT
+  if (method === 'PATCH' || method === 'PUT') {
+    console.log(`🔄 METHOD-OVERRIDE: Converting ${method} to POST with X-HTTP-Method-Override header`);
+    options.method = 'POST';
+    options.headers = {
+      ...options.headers,
+      'X-HTTP-Method-Override': method
+    };
+  }
   
   console.log(`API Request: ${method}`, url);
   

@@ -34,11 +34,7 @@ app.options('/api/*', (req, res) => {
   res.status(204).send();
 });
 
-// DEBUGGING: Early tracer with CORRECT pattern to identify where PATCH requests get blocked
-app.use('/api/operations/*', (req, res, next) => {
-  console.log(`🔍 EARLY TRACE: ${req.method} ${req.path} - VERY early in middleware chain`);
-  next();
-});
+// Method-override workaround is now implemented globally in frontend
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

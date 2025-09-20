@@ -239,17 +239,7 @@ async function handleBasketLotCompositionOnUpdate(operation: any, updateData: an
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // DEBUGGING: No-op handler to test if the hang is in the complex PATCH handler
-  app.patch('/api/operations/:id', (req, res) => {
-    console.log(`🧪 NO-OP PATCH TEST: ${req.method} ${req.path} - immediate response test`);
-    res.status(204).json({ message: "No-op test successful", method: req.method, path: req.path });
-  });
-  
-  // DEBUGGING: Tracer middleware with CORRECT pattern
-  app.use('/api/operations/*', (req, res, next) => {
-    console.log(`🔍 TRACE: ${req.method} ${req.path} - entering operations middleware`);
-    next();
-  });
+  // Method-override workaround implemented - PATCH/PUT converted to POST + header in frontend
 
   // WORKAROUND: GET endpoint per aggiornare operazioni (metodi non-GET non funzionano)
   app.get('/api/operations/:id/update', async (req, res) => {
