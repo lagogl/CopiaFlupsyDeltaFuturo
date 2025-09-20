@@ -2238,16 +2238,31 @@ export default function Operations() {
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedOperation(op);
-                                setIsEditDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-5 w-5 text-gray-600" />
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      disabled={op.type === 'prima-attivazione'}
+                                      onClick={() => {
+                                        setSelectedOperation(op);
+                                        setIsEditDialogOpen(true);
+                                      }}
+                                      className={op.type === 'prima-attivazione' ? 'opacity-50 cursor-not-allowed' : ''}
+                                    >
+                                      <Pencil className={`h-5 w-5 ${op.type === 'prima-attivazione' ? 'text-gray-400' : 'text-gray-600'}`} />
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                {op.type === 'prima-attivazione' && (
+                                  <TooltipContent>
+                                    <p>Le operazioni "Prima attivazione" non possono essere modificate, solo eliminate</p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
                             <Button
                               variant="ghost"
                               size="icon"
