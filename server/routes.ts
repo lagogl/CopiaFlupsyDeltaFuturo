@@ -4662,7 +4662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calcola statistiche usando il campo 'state' per determinare lo stato attivo
       const totalBaskets = basketsInFlupsy.length;
       const activeBaskets = basketsInFlupsy.filter(basket => basket.state === 'active').length;
-      const availableBaskets = basketsInFlupsy.filter(basket => basket.state === 'disponibile').length;
+      const availableBaskets = basketsInFlupsy.filter(basket => basket.state === 'available').length;
       const freePositions = flupsy.maxPositions - totalBaskets;
       
       // Calcola statistiche sugli animali
