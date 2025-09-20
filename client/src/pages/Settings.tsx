@@ -427,7 +427,7 @@ export default function Settings() {
                   <div>
                     <h3 className="text-lg font-medium mb-1">Azzeramento Operazioni, Cicli e Cestelli</h3>
                     <p className="text-sm text-gray-500">
-                      Elimina tutte le operazioni, i cicli, i cestelli, le composizioni lotti misti e la cronologia delle posizioni.
+                      Elimina tutte le operazioni, i cicli, i cestelli e le composizioni lotti misti.
                       I contatori verranno ripristinati a 1.
                     </p>
                   </div>
@@ -447,7 +447,6 @@ export default function Settings() {
                             <li>Eliminerà tutte le operazioni registrate</li>
                             <li>Eliminerà tutti i cicli di crescita</li>
                             <li>Eliminerà tutti i cestelli e le loro composizioni lotti misti</li>
-                            <li>Eliminerà la cronologia delle posizioni dei cestelli</li>
                             <li>Resetterà i contatori delle sequenze ID a 1</li>
                           </ul>
                           Questa operazione non può essere annullata.
