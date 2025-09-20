@@ -1379,23 +1379,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 🚀 ATOMIC CTE SOLUTION: Single SQL operation replacing 6 sequential queries
       console.log(`🚀 SWITCH PROFILING - Using ATOMIC CTE approach for <500ms target...`);
       
-      // Execute the atomic optimized query (basket_position_history removed for performance)
+      // Execute the atomic optimized query with explicit integer casting
       const atomicResult = await db.execute(sql`
         UPDATE baskets 
         SET 
           flupsy_id = CASE 
-            WHEN id = ${basket1Id} THEN ${flupsyId2}
-            WHEN id = ${basket2Id} THEN ${flupsyId1}
+            WHEN id = ${basket1Id}::integer THEN ${flupsyId2}::integer
+            WHEN id = ${basket2Id}::integer THEN ${flupsyId1}::integer
           END,
           row = CASE 
-            WHEN id = ${basket1Id} THEN ${position2Row}
-            WHEN id = ${basket2Id} THEN ${position1Row}
+            WHEN id = ${basket1Id}::integer THEN ${position2Row}::text
+            WHEN id = ${basket2Id}::integer THEN ${position1Row}::text
           END,
           position = CASE 
-            WHEN id = ${basket1Id} THEN ${position2Number}
-            WHEN id = ${basket2Id} THEN ${position1Number}
+            WHEN id = ${basket1Id}::integer THEN ${position2Number}::integer
+            WHEN id = ${basket2Id}::integer THEN ${position1Number}::integer
           END
-        WHERE id IN (${basket1Id}, ${basket2Id})
+        WHERE id IN (${basket1Id}::integer, ${basket2Id}::integer)
         RETURNING id, physical_number, flupsy_id, cycle_code, state, current_cycle_id, nfc_data, row, position;
       `);
       
