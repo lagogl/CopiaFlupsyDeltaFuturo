@@ -163,7 +163,19 @@ secureLogger.info('Logging middleware: Secure API logger initialized with PII pr
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    // CRITICAL FIX: Isolate Vite on dedicated Router to prevent API interception
+    const ui = express.Router();
+    await setupVite(ui, server);
+    
+    // Mount Vite router with filters: exclude /api requests and non-GET/HEAD methods
+    app.use((req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+      return ui(req, res, next);
+    });
+    
+    // Ensure API fallthrough never reaches Vite - return proper JSON 404 for unknown API routes
+    app.use('/api', (_req, res) => res.status(404).json({ message: 'API endpoint not found' }));
   } else {
     app.set("env", "production");
     serveStatic(app);
