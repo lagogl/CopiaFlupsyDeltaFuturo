@@ -2730,6 +2730,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedOperation = await storage.updateOperation(id, updateData);
       
+      if (!updatedOperation) {
+        return res.status(500).json({ message: "Failed to update operation - no result returned" });
+      }
+      
       // Broadcast operation update event via WebSockets
       try {
         console.log("🚨 ROUTES.TS: Invio notifica WebSocket per operazione aggiornata");
