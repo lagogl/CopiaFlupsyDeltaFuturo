@@ -3563,6 +3563,12 @@ export default function Operations() {
                 animalCount: selectedOperation.animalCount,
                 totalWeight: selectedOperation.totalWeight,
                 animalsPerKg: selectedOperation.animalsPerKg,
+                averageWeight: selectedOperation.averageWeight,
+                deadCount: selectedOperation.deadCount,
+                mortalityRate: selectedOperation.mortalityRate,
+                sampleWeight: selectedOperation.sampleWeight || null,
+                liveAnimals: selectedOperation.liveAnimals || null,
+                totalSample: selectedOperation.totalSample || null,
                 notes: selectedOperation.notes || ''
               }}
             />
