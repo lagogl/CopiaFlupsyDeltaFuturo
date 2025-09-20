@@ -198,18 +198,27 @@ function EditOperationForm({ operation, onClose }: { operation: Operation; onClo
   }, [form.watch('animalCount'), form.watch('totalWeight'), form.watch('deadCount')]);
 
   const onSubmit = (data: EditOperationFormData) => {
-    updateOperationMutation.mutate({
+    console.log('Form submitted with data:', data);
+    console.log('Derived values:', derivedValues);
+    
+    const payload = {
       id: operation.id,
       operation: {
         ...operation,
-        ...data,
-        date: new Date(operation.date),
-        // Usa i valori calcolati se non inseriti manualmente
-        animalsPerKg: data.animalsPerKg || derivedValues.animalsPerKg,
-        averageWeight: data.averageWeight || derivedValues.averageWeight,
-        mortalityRate: data.mortalityRate || derivedValues.mortalityRate
+        notes: data.notes || operation.notes,
+        animalCount: data.animalCount || operation.animalCount,
+        totalWeight: data.totalWeight || operation.totalWeight,
+        deadCount: data.deadCount || operation.deadCount,
+        // Usa i valori calcolati o quelli esistenti
+        animalsPerKg: derivedValues.animalsPerKg || operation.animalsPerKg,
+        averageWeight: derivedValues.averageWeight || operation.averageWeight,
+        mortalityRate: derivedValues.mortalityRate || operation.mortalityRate,
+        date: new Date(operation.date)
       }
-    });
+    };
+    
+    console.log('Payload being sent:', payload);
+    updateOperationMutation.mutate(payload);
   };
 
   return (
@@ -241,7 +250,7 @@ function EditOperationForm({ operation, onClose }: { operation: Operation; onClo
             <div>
               <label className="text-sm font-medium">Cestello</label>
               <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
-                #{operation.basket?.physicalNumber} - {operation.basket?.flupsyName}
+                #{operation.basket?.physicalNumber} - {operation.basket?.flupsy?.name || 'N/A'}
               </div>
             </div>
           </div>
@@ -392,12 +401,32 @@ function EditOperationForm({ operation, onClose }: { operation: Operation; onClo
               {isReadOnly ? 'Chiudi' : 'Annulla'}
             </Button>
             {!isReadOnly && (
-              <Button
-                type="submit"
-                disabled={updateOperationMutation.isPending}
-              >
-                {updateOperationMutation.isPending ? 'Salvataggio...' : 'Salva modifiche'}
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    console.log('Test mutation button clicked');
+                    updateOperationMutation.mutate({
+                      id: operation.id,
+                      operation: {
+                        ...operation,
+                        notes: 'Test aggiornamento ' + new Date().toLocaleTimeString(),
+                        date: new Date(operation.date)
+                      }
+                    });
+                  }}
+                  disabled={updateOperationMutation.isPending}
+                >
+                  Test Update
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateOperationMutation.isPending}
+                >
+                  {updateOperationMutation.isPending ? 'Salvataggio...' : 'Salva modifiche'}
+                </Button>
+              </>
             )}
           </div>
         </form>
