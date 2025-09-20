@@ -3532,6 +3532,7 @@ export default function Operations() {
           </DialogHeader>
           {selectedOperation && (
             <OperationForm 
+              key={`edit-form-${selectedOperation.id}-${Date.now()}`}
               onSubmit={(data) => {
                 console.log('Edit dialog - Submitting operation data:', data);
                 

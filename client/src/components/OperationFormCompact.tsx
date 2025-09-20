@@ -458,19 +458,6 @@ export default function OperationFormCompact({
     }
   }, [selectedBasket, basketHasActiveCycle]);
 
-  // Reset form quando cambiano i defaultValues (per modifica operazioni)
-  useEffect(() => {
-    if (defaultValues) {
-      console.log("🔄 RESET FORM with defaultValues:", defaultValues);
-      // Usa setValue per ogni campo invece di reset per garantire che i Select si aggiornino
-      Object.keys(defaultValues).forEach((key) => {
-        const value = defaultValues[key as keyof typeof defaultValues];
-        if (value !== undefined && value !== null) {
-          form.setValue(key as any, value);
-        }
-      });
-    }
-  }, [defaultValues, form]);
 
   // Imposta valori iniziali se forniti come props
   useEffect(() => {
