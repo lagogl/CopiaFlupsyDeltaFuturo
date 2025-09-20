@@ -685,6 +685,29 @@ export class DbStorage implements IStorage {
         // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
         const averageWeight = 1000000 / updateData.animalsPerKg;
         updateData.averageWeight = averageWeight;
+        console.log(`DB-STORAGE - updateOperation - Calculated averageWeight: ${averageWeight} from animalsPerKg: ${updateData.animalsPerKg}`);
+        
+        // CRITICAL FIX: Ricalcola automaticamente la taglia corretta quando animalsPerKg viene aggiornato
+        try {
+          const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
+          
+          // Trova la taglia che corrisponde agli animali per kg aggiornati
+          const matchingSize = allSizes.find(size => 
+            size.minAnimalsPerKg !== null && 
+            size.maxAnimalsPerKg !== null && 
+            updateData.animalsPerKg! >= size.minAnimalsPerKg && 
+            updateData.animalsPerKg! <= size.maxAnimalsPerKg
+          );
+          
+          if (matchingSize) {
+            console.log(`DB-STORAGE - updateOperation - Auto-assigned size: ${matchingSize.code} (ID: ${matchingSize.id}) per ${updateData.animalsPerKg} animali/kg`);
+            updateData.sizeId = matchingSize.id;
+          } else {
+            console.log(`DB-STORAGE - updateOperation - ATTENZIONE: Nessuna taglia trovata per ${updateData.animalsPerKg} animali/kg`);
+          }
+        } catch (sizeError) {
+          console.error("DB-STORAGE - updateOperation - Errore nel recupero delle taglie per ricalcolo automatico:", sizeError);
+        }
       }
       
       // Prevenzione errore di vincolo not-null per cycleId
