@@ -119,6 +119,292 @@ import OperationForm from '@/components/OperationFormCompact';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
 import { useLocation, useSearch } from 'wouter';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+
+// Schema di validazione per il form di modifica
+const editOperationSchema = z.object({
+  notes: z.string().nullable().optional(),
+  animalCount: z.number().min(0, "Il numero di animali deve essere positivo").nullable().optional(),
+  totalWeight: z.number().min(0, "Il peso totale deve essere positivo").nullable().optional(),  
+  deadCount: z.number().min(0, "Il numero di animali morti deve essere positivo").nullable().optional(),
+  animalsPerKg: z.number().min(0).nullable().optional(),
+  averageWeight: z.number().min(0).nullable().optional(),
+  mortalityRate: z.number().min(0).max(100).nullable().optional()
+});
+
+type EditOperationFormData = z.infer<typeof editOperationSchema>;
+
+// Componente per la modifica delle operazioni
+function EditOperationForm({ operation, onClose }: { operation: Operation; onClose?: () => void }) {
+  const queryClient = useQueryClient();
+  
+  const updateOperationMutation = useMutation({
+    mutationFn: (data: any) => apiRequest({
+      url: `/api/operations/${data.id}`,
+      method: 'PATCH',
+      body: data.operation
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      onClose?.();
+      toast({
+        title: "Operazione completata",
+        description: "L'operazione è stata aggiornata con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento dell'operazione",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const form = useForm<EditOperationFormData>({
+    resolver: zodResolver(editOperationSchema),
+    defaultValues: {
+      notes: operation.notes || '',
+      animalCount: operation.animalCount || 0,
+      totalWeight: operation.totalWeight || 0,
+      deadCount: operation.deadCount || 0,
+      animalsPerKg: operation.animalsPerKg || 0,
+      averageWeight: operation.averageWeight || 0,
+      mortalityRate: operation.mortalityRate || 0
+    }
+  });
+
+  const isReadOnly = operation.type === 'prima-attivazione';
+  
+  // Calcoli derivati
+  const derivedValues = useMemo(() => {
+    const animalCount = form.watch('animalCount') || 0;
+    const totalWeight = form.watch('totalWeight') || 0;
+    const deadCount = form.watch('deadCount') || 0;
+    
+    const animalsPerKgCalc = totalWeight > 0 ? Math.round(animalCount / (totalWeight / 1000)) : 0;
+    const averageWeightCalc = animalCount > 0 ? Math.round((totalWeight / animalCount) * 1000) / 1000 : 0;
+    const mortalityRateCalc = animalCount > 0 ? Math.round((deadCount / animalCount) * 100 * 100) / 100 : 0;
+    
+    return {
+      animalsPerKg: animalsPerKgCalc,
+      averageWeight: averageWeightCalc,
+      mortalityRate: mortalityRateCalc
+    };
+  }, [form.watch('animalCount'), form.watch('totalWeight'), form.watch('deadCount')]);
+
+  const onSubmit = (data: EditOperationFormData) => {
+    updateOperationMutation.mutate({
+      id: operation.id,
+      operation: {
+        ...operation,
+        ...data,
+        date: new Date(operation.date),
+        // Usa i valori calcolati se non inseriti manualmente
+        animalsPerKg: data.animalsPerKg || derivedValues.animalsPerKg,
+        averageWeight: data.averageWeight || derivedValues.averageWeight,
+        mortalityRate: data.mortalityRate || derivedValues.mortalityRate
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Informazioni Read-only */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium">Tipo operazione</label>
+              <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
+                {operation.type === 'prima-attivazione' && 'Prima Attivazione'}
+                {operation.type === 'misura' && 'Misura'}
+                {operation.type === 'peso' && 'Peso'}  
+                {operation.type === 'vendita' && 'Vendita'}
+                {isReadOnly && (
+                  <span className="ml-2 text-xs text-red-600">(Solo lettura)</span>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Data</label>
+              <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
+                {format(new Date(operation.date), 'dd/MM/yyyy', { locale: it })}
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Cestello</label>
+              <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
+                #{operation.basket?.physicalNumber} - {operation.basket?.flupsyName}
+              </div>
+            </div>
+          </div>
+
+          {/* Campi modificabili per operazioni non "prima-attivazione" */}
+          {!isReadOnly && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="animalCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Numero animali</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          {...field}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="totalWeight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Peso totale (g)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          {...field}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="deadCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Animali morti</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          {...field}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div>
+                  <label className="text-sm font-medium">Percentuale mortalità</label>
+                  <div className="text-sm text-gray-600 mt-1 p-2 bg-blue-50 rounded">
+                    {derivedValues.mortalityRate}%
+                    <span className="text-xs text-blue-600 ml-1">(Calcolato)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Animali per kg</label>
+                  <div className="text-sm text-gray-600 mt-1 p-2 bg-blue-50 rounded">
+                    {derivedValues.animalsPerKg}
+                    <span className="text-xs text-blue-600 ml-1">(Calcolato)</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Peso medio (g)</label>
+                  <div className="text-sm text-gray-600 mt-1 p-2 bg-blue-50 rounded">
+                    {derivedValues.averageWeight}g
+                    <span className="text-xs text-blue-600 ml-1">(Calcolato)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Campo note sempre modificabile se non "prima-attivazione" */}
+          {!isReadOnly && (
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Note</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value || ''}
+                      rows={3}
+                      placeholder="Aggiungi note all'operazione..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {/* Messaggio per operazioni read-only */}
+          {isReadOnly && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex items-center">
+                <Info className="h-5 w-5 text-yellow-600 mr-2" />
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-800">Operazione non modificabile</h4>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Le operazioni "Prima attivazione" non possono essere modificate per mantenere l'integrità dei dati.
+                    È possibile solo eliminarle se necessario.
+                  </p>
+                  <div className="mt-2 text-xs text-gray-600">
+                    <strong>Note attuali:</strong> {operation.notes || 'Nessuna nota'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pulsanti */}
+          <div className="flex justify-end space-x-2 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              {isReadOnly ? 'Chiudi' : 'Annulla'}
+            </Button>
+            {!isReadOnly && (
+              <Button
+                type="submit"
+                disabled={updateOperationMutation.isPending}
+              >
+                {updateOperationMutation.isPending ? 'Salvataggio...' : 'Salva modifiche'}
+              </Button>
+            )}
+          </div>
+        </form>
+      </Form>
+    </div>
+  );
+}
 
 export default function Operations() {
   const queryClient = useQueryClient();
@@ -3546,82 +3832,13 @@ export default function Operations() {
             <DialogTitle>Modifica Operazione</DialogTitle>
           </DialogHeader>
           {selectedOperation && (
-            <div className="space-y-4">
-              {/* Form semplificato per modifiche essenziali */}
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium">Tipo operazione</label>
-                  <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
-                    {selectedOperation.type === 'prima-attivazione' && 'Prima Attivazione'}
-                    {selectedOperation.type === 'misura' && 'Misura'}
-                    {selectedOperation.type === 'peso' && 'Peso'}  
-                    {selectedOperation.type === 'vendita' && 'Vendita'}
-                    {selectedOperation.type !== 'prima-attivazione' && (
-                      <span className="ml-2 text-xs text-blue-600">(Modificabile)</span>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Data</label>
-                  <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
-                    {format(new Date(selectedOperation.date), 'dd/MM/yyyy', { locale: it })}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Cestello</label>
-                  <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
-                    #{selectedOperation.basket?.physicalNumber} - {selectedOperation.basket?.flupsyName}
-                  </div>
-                </div>
-
-                {selectedOperation.type !== 'prima-attivazione' && (
-                  <div>
-                    <label className="text-sm font-medium">Note</label>
-                    <textarea
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                      rows={3}
-                      defaultValue={selectedOperation.notes || ''}
-                      id="edit-notes"
-                    />
-                  </div>
-                )}
-
-                <div className="text-xs text-gray-500">
-                  Le operazioni "Prima attivazione" non possono essere modificate per mantenere l'integrità dei dati.
-                  È possibile solo eliminarle se necessario.
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditDialogOpen(false)}
-                >
-                  Annulla
-                </Button>
-                {selectedOperation.type !== 'prima-attivazione' && (
-                  <Button
-                    onClick={() => {
-                      const notes = (document.getElementById('edit-notes') as HTMLTextAreaElement)?.value || '';
-                      
-                      updateOperationMutation.mutate({
-                        id: selectedOperation.id,
-                        operation: {
-                          ...selectedOperation,
-                          notes: notes || null,
-                          date: new Date(selectedOperation.date)
-                        }
-                      });
-                    }}
-                    disabled={updateOperationMutation.isPending}
-                  >
-                    {updateOperationMutation.isPending ? 'Salvataggio...' : 'Salva modifiche'}
-                  </Button>
-                )}
-              </div>
-            </div>
+            <EditOperationForm 
+              operation={selectedOperation} 
+              onClose={() => {
+                setIsEditDialogOpen(false);
+                setSelectedOperation(null);
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>
