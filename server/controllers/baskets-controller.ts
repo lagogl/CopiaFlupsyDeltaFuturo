@@ -215,11 +215,11 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     
     // Paginazione
     const skipPagination = includeAll === true || pageSize > 1000;
-    const limitClause = skipPagination ? '' : `LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    let limitClause = '';
     
     if (!skipPagination) {
       const offset = (page - 1) * pageSize;
-      filterParams.push(pageSize, offset);
+      limitClause = `LIMIT ${pageSize} OFFSET ${offset}`;
       console.log("CTE: Applicazione paginazione");
     } else {
       console.log("CTE: Recupero tutti i cestelli senza paginazione");
@@ -250,6 +250,8 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     
     // Esegui la query CTE consolidata
     console.log(`🚀 CTE: Esecuzione query consolidata con ${filterParams.length} parametri`);
+    console.log(`🔍 CTE QUERY DEBUG:`, cteQuery);
+    console.log(`🔍 CTE PARAMS DEBUG:`, filterParams);
     const startQueryTime = Date.now();
     
     const result = await db.execute(sql.raw(cteQuery, filterParams));
@@ -283,7 +285,7 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
       };
       
       // Salva anche il risultato vuoto in cache
-      BasketsCache.set(cacheKey, emptyResult, 300);
+      BasketsCache.set(cacheKey, emptyResult);
       return emptyResult;
     }
     
@@ -370,7 +372,7 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     };
     
     // Salva in cache
-    BasketsCache.set(cacheKey, finalResult, 300);
+    BasketsCache.set(cacheKey, finalResult);
     console.log(`🚀 CESTELLI CTE: Cache SAVED (${enrichedBaskets.length} cestelli)`);
     
     const duration = Date.now() - startTime;

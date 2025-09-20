@@ -1023,14 +1023,10 @@ export default function Baskets() {
           </DialogHeader>
           {selectedBasket && (
             <Tabs defaultValue="info">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-1">
                 <TabsTrigger value="info" className="flex items-center gap-1">
                   <Info className="h-4 w-4" />
                   <span>Informazioni</span>
-                </TabsTrigger>
-                <TabsTrigger value="positions" className="flex items-center gap-1">
-                  <History className="h-4 w-4" />
-                  <span>Cronologia Posizioni</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -1118,22 +1114,6 @@ export default function Baskets() {
                       </div>
                     )}
                   </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="positions" className="mt-4 space-y-4">
-                <div className="bg-muted/20 p-4 rounded-lg border">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    Cronologia degli spostamenti
-                  </h3>
-
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Questa sezione mostra tutti i movimenti e cambi di posizione della cesta nel corso del tempo.
-                    Le posizioni sono ordinate cronologicamente dalla più recente alla più vecchia.
-                  </p>
-
-                  <BasketPositionHistory basketId={selectedBasket.id} />
                 </div>
               </TabsContent>
             </Tabs>
