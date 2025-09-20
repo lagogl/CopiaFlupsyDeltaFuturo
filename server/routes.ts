@@ -1948,7 +1948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Controllo stato cestello in base al tipo operazione
       if (req.body.type === 'prima-attivazione') {
-        if (basket.state !== 'disponibile') {
+        if (basket.state !== 'available') {
           return res.status(400).json({ message: "Cestello deve essere disponibile per prima attivazione" });
         }
       } else if (req.body.type === 'misura') {
@@ -2063,7 +2063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Cestello non trovato" });
         }
         
-        if (basket.state !== 'disponibile') {
+        if (basket.state !== 'available') {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         
@@ -2303,7 +2303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Verifica che il cestello sia disponibile
         console.log("🔍 STEP 2: Verifica stato cestello:", basket.state);
-        if (basket.state !== 'disponibile') {
+        if (basket.state !== 'available') {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         

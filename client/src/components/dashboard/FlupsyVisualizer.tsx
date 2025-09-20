@@ -381,7 +381,7 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
       // Se il cestello è attivo, naviga alla pagina di dettaglio del ciclo corrente
       navigate(`/cycles/${basket.currentCycleId}`);
     } else {
-      // Se il cestello è disponibile, trova l'ultimo ciclo chiuso associato a questo cestello
+      // Se il cestello è available, trova l'ultimo ciclo chiuso associato a questo cestello
       const basketCycles = cycles?.filter(cycle => cycle.basketId === basket.id) || [];
       const latestCycle = basketCycles.length > 0 
         ? basketCycles.sort((a, b) => 

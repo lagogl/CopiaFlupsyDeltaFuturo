@@ -169,12 +169,12 @@ export function implementDirectOperationRoute(app: Express) {
           // Resetta il cestello a stato disponibile
           await db.update(baskets)
             .set({
-              state: 'disponibile',
+              state: 'available',
               currentCycleId: null,
               cycleCode: null
             })
             .where(eq(baskets.id, operation.basketId));
-          console.log(`✅ Cestello ${operation.basketId} resettato a disponibile`);
+          console.log(`✅ Cestello ${operation.basketId} resettato a available`);
         }
 
         // Invalida cache operazioni
