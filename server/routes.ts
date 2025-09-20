@@ -19,8 +19,9 @@ import {
   baskets,
   lots,
   users,
-  screening,
-  screeningPositions,
+  screeningOperations,
+  screeningSourceBaskets,
+  screeningDestinationBaskets,
   notifications
 } from "../shared/schema";
 import { registerAIRoutes } from "./controllers/ai-controller";
