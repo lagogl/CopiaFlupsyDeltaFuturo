@@ -1680,23 +1680,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalWeight = updateData.totalWeight || existingOperation.totalWeight;
       const deadCount = updateData.deadCount !== undefined ? updateData.deadCount : existingOperation.deadCount;
       
+      // Crea l'oggetto di aggiornamento con tutti i campi necessari
+      const finalUpdateData: any = { ...updateData };
+      
       if (updateData.animalCount || updateData.totalWeight) {
         // Ricalcola animalsPerKg e averageWeight
-        if (animalCount && totalWeight) {
+        if (animalCount && totalWeight && animalCount > 0) {
           const averageWeight = (totalWeight * 1000) / animalCount; // peso in mg per animale
-          updateData.averageWeight = parseFloat(averageWeight.toFixed(3));
-          updateData.animalsPerKg = Math.round(1000000 / averageWeight); // animali per kg
+          finalUpdateData.averageWeight = parseFloat(averageWeight.toFixed(3));
+          finalUpdateData.animalsPerKg = Math.round(1000000 / averageWeight); // animali per kg
         }
       }
       
       if (updateData.deadCount !== undefined || updateData.animalCount) {
         // Ricalcola mortalità
-        const mortalityRate = animalCount > 0 ? (deadCount / animalCount) * 100 : 0;
-        updateData.mortalityRate = parseFloat(mortalityRate.toFixed(6));
+        if (animalCount && animalCount > 0) {
+          const mortalityRate = (deadCount || 0) / animalCount * 100;
+          finalUpdateData.mortalityRate = parseFloat(mortalityRate.toFixed(6));
+        }
       }
       
       // Aggiorna l'operazione
-      const updatedOperation = await storage.updateOperation(operationId, updateData);
+      const updatedOperation = await storage.updateOperation(operationId, finalUpdateData);
       if (!updatedOperation) {
         return res.status(500).json({ success: false, message: "Failed to update operation" });
       }
@@ -1720,8 +1725,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // WebSocket broadcast
-      if (wsServer) {
-        wsServer.broadcast('operation_updated', {
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('operation_updated', {
           id: operationId,
           basketId: updatedOperation.basketId,
           operation: updatedOperation
