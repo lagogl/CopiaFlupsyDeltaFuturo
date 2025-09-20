@@ -49,10 +49,7 @@ export async function setupBasketsIndexes(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_operations_basket_id_id ON operations (basket_id, id);
     `);
     
-    // Indice per basket_position_history(basket_id, end_date, start_date) per posizioni attuali
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_basket_position_history_basket_end_start ON basket_position_history (basket_id, end_date, start_date);
-    `);
+    // Indice basket_position_history rimosso per performance ottimizzate
     
     // Indice composito per baskets(flupsy_id, state, current_cycle_id) per filtri combinati
     await db.execute(sql`

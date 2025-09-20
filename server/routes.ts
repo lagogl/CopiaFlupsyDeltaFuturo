@@ -1165,26 +1165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the basket
       const newBasket = await storage.createBasket(parsedData.data);
       
-      // If basket has position data, record it in the position history
-      if (parsedData.data.row && parsedData.data.position) {
-        console.log("createBasketPositionHistory - Creo nuovo record:", {
-          basketId: newBasket.id,
-          flupsyId: newBasket.flupsyId,
-          row: parsedData.data.row,
-          position: parsedData.data.position,
-          startDate: new Date().toISOString().split('T')[0],
-          operationId: null
-        });
-        
-        await storage.createBasketPositionHistory({
-          basketId: newBasket.id,
-          flupsyId: newBasket.flupsyId,
-          row: parsedData.data.row,
-          position: parsedData.data.position,
-          startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
-          operationId: null
-        });
-      }
+      // Sistema cronologia posizioni rimosso per performance ottimizzate
+      // Posizioni ora gestite direttamente tramite baskets.row/position
       
       // Invalidate position cache for this basket
       try {
@@ -1397,50 +1379,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 🚀 ATOMIC CTE SOLUTION: Single SQL operation replacing 6 sequential queries
       console.log(`🚀 SWITCH PROFILING - Using ATOMIC CTE approach for <500ms target...`);
       
-      // Execute the atomic CTE query with proper parameter binding using Drizzle sql`` template
+      // Execute the atomic optimized query (basket_position_history removed for performance)
       const atomicResult = await db.execute(sql`
-        WITH
-        -- Step 1: Close current positions for both baskets atomically
-        close_positions AS (
-          UPDATE basket_position_history 
-          SET end_date = ${formattedDate}
-          WHERE basket_id IN (${basket1Id}, ${basket2Id}) 
-            AND end_date IS NULL
-          RETURNING basket_id, id as closed_position_id
-        ),
-        -- Step 2: Insert new positions for both baskets atomically
-        insert_positions AS (
-          INSERT INTO basket_position_history (basket_id, flupsy_id, row, position, start_date, end_date, operation_id)
-          VALUES 
-            (${basket1Id}, ${flupsyId2}, ${position2Row}, ${position2Number}, ${formattedDate}, NULL, NULL),
-            (${basket2Id}, ${flupsyId1}, ${position1Row}, ${position1Number}, ${formattedDate}, NULL, NULL)
-          RETURNING basket_id, id as new_position_id, flupsy_id, row, position
-        ),
-        -- Step 3: Update baskets with new positions atomically
-        update_baskets AS (
-          UPDATE baskets 
-          SET 
-            flupsy_id = CASE 
-              WHEN id = ${basket1Id} THEN ${flupsyId2}
-              WHEN id = ${basket2Id} THEN ${flupsyId1}
-            END,
-            row = CASE 
-              WHEN id = ${basket1Id} THEN ${position2Row}
-              WHEN id = ${basket2Id} THEN ${position1Row}
-            END,
-            position = CASE 
-              WHEN id = ${basket1Id} THEN ${position2Number}
-              WHEN id = ${basket2Id} THEN ${position1Number}
-            END
-          WHERE id IN (${basket1Id}, ${basket2Id})
-          RETURNING id, physical_number, flupsy_id, cycle_code, state, current_cycle_id, nfc_data, row, position
-        )
-        -- Return updated baskets for response
-        SELECT * FROM update_baskets ORDER BY id;
+        UPDATE baskets 
+        SET 
+          flupsy_id = CASE 
+            WHEN id = ${basket1Id} THEN ${flupsyId2}
+            WHEN id = ${basket2Id} THEN ${flupsyId1}
+          END,
+          row = CASE 
+            WHEN id = ${basket1Id} THEN ${position2Row}
+            WHEN id = ${basket2Id} THEN ${position1Row}
+          END,
+          position = CASE 
+            WHEN id = ${basket1Id} THEN ${position2Number}
+            WHEN id = ${basket2Id} THEN ${position1Number}
+          END
+        WHERE id IN (${basket1Id}, ${basket2Id})
+        RETURNING id, physical_number, flupsy_id, cycle_code, state, current_cycle_id, nfc_data, row, position;
       `);
       
-      // Extract results from atomic operation
-      const [updatedBasket1, updatedBasket2] = atomicResult;
+      // Extract results from atomic operation and sort by id
+      const sortedResults = atomicResult.sort((a, b) => a.id - b.id);
+      const [updatedBasket1, updatedBasket2] = sortedResults;
       console.log(`🚀 ATOMIC CTE: Switch completed in single operation`);
       
       const dbTime = Date.now() - dbStart;
@@ -5204,24 +5165,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const newBasket = await storage.createBasket(basketToCreate);
         
-        // 2. Crea il record nella tabella basket_position_history per tracciare la posizione
-        if (newBasket.row && newBasket.position) {
-          try {
-            await storage.createBasketPositionHistory({
-              basketId: newBasket.id,
-              flupsyId: newBasket.flupsyId,
-              row: newBasket.row,
-              position: newBasket.position,
-              startDate: new Date().toISOString().split('T')[0], // Data corrente
-              operationId: null // Null perché non è legato a un'operazione specifica
-            });
-            
-            console.log(`Creata posizione ${newBasket.row}-${newBasket.position} per cestello #${newBasket.physicalNumber}`);
-          } catch (positionError) {
-            console.error(`Errore nella creazione della posizione per cestello ${newBasket.id}:`, positionError);
-            // Continua comunque con gli altri cestelli
-          }
-        }
+        // Sistema cronologia posizioni rimosso per performance ottimizzate
+        // Posizioni gestite direttamente in baskets.row/position
+        console.log(`Cestello #${newBasket.physicalNumber} creato in posizione ${newBasket.row}-${newBasket.position}`);
         
         newBaskets.push(newBasket);
       }
