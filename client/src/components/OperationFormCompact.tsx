@@ -458,6 +458,14 @@ export default function OperationFormCompact({
     }
   }, [selectedBasket, basketHasActiveCycle]);
 
+  // Reset form quando cambiano i defaultValues (per modifica operazioni)
+  useEffect(() => {
+    if (defaultValues) {
+      console.log("🔄 RESET FORM with defaultValues:", defaultValues);
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
+
   // Imposta valori iniziali se forniti come props
   useEffect(() => {
     if (initialFlupsyId && !form.getValues('flupsyId')) {
