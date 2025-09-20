@@ -239,34 +239,16 @@ async function handleBasketLotCompositionOnUpdate(operation: any, updateData: an
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // PATCH endpoint per aggiornare operazioni - POSIZIONE PRIORITARIA per evitare errori TypeScript
-  app.patch('/api/operations/:id', async (req, res) => {
-    try {
-      const operationId = parseInt(req.params.id);
-      console.log(`📝 PATCH richiesta per operazione ${operationId}:`, req.body);
-      
-      if (isNaN(operationId)) {
-        return res.status(400).json({ success: false, message: "Invalid operation ID" });
-      }
-      
-      // Solo un aggiornamento semplice delle note per il test
-      const notes = req.body.notes || 'Test aggiornamento completato';
-      
-      const updatedOperation = await storage.updateOperation(operationId, { notes });
-      
-      console.log(`✅ Operazione ${operationId} aggiornata con successo`);
-      res.status(200).json({ 
-        success: true, 
-        operation: updatedOperation 
-      });
-      
-    } catch (error) {
-      console.error("❌ Errore aggiornamento operazione:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to update operation" 
-      });
-    }
+  // DEBUGGING: No-op handler to test if the hang is in the complex PATCH handler
+  app.patch('/api/operations/:id', (req, res) => {
+    console.log(`🧪 NO-OP PATCH TEST: ${req.method} ${req.path} - immediate response test`);
+    res.status(204).json({ message: "No-op test successful", method: req.method, path: req.path });
+  });
+  
+  // DEBUGGING: Tracer middleware with CORRECT pattern
+  app.use('/api/operations/*', (req, res, next) => {
+    console.log(`🔍 TRACE: ${req.method} ${req.path} - entering operations middleware`);
+    next();
   });
 
   // WORKAROUND: GET endpoint per aggiornare operazioni (metodi non-GET non funzionano)

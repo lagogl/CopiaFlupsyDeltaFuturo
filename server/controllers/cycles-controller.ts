@@ -403,19 +403,16 @@ export async function getActiveCyclesWithDetails() {
  * Configura l'invalidazione della cache per i cicli
  */
 export function setupCyclesCacheInvalidation(app: any) {
-  // Invalida la cache quando un ciclo viene creato, aggiornato o eliminato
-  const invalidateCache = () => CyclesCache.invalidate();
-  
-  app.post('/api/cycles*', invalidateCache);
-  app.put('/api/cycles*', invalidateCache);
-  app.patch('/api/cycles*', invalidateCache);
-  app.delete('/api/cycles*', invalidateCache);
-  
-  // Invalida anche quando un'operazione viene creata o modificata
-  app.post('/api/operations*', invalidateCache);
-  app.put('/api/operations*', invalidateCache);
-  app.patch('/api/operations*', invalidateCache);
-  app.delete('/api/operations*', invalidateCache);
+  // CRITICAL FIX: Use post-response hooks to avoid interfering with request flow
+  app.use(['/api/operations/*', '/api/cycles/*'], (req: any, res: any, next: any) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      res.on('finish', () => {
+        console.log("Invalidazione cache cicli");
+        CyclesCache.invalidate();
+      });
+    }
+    next();
+  });
   
   console.log("Sistema di invalidazione cache cicli configurato con successo");
 }
