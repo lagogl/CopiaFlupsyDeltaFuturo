@@ -3546,48 +3546,82 @@ export default function Operations() {
             <DialogTitle>Modifica Operazione</DialogTitle>
           </DialogHeader>
           {selectedOperation && (
-            <OperationForm 
-              key={`edit-form-${selectedOperation.id}-${Date.now()}`}
-              onSubmit={(data) => {
-                console.log('Edit dialog - Submitting operation data:', data);
-                
-                // Assicurati che i campi numerici siano effettivamente numeri
-                const formattedData = {
-                  ...data,
-                  animalCount: data.animalCount ? Number(data.animalCount) : null,
-                  animalsPerKg: data.animalsPerKg ? Number(data.animalsPerKg) : null,
-                  totalWeight: data.totalWeight ? Number(data.totalWeight) : null,
-                  date: data.date instanceof Date ? data.date : new Date(data.date),
-                  // Assicuriamoci che notes sia salvato correttamente
-                  notes: data.notes || null
-                };
-                
-                console.log('Formatted operation data:', formattedData);
-                updateOperationMutation.mutate({ id: selectedOperation.id, operation: formattedData });
-              }}
-              onCancel={() => setIsEditDialogOpen(false)}
-              isLoading={updateOperationMutation.isPending}
-              defaultValues={{
-                type: selectedOperation.type,
-                date: new Date(selectedOperation.date),
-                basketId: selectedOperation.basketId,
-                cycleId: selectedOperation.cycleId,
-                flupsyId: selectedOperation.basket?.flupsyId || selectedOperation.flupsyId,
-                sizeId: selectedOperation.sizeId,
-                sgrId: selectedOperation.sgrId,
-                lotId: selectedOperation.lotId,
-                animalCount: selectedOperation.animalCount,
-                totalWeight: selectedOperation.totalWeight,
-                animalsPerKg: selectedOperation.animalsPerKg,
-                averageWeight: selectedOperation.averageWeight,
-                deadCount: selectedOperation.deadCount,
-                mortalityRate: selectedOperation.mortalityRate,
-                sampleWeight: selectedOperation.sampleWeight || null,
-                liveAnimals: selectedOperation.liveAnimals || null,
-                totalSample: selectedOperation.totalSample || null,
-                notes: selectedOperation.notes || ''
-              }}
-            />
+            <div className="space-y-4">
+              {/* Form semplificato per modifiche essenziali */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Tipo operazione</label>
+                  <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
+                    {selectedOperation.type === 'prima-attivazione' && 'Prima Attivazione'}
+                    {selectedOperation.type === 'misura' && 'Misura'}
+                    {selectedOperation.type === 'peso' && 'Peso'}  
+                    {selectedOperation.type === 'vendita' && 'Vendita'}
+                    {selectedOperation.type !== 'prima-attivazione' && (
+                      <span className="ml-2 text-xs text-blue-600">(Modificabile)</span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Data</label>
+                  <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
+                    {format(new Date(selectedOperation.date), 'dd/MM/yyyy', { locale: it })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Cestello</label>
+                  <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
+                    #{selectedOperation.basket?.physicalNumber} - {selectedOperation.basket?.flupsyName}
+                  </div>
+                </div>
+
+                {selectedOperation.type !== 'prima-attivazione' && (
+                  <div>
+                    <label className="text-sm font-medium">Note</label>
+                    <textarea
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      rows={3}
+                      defaultValue={selectedOperation.notes || ''}
+                      id="edit-notes"
+                    />
+                  </div>
+                )}
+
+                <div className="text-xs text-gray-500">
+                  Le operazioni "Prima attivazione" non possono essere modificate per mantenere l'integrità dei dati.
+                  È possibile solo eliminarle se necessario.
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Annulla
+                </Button>
+                {selectedOperation.type !== 'prima-attivazione' && (
+                  <Button
+                    onClick={() => {
+                      const notes = (document.getElementById('edit-notes') as HTMLTextAreaElement)?.value || '';
+                      
+                      updateOperationMutation.mutate({
+                        id: selectedOperation.id,
+                        operation: {
+                          ...selectedOperation,
+                          notes: notes || null,
+                          date: new Date(selectedOperation.date)
+                        }
+                      });
+                    }}
+                    disabled={updateOperationMutation.isPending}
+                  >
+                    {updateOperationMutation.isPending ? 'Salvataggio...' : 'Salva modifiche'}
+                  </Button>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
