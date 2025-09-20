@@ -10,6 +10,30 @@ import { createSecureApiLogger, secureLogger } from "./utils/secure-logging";
 import { createSmartCacheMiddleware, createReplitPreviewCacheMiddleware } from "./utils/smart-cache";
 
 const app = express();
+
+// CRITICAL FIX: Method override middleware to bypass Replit proxy PATCH/PUT blocking
+app.use((req, res, next) => {
+  // Only apply to /api routes for security
+  if (req.path.startsWith('/api/')) {
+    const override = req.headers['x-http-method-override'] || req.query._method;
+    if (override && ['PUT', 'PATCH', 'DELETE'].includes((override as string).toUpperCase())) {
+      const originalMethod = req.method;
+      req.method = (override as string).toUpperCase();
+      console.log(`[METHOD-OVERRIDE] ${originalMethod} ${req.path} → ${req.method} (via header/query)`);
+    }
+  }
+  next();
+});
+
+// OPTIONS preflight responder for CORS support
+app.options('/api/*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-HTTP-Method-Override');
+  res.header('Access-Control-Max-Age', '600');
+  res.status(204).send();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

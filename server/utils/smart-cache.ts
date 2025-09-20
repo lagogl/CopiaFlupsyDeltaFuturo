@@ -94,6 +94,12 @@ export function createSmartCacheMiddleware() {
   const config = getCacheConfig();
   
   return (req: Request, res: Response, next: NextFunction) => {
+    // CRITICAL FIX: Bypass cache middleware for non-GET/HEAD methods
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      console.log(`[CACHE-BYPASS] ${req.method} ${req.path} - bypassing cache middleware`);
+      return next();
+    }
+    
     const path = req.path;
     
     // Set security headers for all responses
@@ -168,6 +174,12 @@ export function createSmartCacheMiddleware() {
 // Middleware specifically for Replit preview environment
 export function createReplitPreviewCacheMiddleware() {
   return (req: Request, res: Response, next: NextFunction) => {
+    // CRITICAL FIX: Bypass cache middleware for non-GET/HEAD methods
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      console.log(`[CACHE-BYPASS-PREVIEW] ${req.method} ${req.path} - bypassing preview cache middleware`);
+      return next();
+    }
+    
     const path = req.path;
     
     // In Replit preview, we want to see changes immediately for development
