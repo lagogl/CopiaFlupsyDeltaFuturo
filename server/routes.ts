@@ -2557,7 +2557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Update the basket state
           await storage.updateBasket(basketId, {
-            state: 'disponibile',
+            state: 'available',
             currentCycleId: null,
             cycleCode: null
           });

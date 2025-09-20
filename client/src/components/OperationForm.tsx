@@ -690,7 +690,7 @@ export default function OperationForm({
   // Implementazione restrittiva per cestelli disponibili
   let filteredOperationTypes;
   if (selectedBasket) {
-    if (selectedBasket.state === 'disponibile') {
+    if (selectedBasket.state === 'available') {
       // Solo "Prima Attivazione" per cestelli disponibili
       filteredOperationTypes = allOperationTypes.filter(op => op.value === 'prima-attivazione');
       console.log('✅ CESTELLO DISPONIBILE - mostro solo Prima Attivazione:', filteredOperationTypes.map(op => op.value));

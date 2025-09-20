@@ -423,13 +423,13 @@ export default function OperationFormCompact({
   const basketOperations = useMemo(() => {
     if (!selectedBasket) return [];
     
-    const isReallyAvailable = selectedBasket.state === 'disponibile' && !basketHasActiveCycle;
-    const isActiveWithCycle = selectedBasket.state === 'active' || basketHasActiveCycle;
+    const isReallyAvailable = selectedBasket.state === 'available' && !selectedBasket.currentCycleId;
+    const isActiveWithCycle = selectedBasket.state === 'active' || selectedBasket.currentCycleId;
     
     console.log(`🔍 Cestello #${selectedBasket.physicalNumber}:`, {
       state: selectedBasket.state,
       currentCycleId: selectedBasket.currentCycleId,
-      hasActiveCycle: basketHasActiveCycle,
+      hasActiveCycle: !!selectedBasket.currentCycleId,
       isReallyAvailable,
       isActiveWithCycle
     });
@@ -521,14 +521,14 @@ export default function OperationFormCompact({
     console.log('🔍 Debug auto-set OperationFormCompact - DETAILS:', {
       watchBasketId,
       selectedBasket: selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : null,
-      shouldAutoSet: watchBasketId && selectedBasket?.state === 'disponibile',
+      shouldAutoSet: watchBasketId && selectedBasket?.state === 'available',
       currentType: watchType,
       basketsLoaded: !!baskets
     });
     
     if (watchBasketId && selectedBasket) {
-      const isReallyAvailable = selectedBasket.state === 'disponibile' && !basketHasActiveCycle;
-      const isActiveWithCycle = selectedBasket.state === 'active' || basketHasActiveCycle;
+      const isReallyAvailable = selectedBasket.state === 'available' && !selectedBasket.currentCycleId;
+      const isActiveWithCycle = selectedBasket.state === 'active' || selectedBasket.currentCycleId;
       
       // AUTO-IMPOSTA SEMPRE IL CICLO ATTIVO SE PRESENTE
       if (selectedBasket.currentCycleId && form.getValues('cycleId') !== selectedBasket.currentCycleId) {
@@ -1111,7 +1111,7 @@ export default function OperationFormCompact({
                                 form.setValue('cycleId', null);
                                 
                                 // AUTO-IMPOSTAZIONE: Se il cestello è disponibile, imposta automaticamente "Prima Attivazione"
-                                if (selectedBasket.state === 'disponibile') {
+                                if (selectedBasket.state === 'available') {
                                   console.log("CESTELLO DISPONIBILE - Auto-impostazione Prima Attivazione");
                                   form.setValue('type', 'prima-attivazione');
                                   console.log("Tipo operazione impostato automaticamente a 'Prima Attivazione'");
@@ -1206,7 +1206,7 @@ export default function OperationFormCompact({
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center gap-2">
                                             <span className="font-medium text-gray-500">
-                                              {selectedBasket.state === 'disponibile' ? 
+                                              {selectedBasket.state === 'available' ? 
                                                 "Cestello disponibile" : 
                                                 "N° animali non disponibile"}
                                             </span>
