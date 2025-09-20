@@ -485,7 +485,7 @@ export default function OperationFormCompact({
           form.setValue('cycleId', selectedBasket.currentCycleId);
           
           // Cerca l'ultima operazione per questo cestello/ciclo
-          if (operations && operations.length > 0) {
+          if (operations && Array.isArray(operations) && operations.length > 0) {
             const basketOperations = operations.filter((op: any) => 
               op.basketId === initialBasketId && 
               op.cycleId === selectedBasket.currentCycleId
@@ -550,7 +550,7 @@ export default function OperationFormCompact({
       }
       
       // AUTO-IMPOSTA IL LOTTO DALLA PRIMA ATTIVAZIONE PER OPERAZIONI SU CICLI ATTIVI
-      if (isActiveWithCycle && operations && operations.length > 0) {
+      if (isActiveWithCycle && operations && Array.isArray(operations) && operations.length > 0) {
         const firstActivationOp = operations.find((op: any) => 
           op.basketId === watchBasketId && 
           op.type === 'prima-attivazione'
@@ -571,7 +571,7 @@ export default function OperationFormCompact({
       form.setValue('averageWeight', 1000000 / watchAnimalsPerKg);
       
       // Auto-select size based on animals per kg
-      if (sizes && sizes.length > 0) {
+      if (sizes && Array.isArray(sizes) && sizes.length > 0) {
         console.log("Cercando taglia per animali per kg:", watchAnimalsPerKg);
         
         // Importa la funzione di utilità che gestisce sia camelCase che snake_case
