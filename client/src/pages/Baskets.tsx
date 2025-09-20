@@ -437,10 +437,10 @@ export default function Baskets() {
 
         // Priorità 1: Le ceste con stato "active" vengono prima di quelle disponibili
         if (a.state !== b.state) {
-          if (a.state === 'active' && b.state === 'disponibile') {
+          if (a.state === 'active' && b.state === 'available') {
             return -1;
           }
-          if (a.state === 'disponibile' && b.state === 'active') {
+          if (a.state === 'available' && b.state === 'active') {
             return 1;
           }
         }
@@ -559,7 +559,7 @@ export default function Baskets() {
     // Filter by state
     const matchesState = stateFilter === 'all' || 
       (stateFilter === 'active' && basket.state === 'active') ||
-      (stateFilter === 'available' && basket.state === 'disponibile');
+      (stateFilter === 'available' && basket.state === 'available');
 
     // Filter by FLUPSY
     const matchesFlupsy = flupsyFilter === 'all' || 
@@ -937,7 +937,7 @@ export default function Baskets() {
                             >
                               <Pencil className="h-5 w-5 text-gray-600" />
                             </Button>
-                            {basket.state === 'disponibile' ? (
+                            {basket.state === 'available' ? (
                               <Button 
                                 variant="ghost" 
                                 size="icon"
@@ -1200,7 +1200,7 @@ export default function Baskets() {
                   <div className="col-span-2">
                     <p className="text-sm font-medium text-muted-foreground">Stato</p>
                     <p className="font-medium flex items-center">
-                      {selectedBasket.state === 'disponibile' ? (
+                      {selectedBasket.state === 'available' ? (
                         <><span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-2"></span> Disponibile</>
                       ) : selectedBasket.state === 'active' && selectedBasket.currentCycleId ? (
                         <><span className="inline-block h-2 w-2 rounded-full bg-blue-500 mr-2"></span> In uso (ciclo attivo)</>
@@ -1235,7 +1235,7 @@ export default function Baskets() {
             <Button
               variant="destructive"
               onClick={() => selectedBasket && deleteBasketMutation.mutate(selectedBasket.id)}
-              disabled={deleteBasketMutation.isPending || (selectedBasket && selectedBasket.state !== 'disponibile')}
+              disabled={deleteBasketMutation.isPending || (selectedBasket && selectedBasket.state !== 'available')}
             >
               {deleteBasketMutation.isPending ? "Eliminazione in corso..." : "Elimina"}
             </Button>

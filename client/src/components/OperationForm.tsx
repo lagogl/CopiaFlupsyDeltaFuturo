@@ -298,7 +298,7 @@ export default function OperationForm({
     
     if (watchType === 'prima-attivazione') {
       // Per prima attivazione: solo cestelli disponibili
-      return allFlupsyBaskets.filter((basket: any) => basket.state === 'disponibile');
+      return allFlupsyBaskets.filter((basket: any) => basket.state === 'available');
     } else {
       // Per tutte le altre operazioni: solo cestelli attivi con ciclo
       return allFlupsyBaskets.filter((basket: any) => 
@@ -528,7 +528,7 @@ export default function OperationForm({
     
     // Se il cestello è disponibile, non applicare la restrizione della data
     // (permettiamo più operazioni nello stesso giorno per cestelli disponibili)
-    if (selectedBasket?.state === 'disponibile') {
+    if (selectedBasket?.state === 'available') {
       return;
     }
     
@@ -619,7 +619,7 @@ export default function OperationForm({
   const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
   
   // Determine if a new cycle needs to be created
-  const needsNewCycle = selectedBasket?.state === 'disponibile' && watchBasketId;
+  const needsNewCycle = selectedBasket?.state === 'available' && watchBasketId;
   
   // Determina se abbiamo un cestello attivo senza cicli attivi
   const isActiveBasketWithNoCycles = selectedBasket?.state === 'active' && filteredCycles.length === 0;
@@ -637,11 +637,11 @@ export default function OperationForm({
     console.log('🔍 Debug auto-set:', {
       watchBasketId,
       selectedBasket: selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : null,
-      shouldAutoSet: watchBasketId && selectedBasket?.state === 'disponibile',
+      shouldAutoSet: watchBasketId && selectedBasket?.state === 'available',
       currentType: watchType
     });
     
-    if (watchBasketId && selectedBasket?.state === 'disponibile') {
+    if (watchBasketId && selectedBasket?.state === 'available') {
       // Forza il tipo a "prima-attivazione" per ceste disponibili
       console.log('🚀 FORZANDO auto-impostazione di Prima Attivazione per cesta disponibile');
       form.setValue('type', 'prima-attivazione');
@@ -1006,7 +1006,7 @@ export default function OperationForm({
                       console.log('🔍 BASKET FOUND:', selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : 'NOT FOUND');
                       
                       // COMPORTAMENTO AUTOMATICO: Imposta tipo operazione in base allo stato del cestello
-                      if (selectedBasket?.state === 'disponibile') {
+                      if (selectedBasket?.state === 'available') {
                         // Cestello disponibile = SOLO Prima Attivazione possibile
                         console.log('🎯 AUTO-SET: Cestello disponibile → Prima Attivazione:', selectedBasket);
                         form.setValue('type', 'prima-attivazione');
@@ -1038,7 +1038,7 @@ export default function OperationForm({
                           ` - Fila ${basket.row} Pos. ${basket.position}` : '';
                           
                         // Stato visualizzato solo per ceste disponibili
-                        const stateInfo = basket.state === 'disponibile' ? 
+                        const stateInfo = basket.state === 'available' ? 
                           ' - Disponibile' : '';
                           
                         return (
@@ -1048,14 +1048,14 @@ export default function OperationForm({
                             className={
                               basket.state === 'active' && basket.currentCycleId 
                                 ? "text-green-700 font-medium" 
-                                : (basket.state === 'disponibile' || (basket.state === 'active' && !basket.currentCycleId))
+                                : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
                                   ? "text-amber-600" 
                                   : ""
                             }
                           >
                             {basket.state === 'active' && basket.currentCycleId
                               ? "🟢 " 
-                              : (basket.state === 'disponibile' || (basket.state === 'active' && !basket.currentCycleId))
+                              : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
                                 ? "🟠 " 
                                 : ""}
                             Cesta #{basket.physicalNumber}{positionInfo}{cycleInfo}{stateInfo}
@@ -1187,7 +1187,7 @@ export default function OperationForm({
             name="type"
             render={({ field }) => {
               // Forza il valore "prima-attivazione" per ceste disponibili o ceste attive senza ciclo
-              if ((selectedBasket?.state === 'disponibile' || 
+              if ((selectedBasket?.state === 'available' || 
                   (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) && 
                   field.value !== 'prima-attivazione') {
                 // Aggiorna immediatamente il valore del campo per ceste disponibili
@@ -1202,12 +1202,12 @@ export default function OperationForm({
               const availableOperationTypes = operationTypes;
               
               // Determina se il selettore dovrebbe essere disabilitato
-              const isSelectDisabled = selectedBasket?.state === 'disponibile' || 
+              const isSelectDisabled = selectedBasket?.state === 'available' || 
                 (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId);
 
               // Colore di sfondo e testo per il selettore
               const selectClassName = 
-                (selectedBasket?.state === 'disponibile' || 
+                (selectedBasket?.state === 'available' || 
                 (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) ?
                 "bg-amber-50 border-amber-200 text-amber-700 font-medium" : "";
               
@@ -1217,7 +1217,7 @@ export default function OperationForm({
                   <Select 
                     onValueChange={field.onChange} 
                     value={
-                      (selectedBasket?.state === 'disponibile' || 
+                      (selectedBasket?.state === 'available' || 
                        (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) 
                        ? 'prima-attivazione' 
                        : field.value
@@ -1234,7 +1234,7 @@ export default function OperationForm({
                         // Evidenzia in modo speciale l'opzione Prima Attivazione per cestelli senza ciclo
                         const isPrimaAttivazione = type.value === 'prima-attivazione';
                         const isMandatory = isPrimaAttivazione && 
-                          (selectedBasket?.state === 'disponibile' || 
+                          (selectedBasket?.state === 'available' || 
                            (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId));
                         const className = isMandatory ? "bg-amber-50 font-medium" : "";
                         
@@ -1251,7 +1251,7 @@ export default function OperationForm({
                     </SelectContent>
                   </Select>
                   <FormDescription className="text-xs">
-                    {selectedBasket?.state === 'disponibile' 
+                    {selectedBasket?.state === 'available' 
                       ? "Per ceste disponibili è possibile eseguire solo operazioni di Prima Attivazione" 
                       : selectedBasket?.state === 'active' && selectedBasket?.currentCycleId
                         ? "L'operazione Prima Attivazione è disponibile solo per cestelli senza ciclo attivo"

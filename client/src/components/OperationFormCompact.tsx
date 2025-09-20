@@ -362,7 +362,7 @@ export default function OperationFormCompact({
       
       // Debug dettagliato degli stati
       const activeBasketsCount = filtered.filter(b => b.state === 'active').length;
-      const availableBasketsCount = filtered.filter(b => b.state === 'disponibile').length;
+      const availableBasketsCount = filtered.filter(b => b.state === 'available').length;
       
       console.log("🎯 STATI CESTELLI AGGIORNATI:", {
         attivi: activeBasketsCount,
@@ -1052,7 +1052,7 @@ export default function OperationFormCompact({
                           <div className="text-xs font-medium text-gray-600">
                             Occupazione FLUPSY ({baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length} cestelli) - 
                             Attivi: {baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId) && b.state === 'active').length}, 
-                            Disponibili: {baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId) && b.state === 'disponibile').length}
+                            Disponibili: {baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId) && b.state === 'available').length}
                           </div>
                         </div>
                       )}
@@ -1306,7 +1306,7 @@ export default function OperationFormCompact({
                                           Ciclo attivo dal: {format(new Date(lastOperation.date), 'dd/MM/yyyy', { locale: it })}
                                         </div>
                                       </div>
-                                    ) : basket.state === 'disponibile' ? (
+                                    ) : basket.state === 'available' ? (
                                       <div className="text-xs text-orange-600 font-medium">
                                         Pronto per nuova prima attivazione
                                       </div>
