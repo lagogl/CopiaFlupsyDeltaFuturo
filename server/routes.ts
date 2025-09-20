@@ -5496,11 +5496,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`DELETE FROM selection_source_baskets`;
           await sql`DELETE FROM selections`;
           
-          // 8. Elimina la cronologia delle posizioni dei cestelli
-          const step8 = "📍 Eliminazione cronologia posizioni cestelli...";
-          console.log(step8);
-          broadcastMessage("database_reset_progress", { message: step8, step: 8 });
-          await sql`DELETE FROM basket_position_history`;
+          // 8. (RIMOSSO) Sistema cronologia posizioni rimosso per performance
+          // La cronologia delle posizioni è ora gestita direttamente nei campi basket.row/position
           
           // 9. Elimina le operazioni
           const step9 = "⚙️ Eliminazione operazioni...";
@@ -5605,7 +5602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS selection_destination_baskets_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS selection_basket_history_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
+          // basket_position_history_id_seq rimossa (sistema cronologia eliminato per performance)
           await sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
