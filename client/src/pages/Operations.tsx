@@ -940,13 +940,56 @@ export default function Operations() {
     }
   });
   
-  // Update mutation
+  // Update mutation with optimistic cache update
   const updateOperationMutation = useMutation({
     mutationFn: (data: any) => apiRequest({
       url: `/api/operations/${data.id}`,
       method: 'PATCH',
       body: data.operation
     }),
+    onMutate: async (data: any) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ['/api/operations'] });
+      
+      // Snapshot the previous value for rollback
+      const previousOperations = queryClient.getQueryData(['/api/operations']);
+      
+      // Calculate the new sizeId if animalsPerKg is being updated
+      let newSizeId = data.operation.sizeId;
+      if (data.operation.animalsPerKg && data.operation.animalsPerKg > 0 && sizes) {
+        const matchingSize = sizes.find((size: Size) => 
+          size.minAnimalsPerKg !== null && 
+          size.maxAnimalsPerKg !== null && 
+          data.operation.animalsPerKg >= size.minAnimalsPerKg && 
+          data.operation.animalsPerKg <= size.maxAnimalsPerKg
+        );
+        if (matchingSize) {
+          newSizeId = matchingSize.id;
+          console.log(`🎯 OPTIMISTIC: Auto-assigned size ${matchingSize.code} (ID: ${matchingSize.id}) for ${data.operation.animalsPerKg} animals/kg`);
+        }
+      }
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(['/api/operations'], (old: any) => {
+        if (!old || !old.response) return old;
+        return {
+          ...old,
+          response: old.response.map((op: Operation) => 
+            op.id === data.id 
+              ? { 
+                  ...op, 
+                  ...data.operation,
+                  sizeId: newSizeId,
+                  size: newSizeId && sizes ? sizes.find((s: Size) => s.id === newSizeId) : op.size
+                }
+              : op
+          )
+        };
+      });
+      
+      // Return context object with the snapshotted value for rollback
+      return { previousOperations };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       setIsEditDialogOpen(false);
@@ -956,7 +999,11 @@ export default function Operations() {
         description: "L'operazione è stata aggiornata con successo",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context: any) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousOperations) {
+        queryClient.setQueryData(['/api/operations'], context.previousOperations);
+      }
       toast({
         title: "Errore",
         description: error.message || "Si è verificato un errore durante l'aggiornamento dell'operazione",
