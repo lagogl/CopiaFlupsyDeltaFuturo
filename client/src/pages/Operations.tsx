@@ -143,11 +143,23 @@ function EditOperationForm({ operation, onClose }: { operation: Operation; onClo
   const queryClient = useQueryClient();
   
   const updateOperationMutation = useMutation({
-    mutationFn: (data: any) => apiRequest({
-      url: `/api/operations/${data.id}`,
-      method: 'PATCH',
-      body: data.operation
-    }),
+    mutationFn: async (data: any) => {
+      // Funzione helper per richieste con timeout (evita blocchi infiniti)
+      const apiRequestWithTimeout = async (options: any, timeoutMs = 15000) => {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Il server non ha risposto entro 15 secondi')), timeoutMs)
+        );
+        
+        const requestPromise = apiRequest(options);
+        return Promise.race([requestPromise, timeoutPromise]);
+      };
+
+      return apiRequestWithTimeout({
+        url: `/api/operations/${data.id}`,
+        method: 'PATCH',
+        body: data.operation
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       onClose?.();
@@ -402,24 +414,6 @@ function EditOperationForm({ operation, onClose }: { operation: Operation; onClo
             </Button>
             {!isReadOnly && (
               <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    console.log('Test mutation button clicked');
-                    updateOperationMutation.mutate({
-                      id: operation.id,
-                      operation: {
-                        ...operation,
-                        notes: 'Test aggiornamento ' + new Date().toLocaleTimeString(),
-                        date: new Date(operation.date)
-                      }
-                    });
-                  }}
-                  disabled={updateOperationMutation.isPending}
-                >
-                  Test Update
-                </Button>
                 <Button
                   type="submit"
                   disabled={updateOperationMutation.isPending}
