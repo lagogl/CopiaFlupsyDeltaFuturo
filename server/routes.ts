@@ -269,29 +269,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST endpoint temporaneo per aggiornare operazioni (workaround PATCH/PUT non funzionanti)
-  app.post('/api/operations/:id/update', async (req, res) => {
+  // WORKAROUND: GET endpoint per aggiornare operazioni (metodi non-GET non funzionano)
+  app.get('/api/operations/:id/update', async (req, res) => {
     try {
       const operationId = parseInt(req.params.id);
-      console.log(`📝 POST UPDATE richiesta per operazione ${operationId}:`, req.body);
+      console.log(`📝 WORKAROUND GET UPDATE per operazione ${operationId}:`, req.query);
       
       if (isNaN(operationId)) {
         return res.status(400).json({ success: false, message: "Invalid operation ID" });
       }
+
+      // Estrai i parametri dalla query string
+      const updateData: any = {};
+      if (req.query.notes) updateData.notes = req.query.notes;
+      if (req.query.animalCount) updateData.animalCount = parseInt(req.query.animalCount as string);
+      if (req.query.totalWeight) updateData.totalWeight = parseInt(req.query.totalWeight as string);
+      if (req.query.averageWeight) updateData.averageWeight = parseFloat(req.query.averageWeight as string);
+
+      console.log(`📝 Dati per aggiornamento:`, updateData);
       
-      // Solo un aggiornamento semplice delle note per il test
-      const notes = req.body.notes || 'Test POST aggiornamento completato';
+      const updatedOperation = await storage.updateOperation(operationId, updateData);
       
-      const updatedOperation = await storage.updateOperation(operationId, { notes });
-      
-      console.log(`✅ POST UPDATE Operazione ${operationId} aggiornata con successo`);
+      console.log(`✅ WORKAROUND UPDATE Operazione ${operationId} aggiornata con successo`);
       res.status(200).json({ 
         success: true, 
         operation: updatedOperation 
       });
       
     } catch (error) {
-      console.error("❌ Errore POST UPDATE aggiornamento operazione:", error);
+      console.error("❌ Errore WORKAROUND UPDATE operazione:", error);
       res.status(500).json({ 
         success: false, 
         message: "Failed to update operation" 
