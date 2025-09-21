@@ -882,15 +882,36 @@ export default function VagliaturaConMappa() {
                     {sourceBaskets.length > 0 && (
                       <div className="border rounded-md p-3">
                         <h3 className="text-sm font-semibold mb-2">Cestelli Selezionati ({sourceBaskets.length})</h3>
-                        <div className="max-h-[200px] overflow-y-auto">
+                        <div className="max-h-[200px] overflow-y-auto space-y-2">
                           {sourceBaskets.map(basket => {
                             const basketDetails = baskets.find(b => b.id === basket.basketId);
+                            
+                            // Trova la taglia dal sizeId o dagli animali/kg
+                            const basketSize = basketDetails?.lastOperation?.sizeId 
+                              ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
+                              : basketDetails?.lastOperation?.animalsPerKg 
+                                ? sizes?.find(size => 
+                                    basketDetails.lastOperation!.animalsPerKg! >= size.min && 
+                                    basketDetails.lastOperation!.animalsPerKg! <= size.max
+                                  )
+                                : null;
+
                             return (
-                              <div key={basket.basketId} className="text-xs p-1 border-b last:border-b-0">
-                                Cestello #{basketDetails?.physicalNumber} 
-                                {basketDetails?.lastOperation?.animalCount && 
-                                  ` - ${basketDetails.lastOperation.animalCount.toLocaleString()} animali`
-                                }
+                              <div key={basket.basketId} className="text-xs p-2 border rounded bg-gray-50">
+                                <div className="font-medium">Cestello #{basketDetails?.physicalNumber}</div>
+                                {basketSize && (
+                                  <div className="text-blue-600 font-medium">{basketSize.code}</div>
+                                )}
+                                {basketDetails?.lastOperation?.animalCount && (
+                                  <div className="text-gray-600">
+                                    {formatNumberItalian(basketDetails.lastOperation.animalCount)} animali
+                                  </div>
+                                )}
+                                {basketDetails?.lastOperation?.animalsPerKg && (
+                                  <div className="text-gray-600">
+                                    {formatNumberItalian(basketDetails.lastOperation.animalsPerKg)} animali/kg
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -902,9 +923,9 @@ export default function VagliaturaConMappa() {
                       <h3 className="text-sm font-semibold mb-2">Cestelli Totali</h3>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>Animali totali:</div>
-                        <div className="text-right font-semibold">{calculatedValues.totalAnimals.toLocaleString()}</div>
+                        <div className="text-right font-semibold">{formatNumberItalian(calculatedValues.totalAnimals)}</div>
                         <div>Animali/kg:</div>
-                        <div className="text-right font-semibold">{calculatedValues.animalsPerKg}</div>
+                        <div className="text-right font-semibold">{formatNumberItalian(calculatedValues.animalsPerKg)}</div>
                       </div>
                     </div>
                   </div>
@@ -1041,17 +1062,17 @@ export default function VagliaturaConMappa() {
                           <div className="space-y-2 text-xs">
                             <div className="flex justify-between">
                               <span className="text-blue-700">Animali Origine Selezionati:</span>
-                              <span className="font-semibold">{totalOriginAnimals.toLocaleString('it-IT')}</span>
+                              <span className="font-semibold">{formatNumberItalian(totalOriginAnimals)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-green-700">Animali Destinazione:</span>
-                              <span className="font-semibold">{totalDestinationAnimals.toLocaleString('it-IT')}</span>
+                              <span className="font-semibold">{formatNumberItalian(totalDestinationAnimals)}</span>
                             </div>
                             <hr className="border-blue-200"/>
                             <div className="flex justify-between">
                               <span className="text-gray-700">Differenza:</span>
                               <span className={`font-bold ${difference > 0 ? 'text-orange-600' : difference < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                {difference > 0 ? '+' : ''}{difference.toLocaleString('it-IT')}
+                                {difference > 0 ? '+' : ''}{formatNumberItalian(difference)}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -1079,23 +1100,49 @@ export default function VagliaturaConMappa() {
                     {destinationBaskets.length > 0 && (
                       <div className="border rounded-md p-3">
                         <h3 className="text-sm font-semibold mb-2">Cestelli Destinazione ({destinationBaskets.length})</h3>
-                        <div className="max-h-[150px] overflow-y-auto">
+                        <div className="max-h-[150px] overflow-y-auto space-y-2">
                           {destinationBaskets.map((basket, index) => {
                             const basketDetails = baskets.find(b => b.id === basket.basketId);
                             // Per le ceste virtuali, usa la posizione come identificatore univoco
                             const uniqueKey = basket.basketId < 0 ? `virtual-${basket.position || 'N'}` : basket.basketId;
                             const displayNumber = basketDetails?.physicalNumber || `Pos. ${basket.position}`;
                             
+                            // Trova la taglia dal sizeId o dagli animali/kg
+                            const basketSize = basketDetails?.lastOperation?.sizeId 
+                              ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
+                              : basket.animalsPerKg 
+                                ? sizes?.find(size => 
+                                    basket.animalsPerKg! >= size.min && 
+                                    basket.animalsPerKg! <= size.max
+                                  )
+                                : null;
+                            
                             return (
-                              <div key={uniqueKey} className="text-xs p-1 border-b last:border-b-0 flex justify-between items-center">
-                                <div>
-                                  <span>Cestello #{displayNumber}</span>
-                                  <br/>
-                                  <span className="text-gray-500">{(basket.animalCount || 0).toLocaleString('it-IT')} animali</span>
+                              <div key={uniqueKey} className="text-xs p-2 border rounded bg-gray-50">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="font-medium">Cestello #{displayNumber}</div>
+                                    {basketSize && (
+                                      <div className="text-blue-600 font-medium">{basketSize.code}</div>
+                                    )}
+                                    <div className="text-gray-600">
+                                      {formatNumberItalian(basket.animalCount || 0)} animali
+                                    </div>
+                                    {basket.animalsPerKg && (
+                                      <div className="text-gray-600">
+                                        {formatNumberItalian(basket.animalsPerKg)} animali/kg
+                                      </div>
+                                    )}
+                                    {basket.destinationType === 'sold' && basket.saleClient && (
+                                      <div className="text-gray-600">Cliente: {basket.saleClient}</div>
+                                    )}
+                                  </div>
+                                  <div className="ml-2">
+                                    <Badge variant={basket.destinationType === 'sold' ? 'destructive' : 'outline'}>
+                                      {basket.destinationType === 'sold' ? 'Vendita' : 'Posto'}
+                                    </Badge>
+                                  </div>
                                 </div>
-                                <Badge variant={basket.destinationType === 'sold' ? 'destructive' : 'outline'}>
-                                  {basket.destinationType === 'sold' ? 'Vendita' : 'Posto'}
-                                </Badge>
                               </div>
                             );
                           })}
