@@ -1204,59 +1204,67 @@ export default function VagliaturaConMappa() {
         <TabsContent value="riepilogo" className="mt-4">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle>Riepilogo e Conferma</CardTitle>
-                  <CardDescription>
-                    Verifica i dettagli della vagliatura prima di confermare
-                  </CardDescription>
-                </div>
+              {(() => {
+                // Calcola gli arrays per le statistiche
+                const soldBaskets = destinationBaskets.filter(basket => basket.destinationType === 'sold');
+                const placedBaskets = destinationBaskets.filter(basket => basket.destinationType === 'placed');
                 
-                {/* Pannello Statistiche */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 min-w-[280px]">
-                  <h3 className="text-sm font-semibold text-blue-800 mb-3">📊 Riepilogo Operazione</h3>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Cestelli Origine:</span>
-                      <span className="font-medium text-blue-700">{sourceBaskets.length}</span>
+                return (
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>Riepilogo e Conferma</CardTitle>
+                      <CardDescription>
+                        Verifica i dettagli della vagliatura prima di confermare
+                      </CardDescription>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Cestelli Venduti:</span>
-                      <span className="font-medium text-red-700">{soldBaskets.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Cestelli Riposizionati:</span>
-                      <span className="font-medium text-green-700">{placedBaskets.length}</span>
-                    </div>
-                    <hr className="border-blue-200 my-2" />
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tot. Animali Origine:</span>
-                      <span className="font-medium text-blue-700">{formatNumberItalian(sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0))}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tot. Peso Origine (kg):</span>
-                      <span className="font-medium text-blue-700">{sourceBaskets.reduce((sum, b) => sum + (b.totalWeight || 0), 0)}</span>
-                    </div>
-                    <hr className="border-blue-200 my-2" />
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tot. Animali Venduti:</span>
-                      <span className="font-medium text-red-700">{formatNumberItalian(soldBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0))}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tot. Peso Venduto (kg):</span>
-                      <span className="font-medium text-red-700">{soldBaskets.reduce((sum, b) => sum + (b.totalWeight || 0), 0)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tot. Animali Riposizionati:</span>
-                      <span className="font-medium text-green-700">{formatNumberItalian(placedBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0))}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tot. Peso Riposizionato (kg):</span>
-                      <span className="font-medium text-green-700">{placedBaskets.reduce((sum, b) => sum + (b.totalWeight || 0), 0)}</span>
+                    
+                    {/* Pannello Statistiche */}
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 min-w-[280px]">
+                      <h3 className="text-sm font-semibold text-blue-800 mb-3">📊 Riepilogo Operazione</h3>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Cestelli Origine:</span>
+                          <span className="font-medium text-blue-700">{sourceBaskets.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Cestelli Venduti:</span>
+                          <span className="font-medium text-red-700">{soldBaskets.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Cestelli Riposizionati:</span>
+                          <span className="font-medium text-green-700">{placedBaskets.length}</span>
+                        </div>
+                        <hr className="border-blue-200 my-2" />
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tot. Animali Origine:</span>
+                          <span className="font-medium text-blue-700">{formatNumberItalian(sourceBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tot. Peso Origine (kg):</span>
+                          <span className="font-medium text-blue-700">{sourceBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0)}</span>
+                        </div>
+                        <hr className="border-blue-200 my-2" />
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tot. Animali Venduti:</span>
+                          <span className="font-medium text-red-700">{formatNumberItalian(soldBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tot. Peso Venduto (kg):</span>
+                          <span className="font-medium text-red-700">{soldBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tot. Animali Riposizionati:</span>
+                          <span className="font-medium text-green-700">{formatNumberItalian(placedBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tot. Peso Riposizionato (kg):</span>
+                          <span className="font-medium text-green-700">{placedBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
