@@ -115,9 +115,13 @@ export default function FlupsyMapVisualizer({
   const isBasketSelectable = (basket: Basket | undefined): boolean => {
     if (!basket) return false;
     
-    // Se siamo in modalità origine, qualsiasi cestello con ciclo attivo è selezionabile
+    // Se siamo in modalità origine, il cestello deve:
+    // 1. Avere un ciclo attivo E
+    // 2. Contenere effettivamente animali (animalCount > 0)
     if (mode === 'source') {
-      return basket.currentCycleId !== null && basket.state === 'active';
+      const hasActiveCycle = basket.currentCycleId !== null && basket.state === 'active';
+      const hasAnimals = basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0;
+      return hasActiveCycle && hasAnimals;
     }
     
     // In modalità destinazione, un cestello è selezionabile se:
