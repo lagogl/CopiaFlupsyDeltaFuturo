@@ -1355,6 +1355,7 @@ export default function VagliaturaConMappa() {
                                       size="sm"
                                       className="h-6 px-2 text-xs text-red-700 hover:bg-red-200"
                                       onClick={() => {
+                                        // Precompila i dati di vendita
                                         setDirectSaleData({
                                           client: basket.saleClient || 'Cliente',
                                           date: basket.saleDate || new Date().toISOString().split('T')[0],
@@ -1363,6 +1364,21 @@ export default function VagliaturaConMappa() {
                                           animalsPerKg: basket.animalsPerKg || 0,
                                           selectedBasketId: basket.basketId
                                         });
+                                        
+                                        // Precompila anche i dati di misurazione per permettere il ricalcolo
+                                        setMeasurementData(prev => ({
+                                          ...prev,
+                                          basketId: basket.basketId,
+                                          sampleWeight: basket.sampleWeight || 0,
+                                          sampleCount: basket.sampleCount || 0,
+                                          totalWeight: basket.totalWeight || 0,
+                                          animalCount: basket.animalCount || 0,
+                                          animalsPerKg: basket.animalsPerKg || 0,
+                                          deadCount: basket.deadCount || 0,
+                                          mortalityRate: 0,
+                                          destinationType: 'sold' as 'sold'
+                                        }));
+                                        
                                         setIsDirectSaleDialogOpen(true);
                                       }}
                                     >
@@ -1438,7 +1454,7 @@ export default function VagliaturaConMappa() {
                                     {formatNumberItalian(basket.animalCount || 0)}
                                   </TableCell>
                                   <TableCell className="text-right text-green-900">
-                                    {formatNumberItalian(basket.animalsPerKg || 0)}
+                                    {formatNumberItalian(finalAnimalsPerKg)}
                                   </TableCell>
                                   <TableCell className="text-right text-green-900">
                                     {basket.totalWeight || 0}
