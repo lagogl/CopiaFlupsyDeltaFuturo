@@ -712,7 +712,7 @@ export default function VagliaturaConMappa() {
         }
         
         const newSelection = await selectionResponse.json();
-        selectionId = newSelection.id;
+        selectionId = newSelection.selection.id;
         
         setSelection(prev => ({
           ...prev,
