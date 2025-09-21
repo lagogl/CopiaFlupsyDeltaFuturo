@@ -11,6 +11,11 @@ const useTranslation = () => {
   return { t };
 };
 
+// Funzione per formattare i numeri con separatori italiani
+const formatNumberItalian = (num: number): string => {
+  return new Intl.NumberFormat('it-IT').format(num);
+};
+
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -1178,106 +1184,194 @@ export default function VagliaturaConMappa() {
                 
                 {/* Cestelli origine */}
                 <div>
-                  <h3 className="text-lg font-medium mb-2">Cestelli Origine</h3>
+                  <h3 className="text-lg font-medium mb-3">Cestelli Origine</h3>
                   {sourceBaskets.length === 0 ? (
                     <p className="text-muted-foreground">Nessun cestello origine selezionato</p>
                   ) : (
-                    <div className="border rounded-md divide-y">
-                      {sourceBaskets.map(basket => (
-                        <div key={basket.basketId} className="p-3 flex justify-between items-center">
-                          <div>
-                            <span className="font-medium">Cestello #{basket.physicalNumber}</span>
-                            <span className="text-sm text-muted-foreground ml-2">
-                              {basket.animalsPerKg ? `${basket.animalsPerKg} animali/kg` : ''}
-                            </span>
-                          </div>
-                          <Badge variant="outline">{basket.animalCount} animali</Badge>
-                        </div>
-                      ))}
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Cestello</TableHead>
+                            <TableHead>Taglia</TableHead>
+                            <TableHead className="text-right">Animali</TableHead>
+                            <TableHead className="text-right">Animali/kg</TableHead>
+                            <TableHead className="text-right">Peso (kg)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {sourceBaskets.map(basket => {
+                            // Trova la taglia corrispondente
+                            const basketSize = sizes?.find(size => 
+                              basket.animalsPerKg && basket.animalsPerKg >= size.min && basket.animalsPerKg <= size.max
+                            );
+                            
+                            return (
+                              <TableRow key={basket.basketId}>
+                                <TableCell className="font-medium">#{basket.physicalNumber}</TableCell>
+                                <TableCell>
+                                  {basketSize ? (
+                                    <Badge variant="outline">{basketSize.code}</Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">Non determinata</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatNumberItalian(basket.animalCount || 0)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatNumberItalian(basket.animalsPerKg || 0)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {basket.totalWeight || 0}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </div>
                 
-                {/* Cestelli destinazione */}
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Cestelli Destinazione</h3>
-                  {destinationBaskets.length === 0 ? (
-                    <p className="text-muted-foreground">Nessun cestello destinazione selezionato</p>
-                  ) : (
-                    <div className="border rounded-md divide-y">
-                      {destinationBaskets.map(basket => (
-                        <div key={basket.basketId} className="p-3">
-                          <div className="flex justify-between items-center mb-2">
-                            <div>
-                              <span className="font-medium">Cestello #{basket.physicalNumber}</span>
-                              <span className="text-sm ml-2">
-                                {basket.destinationType === 'sold' ? (
-                                  <Badge variant="destructive">Vendita</Badge>
-                                ) : (
-                                  <Badge variant="outline">Posizionamento</Badge>
-                                )}
-                              </span>
-                              {basket.isAlsoSource && (
-                                <Badge variant="secondary" className="ml-2">Anche origine</Badge>
-                              )}
-                            </div>
-                            <Badge variant="outline">{basket.animalCount || 0} animali</Badge>
-                          </div>
-                          
-                          {/* Dettagli aggiuntivi per tutti i cestelli */}
-                          <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-                            <div>
-                              <span className="text-muted-foreground">Posizione: </span>
-                              <span>{basket.position || 'Non specificata'}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Animali/kg: </span>
-                              <span>{basket.animalsPerKg || 0}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Peso totale: </span>
-                              <span>{basket.totalWeight || 0} kg</span>
-                            </div>
-                            
-                            {/* Dettagli specifici per i cestelli in vendita */}
-                            {basket.destinationType === 'sold' && (
-                              <>
-                                <div>
-                                  <span className="text-muted-foreground">Cliente: </span>
-                                  <span>{basket.saleClient || 'Non specificato'}</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">Data vendita: </span>
-                                  <span>{basket.saleDate || new Date().toISOString().split('T')[0]}</span>
-                                </div>
-                                <div className="col-span-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="p-0 h-auto text-xs text-blue-600 hover:text-blue-800"
-                                    onClick={() => {
-                                      setDirectSaleData({
-                                        client: basket.saleClient || 'Cliente',
-                                        date: basket.saleDate || new Date().toISOString().split('T')[0],
-                                        animalCount: basket.animalCount || 0,
-                                        totalWeight: basket.totalWeight || 0,
-                                        animalsPerKg: basket.animalsPerKg || 0,
-                                        selectedBasketId: basket.basketId
-                                      });
-                                      setIsDirectSaleDialogOpen(true);
-                                    }}
-                                  >
-                                    Modifica dettagli vendita
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                {/* Cestelli destinazione - Vendite */}
+                {(() => {
+                  const soldBaskets = destinationBaskets.filter(basket => basket.destinationType === 'sold');
+                  return soldBaskets.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Cestelli Venduti ({soldBaskets.length})</h3>
+                      <div className="border rounded-md overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Cestello</TableHead>
+                              <TableHead>Taglia</TableHead>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Data</TableHead>
+                              <TableHead className="text-right">Animali</TableHead>
+                              <TableHead className="text-right">Peso (kg)</TableHead>
+                              <TableHead className="w-12"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {soldBaskets.map(basket => {
+                              const basketSize = sizes?.find(size => 
+                                basket.animalsPerKg && basket.animalsPerKg >= size.min && basket.animalsPerKg <= size.max
+                              );
+                              
+                              return (
+                                <TableRow key={basket.basketId}>
+                                  <TableCell className="font-medium">
+                                    #{basket.physicalNumber}
+                                    {basket.isAlsoSource && (
+                                      <Badge variant="secondary" className="ml-2 text-xs">Origine</Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {basketSize ? (
+                                      <Badge variant="outline">{basketSize.code}</Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">Calcolata</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>{basket.saleClient || 'Non specificato'}</TableCell>
+                                  <TableCell>{basket.saleDate || new Date().toISOString().split('T')[0]}</TableCell>
+                                  <TableCell className="text-right">
+                                    {formatNumberItalian(basket.animalCount || 0)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {basket.totalWeight || 0}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 px-2 text-xs"
+                                      onClick={() => {
+                                        setDirectSaleData({
+                                          client: basket.saleClient || 'Cliente',
+                                          date: basket.saleDate || new Date().toISOString().split('T')[0],
+                                          animalCount: basket.animalCount || 0,
+                                          totalWeight: basket.totalWeight || 0,
+                                          animalsPerKg: basket.animalsPerKg || 0,
+                                          selectedBasketId: basket.basketId
+                                        });
+                                        setIsDirectSaleDialogOpen(true);
+                                      }}
+                                    >
+                                      Modifica
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
+                
+                {/* Cestelli destinazione - Riposizionamento */}
+                {(() => {
+                  const placedBaskets = destinationBaskets.filter(basket => basket.destinationType === 'placed');
+                  return placedBaskets.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Cestelli Riposizionati ({placedBaskets.length})</h3>
+                      <div className="border rounded-md overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Cestello</TableHead>
+                              <TableHead>Taglia</TableHead>
+                              <TableHead>Posizione</TableHead>
+                              <TableHead className="text-right">Animali</TableHead>
+                              <TableHead className="text-right">Animali/kg</TableHead>
+                              <TableHead className="text-right">Peso (kg)</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {placedBaskets.map(basket => {
+                              const basketSize = sizes?.find(size => 
+                                basket.animalsPerKg && basket.animalsPerKg >= size.min && basket.animalsPerKg <= size.max
+                              );
+                              
+                              return (
+                                <TableRow key={basket.basketId}>
+                                  <TableCell className="font-medium">
+                                    #{basket.physicalNumber}
+                                    {basket.isAlsoSource && (
+                                      <Badge variant="secondary" className="ml-2 text-xs">Origine</Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {basketSize ? (
+                                      <Badge variant="outline">{basketSize.code}</Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">Calcolata</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">{basket.position || 'Non specificata'}</Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatNumberItalian(basket.animalCount || 0)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatNumberItalian(basket.animalsPerKg || 0)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {basket.totalWeight || 0}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
