@@ -3178,30 +3178,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // API - Ottieni tutte le taglie disponibili
-  app.get("/api/sizes", async (req, res) => {
-    try {
-      // Ordina per minAnimalsPerKg crescente (meno animali per kg = animali più grandi)
-      const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
-      
-      // Formatta i risultati per l'uso nel frontend includendo i campi minAnimalsPerKg e maxAnimalsPerKg
-      const formattedSizes = allSizes.map(size => ({
-        id: size.id,
-        code: size.code,
-        name: size.name,
-        minAnimalsPerKg: size.minAnimalsPerKg,
-        maxAnimalsPerKg: size.maxAnimalsPerKg
-      }));
-      
-      return res.status(200).json(formattedSizes);
-    } catch (error) {
-      console.error('Errore nel recupero delle taglie:', error);
-      return res.status(500).json({ 
-        error: 'Errore nel recupero delle taglie',
-        message: error instanceof Error ? error.message : 'Errore sconosciuto'
-      });
-    }
-  });
   
   // API - Ottieni dati SGR per calcoli previsioni crescita
   app.get("/api/sgr", async (req, res) => {

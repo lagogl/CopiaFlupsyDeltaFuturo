@@ -1251,47 +1251,14 @@ export default function VagliaturaConMappa() {
                             // Trova la taglia corrispondente usando priorità sizeId
                             const basketDetails = baskets.find(b => b.id === basket.basketId);
                             
-                            // Debug per capire perché le taglie non si vedono
-                            console.log('DEBUG TAGLIE ORIGINE - Cestello:', basket.physicalNumber, {
-                              basketId: basket.basketId,
-                              basketAnimalsPerKg: basket.animalsPerKg,
-                              basketDetailsFound: !!basketDetails,
-                              lastOperationSizeId: basketDetails?.lastOperation?.sizeId,
-                              lastOperationAnimalsPerKg: basketDetails?.lastOperation?.animalsPerKg,
-                              sizesLength: sizes?.length
-                            });
-                            
-                            // Debug le taglie per capire il problema di matching
-                            if (basket.animalsPerKg === 350000) {
-                              console.log('🔍 DEBUG TAGLIA 350000 - Tutte le taglie disponibili:');
-                              sizes?.forEach(size => {
-                                const matches = basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max;
-                                console.log(`Taglia ${size.code}: min=${size.min}, max=${size.max}, matches=${matches}`);
-                              });
-                            }
-                            
-                            // Prova prima con sizeId dalle lastOperation, poi con animalsPerKg  
-                            let basketSize = null;
-                            
-                            if (basketDetails?.lastOperation?.sizeId) {
-                              basketSize = sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId);
-                              console.log('Trovata taglia da sizeId:', basketSize?.code);
-                            } else if (basket.animalsPerKg && basket.animalsPerKg > 0) {
-                              basketSize = sizes?.find(size => 
-                                basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max
-                              );
-                              console.log('Trovata taglia da animalsPerKg:', basketSize?.code, 'per', basket.animalsPerKg, 'animali/kg');
-                            } else if (basketDetails?.lastOperation?.animalsPerKg && basketDetails.lastOperation.animalsPerKg > 0) {
-                              basketSize = sizes?.find(size => 
-                                basketDetails.lastOperation!.animalsPerKg! >= size.min && basketDetails.lastOperation!.animalsPerKg! <= size.max
-                              );
-                              console.log('Trovata taglia da lastOperation.animalsPerKg:', basketSize?.code, 'per', basketDetails.lastOperation.animalsPerKg, 'animali/kg');
-                            }
-                                
-                            console.log('DEBUG TAGLIE ORIGINE - Risultato finale:', {
-                              basketSize: basketSize?.code,
-                              sizeFound: !!basketSize
-                            });
+                            // Trova la taglia corrispondente usando priorità sizeId
+                            const basketSize = basketDetails?.lastOperation?.sizeId 
+                              ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
+                              : basket.animalsPerKg 
+                                ? sizes?.find(size => 
+                                    basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max
+                                  )
+                                : null;
                             
                             return (
                               <TableRow key={basket.basketId} className="bg-blue-25 hover:bg-blue-100">

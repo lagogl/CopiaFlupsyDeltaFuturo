@@ -959,7 +959,19 @@ export class DbStorage implements IStorage {
   // SIZES
   async getSizes(): Promise<Size[]> {
     // Ordina per minAnimalsPerKg crescente (meno animali per kg = animali più grandi)
-    return await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
+    const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
+    
+    // Mappa i campi del database ai campi attesi dal frontend
+    return allSizes.map(size => ({
+      id: size.id,
+      code: size.code,
+      name: size.name,
+      min: size.minAnimalsPerKg,
+      max: size.maxAnimalsPerKg,
+      color: size.color,
+      createdAt: size.createdAt,
+      updatedAt: size.updatedAt
+    }));
   }
   
   // Added this method to support FLUPSY units view with main sizes data
