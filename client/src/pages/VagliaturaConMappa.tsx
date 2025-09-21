@@ -1261,6 +1261,15 @@ export default function VagliaturaConMappa() {
                               sizesLength: sizes?.length
                             });
                             
+                            // Debug le taglie per capire il problema di matching
+                            if (basket.animalsPerKg === 350000) {
+                              console.log('🔍 DEBUG TAGLIA 350000 - Tutte le taglie disponibili:');
+                              sizes?.forEach(size => {
+                                const matches = basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max;
+                                console.log(`Taglia ${size.code}: min=${size.min}, max=${size.max}, matches=${matches}`);
+                              });
+                            }
+                            
                             // Prova prima con sizeId dalle lastOperation, poi con animalsPerKg  
                             let basketSize = null;
                             
