@@ -1312,25 +1312,19 @@ export default function VagliaturaConMappa() {
                               // Trova la taglia corrispondente usando priorità sizeId
                               const basketDetails = baskets.find(b => b.id === basket.basketId);
                               
-                              // DEBUG: Log per cestello venduto
-                              console.log(`DEBUG CESTELLO VENDUTO ${basket.basketId}:`, {
-                                basketDetails: basketDetails ? 'trovato' : 'non trovato',
-                                lastOperationSizeId: basketDetails?.lastOperation?.sizeId,
-                                basketAnimalsPerKg: basket.animalsPerKg,
-                                sizesLength: sizes?.length
-                              });
+                              // Calcola animalsPerKg se mancante, usando la stessa logica del completamento
+                              let finalAnimalsPerKg = basket.animalsPerKg || 0;
+                              if ((!finalAnimalsPerKg || finalAnimalsPerKg === 0) && basket.sampleWeight && basket.sampleCount && basket.sampleWeight > 0 && basket.sampleCount > 0) {
+                                finalAnimalsPerKg = Math.round((basket.sampleCount / basket.sampleWeight) * 1000);
+                              }
                               
                               const basketSize = basketDetails?.lastOperation?.sizeId 
                                 ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
-                                : basket.animalsPerKg 
-                                  ? sizes?.find(size => {
-                                      const matches = basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max;
-                                      console.log(`DEBUG TAGLIA VENDUTO ${size.code}: min=${size.min}, max=${size.max}, animalsPerKg=${basket.animalsPerKg}, matches=${matches}`);
-                                      return matches;
-                                    })
+                                : finalAnimalsPerKg > 0
+                                  ? sizes?.find(size => 
+                                      finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
+                                    )
                                   : null;
-                              
-                              console.log(`DEBUG RISULTATO VENDUTO ${basket.basketId}:`, basketSize ? basketSize.code : 'non trovata');
                               
                               return (
                                 <TableRow key={basket.basketId} className="bg-red-25 hover:bg-red-100">
@@ -1408,25 +1402,19 @@ export default function VagliaturaConMappa() {
                               // Trova la taglia corrispondente usando priorità sizeId
                               const basketDetails = baskets.find(b => b.id === basket.basketId);
                               
-                              // DEBUG: Log per cestello riposizionato
-                              console.log(`DEBUG CESTELLO RIPOSIZIONATO ${basket.basketId}:`, {
-                                basketDetails: basketDetails ? 'trovato' : 'non trovato',
-                                lastOperationSizeId: basketDetails?.lastOperation?.sizeId,
-                                basketAnimalsPerKg: basket.animalsPerKg,
-                                sizesLength: sizes?.length
-                              });
+                              // Calcola animalsPerKg se mancante, usando la stessa logica del completamento
+                              let finalAnimalsPerKg = basket.animalsPerKg || 0;
+                              if ((!finalAnimalsPerKg || finalAnimalsPerKg === 0) && basket.sampleWeight && basket.sampleCount && basket.sampleWeight > 0 && basket.sampleCount > 0) {
+                                finalAnimalsPerKg = Math.round((basket.sampleCount / basket.sampleWeight) * 1000);
+                              }
                               
                               const basketSize = basketDetails?.lastOperation?.sizeId 
                                 ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
-                                : basket.animalsPerKg 
-                                  ? sizes?.find(size => {
-                                      const matches = basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max;
-                                      console.log(`DEBUG TAGLIA RIPOSIZIONATO ${size.code}: min=${size.min}, max=${size.max}, animalsPerKg=${basket.animalsPerKg}, matches=${matches}`);
-                                      return matches;
-                                    })
+                                : finalAnimalsPerKg > 0
+                                  ? sizes?.find(size => 
+                                      finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
+                                    )
                                   : null;
-                              
-                              console.log(`DEBUG RISULTATO RIPOSIZIONATO ${basket.basketId}:`, basketSize ? basketSize.code : 'non trovata');
                               
                               return (
                                 <TableRow key={basket.basketId} className="bg-green-25 hover:bg-green-100">
