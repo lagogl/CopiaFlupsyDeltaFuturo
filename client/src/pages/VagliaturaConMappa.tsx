@@ -1276,17 +1276,57 @@ export default function VagliaturaConMappa() {
                     </div>
 
                     {/* Chip Totali */}
-                    <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 sm:col-span-2 lg:col-span-2">
-                      <Hash className="w-4 h-4 text-indigo-600" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-indigo-800 truncate">Riepilogo Totali</div>
-                        <div className="text-xs text-indigo-600 tabular-nums">
-                          Origine: {formatNumberItalian(originAnimals)} anim. • {originWeight}kg
-                          {soldBaskets.length > 0 && ` • Venduti: ${formatNumberItalian(soldAnimals)} anim.`}
-                          {placedBaskets.length > 0 && ` • Ripos.: ${formatNumberItalian(placedAnimals)} anim.`}
+                    {(() => {
+                      const destinationAnimals = soldAnimals + placedAnimals;
+                      const difference = destinationAnimals - originAnimals;
+                      const percentage = originAnimals > 0 ? ((difference / originAnimals) * 100) : 0;
+                      const isPositive = difference > 0;
+                      const isNeutral = difference === 0;
+                      
+                      return (
+                        <div className={`flex items-center gap-2 rounded-lg px-3 py-2 sm:col-span-2 lg:col-span-2 ${
+                          isNeutral 
+                            ? 'bg-indigo-50 border border-indigo-200' 
+                            : isPositive 
+                              ? 'bg-green-50 border border-green-200' 
+                              : 'bg-amber-50 border border-amber-200'
+                        }`}>
+                          <Hash className={`w-4 h-4 ${
+                            isNeutral 
+                              ? 'text-indigo-600' 
+                              : isPositive 
+                                ? 'text-green-600' 
+                                : 'text-amber-600'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <div className={`font-medium truncate ${
+                              isNeutral 
+                                ? 'text-indigo-800' 
+                                : isPositive 
+                                  ? 'text-green-800' 
+                                  : 'text-amber-800'
+                            }`}>
+                              Riepilogo Totali
+                            </div>
+                            <div className={`text-xs tabular-nums ${
+                              isNeutral 
+                                ? 'text-indigo-600' 
+                                : isPositive 
+                                  ? 'text-green-600' 
+                                  : 'text-amber-600'
+                            }`}>
+                              Origine: {formatNumberItalian(originAnimals)} anim. • Destinazioni: {formatNumberItalian(destinationAnimals)} anim.
+                              <br />
+                              <span className="font-medium">
+                                Differenza: {difference > 0 ? '+' : ''}{formatNumberItalian(difference)} anim. 
+                                ({percentage > 0 ? '+' : ''}{percentage.toFixed(1)}%)
+                                {isPositive && ' ↗️'} {difference < 0 && ' ↘️'} {isNeutral && ' ➡️'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
