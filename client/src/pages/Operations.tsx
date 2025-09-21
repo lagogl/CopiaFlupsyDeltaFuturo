@@ -2040,11 +2040,21 @@ export default function Operations() {
           byType: {} as Record<string, { animals: number; operations: number; weight: number }>
         };
 
+        // FIX CORRETTO: Trova l'operazione più recente per ogni cestello per evitare doppio conteggio
+        const latestStateByBasket = new Map<number, { 
+          animalCount: number; 
+          sizeCode: string; 
+          date: string; 
+          weight: number;
+        }>();
+
         filteredOperations.forEach((op: any) => {
           const animalCount = op.animalCount || 0;
           const weight = op.totalWeight || 0;
           const sizeCode = op.size?.code || 'Non specificata';
           const opType = op.type || 'unknown';
+          const basketId = op.basketId;
+          const opDate = op.date;
 
           // Calcolo corretto degli animali secondo la logica di business:
           // ENTRATE: prima-attivazione, ripopolamento (+)
@@ -2061,21 +2071,36 @@ export default function Operations() {
           totals.totalAnimals += animalMovement;
           totals.totalWeight += weight;
 
-          // Raggruppamento per taglia
-          if (!totals.bySize[sizeCode]) {
-            totals.bySize[sizeCode] = { animals: 0, operations: 0, weight: 0 };
+          // Per "Per Taglia": trova l'operazione più recente per cestello con dati stato
+          if (animalCount > 0 && ['misura', 'peso', 'prima-attivazione', 'vagliatura', 'ripopolamento'].includes(opType)) {
+            const existing = latestStateByBasket.get(basketId);
+            if (!existing || opDate > existing.date) {
+              latestStateByBasket.set(basketId, {
+                animalCount,
+                sizeCode,
+                date: opDate,
+                weight
+              });
+            }
           }
-          totals.bySize[sizeCode].animals += animalMovement;
-          totals.bySize[sizeCode].operations += 1;
-          totals.bySize[sizeCode].weight += weight;
 
-          // Raggruppamento per tipo operazione
+          // Raggruppamento per tipo operazione - usa animalMovement per i totali netti
           if (!totals.byType[opType]) {
             totals.byType[opType] = { animals: 0, operations: 0, weight: 0 };
           }
           totals.byType[opType].animals += animalMovement;
           totals.byType[opType].operations += 1;
           totals.byType[opType].weight += weight;
+        });
+
+        // Aggrega stati più recenti per taglia (evita doppio conteggio)
+        latestStateByBasket.forEach((state) => {
+          if (!totals.bySize[state.sizeCode]) {
+            totals.bySize[state.sizeCode] = { animals: 0, operations: 0, weight: 0 };
+          }
+          totals.bySize[state.sizeCode].animals += state.animalCount;
+          totals.bySize[state.sizeCode].operations += 1;
+          totals.bySize[state.sizeCode].weight += state.weight;
         });
 
         const typeLabels: Record<string, string> = {
