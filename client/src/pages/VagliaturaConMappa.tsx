@@ -34,7 +34,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Fish, ShoppingCart, MoveRight, Calendar, Hash } from 'lucide-react';
 
 // Types
 import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket, Size } from '@/types';
@@ -1204,61 +1204,86 @@ export default function VagliaturaConMappa() {
         <TabsContent value="riepilogo" className="mt-4">
           <Card>
             <CardHeader>
+              <div>
+                <CardTitle>Riepilogo e Conferma</CardTitle>
+                <CardDescription>
+                  Verifica i dettagli della vagliatura prima di confermare
+                </CardDescription>
+              </div>
+              
+              {/* Pannello Statistiche Orizzontale Compatto */}
               {(() => {
                 // Calcola gli arrays per le statistiche
                 const soldBaskets = destinationBaskets.filter(basket => basket.destinationType === 'sold');
                 const placedBaskets = destinationBaskets.filter(basket => basket.destinationType === 'placed');
                 
+                // Calcola i totali
+                const originAnimals = sourceBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0);
+                const originWeight = sourceBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0);
+                const soldAnimals = soldBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0);
+                const soldWeight = soldBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0);
+                const placedAnimals = placedBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0);
+                const placedWeight = placedBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0);
+                
                 return (
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle>Riepilogo e Conferma</CardTitle>
-                      <CardDescription>
-                        Verifica i dettagli della vagliatura prima di confermare
-                      </CardDescription>
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                    {/* Chip Origine */}
+                    <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                      <Fish className="w-4 h-4 text-blue-600" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-blue-800 truncate">Cestelli Origine</div>
+                        <div className="text-xs text-blue-600 tabular-nums">
+                          {sourceBaskets.length} cest. • {formatNumberItalian(originAnimals)} anim. • {originWeight}kg
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Pannello Statistiche */}
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 min-w-[280px]">
-                      <h3 className="text-sm font-semibold text-blue-800 mb-3">📊 Riepilogo Operazione</h3>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Cestelli Origine:</span>
-                          <span className="font-medium text-blue-700">{sourceBaskets.length}</span>
+
+                    {/* Chip Venduti */}
+                    {soldBaskets.length > 0 && (
+                      <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                        <ShoppingCart className="w-4 h-4 text-red-600" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-red-800 truncate">Cestelli Venduti</div>
+                          <div className="text-xs text-red-600 tabular-nums">
+                            {soldBaskets.length} cest. • {formatNumberItalian(soldAnimals)} anim. • {soldWeight}kg
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Cestelli Venduti:</span>
-                          <span className="font-medium text-red-700">{soldBaskets.length}</span>
+                      </div>
+                    )}
+
+                    {/* Chip Riposizionati */}
+                    {placedBaskets.length > 0 && (
+                      <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                        <MoveRight className="w-4 h-4 text-green-600" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-green-800 truncate">Cestelli Riposizionati</div>
+                          <div className="text-xs text-green-600 tabular-nums">
+                            {placedBaskets.length} cest. • {formatNumberItalian(placedAnimals)} anim. • {placedWeight}kg
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Cestelli Riposizionati:</span>
-                          <span className="font-medium text-green-700">{placedBaskets.length}</span>
+                      </div>
+                    )}
+
+                    {/* Chip Informazioni Operazione */}
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <Calendar className="w-4 h-4 text-gray-600" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-800 truncate">Operazione Vagliatura</div>
+                        <div className="text-xs text-gray-600 tabular-nums">
+                          {formatDateEuropean(new Date().toISOString().split('T')[0])} • {destinationBaskets.length} destinazioni
                         </div>
-                        <hr className="border-blue-200 my-2" />
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tot. Animali Origine:</span>
-                          <span className="font-medium text-blue-700">{formatNumberItalian(sourceBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0))}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tot. Peso Origine (kg):</span>
-                          <span className="font-medium text-blue-700">{sourceBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0)}</span>
-                        </div>
-                        <hr className="border-blue-200 my-2" />
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tot. Animali Venduti:</span>
-                          <span className="font-medium text-red-700">{formatNumberItalian(soldBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0))}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tot. Peso Venduto (kg):</span>
-                          <span className="font-medium text-red-700">{soldBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tot. Animali Riposizionati:</span>
-                          <span className="font-medium text-green-700">{formatNumberItalian(placedBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0))}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tot. Peso Riposizionato (kg):</span>
-                          <span className="font-medium text-green-700">{placedBaskets.reduce((sum: number, b: any) => sum + (b.totalWeight || 0), 0)}</span>
+                      </div>
+                    </div>
+
+                    {/* Chip Totali */}
+                    <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 sm:col-span-2 lg:col-span-2">
+                      <Hash className="w-4 h-4 text-indigo-600" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-indigo-800 truncate">Riepilogo Totali</div>
+                        <div className="text-xs text-indigo-600 tabular-nums">
+                          Origine: {formatNumberItalian(originAnimals)} anim. • {originWeight}kg
+                          {soldBaskets.length > 0 && ` • Venduti: ${formatNumberItalian(soldAnimals)} anim.`}
+                          {placedBaskets.length > 0 && ` • Ripos.: ${formatNumberItalian(placedAnimals)} anim.`}
                         </div>
                       </div>
                     </div>
