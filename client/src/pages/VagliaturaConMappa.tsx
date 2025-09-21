@@ -16,6 +16,12 @@ const formatNumberItalian = (num: number): string => {
   return new Intl.NumberFormat('it-IT').format(num);
 };
 
+const formatDateEuropean = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('it-IT');
+};
+
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1198,10 +1204,59 @@ export default function VagliaturaConMappa() {
         <TabsContent value="riepilogo" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Riepilogo e Conferma</CardTitle>
-              <CardDescription>
-                Verifica i dettagli della vagliatura prima di confermare
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>Riepilogo e Conferma</CardTitle>
+                  <CardDescription>
+                    Verifica i dettagli della vagliatura prima di confermare
+                  </CardDescription>
+                </div>
+                
+                {/* Pannello Statistiche */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 min-w-[280px]">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-3">📊 Riepilogo Operazione</h3>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cestelli Origine:</span>
+                      <span className="font-medium text-blue-700">{sourceBaskets.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cestelli Venduti:</span>
+                      <span className="font-medium text-red-700">{soldBaskets.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cestelli Riposizionati:</span>
+                      <span className="font-medium text-green-700">{placedBaskets.length}</span>
+                    </div>
+                    <hr className="border-blue-200 my-2" />
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tot. Animali Origine:</span>
+                      <span className="font-medium text-blue-700">{formatNumberItalian(sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tot. Peso Origine (kg):</span>
+                      <span className="font-medium text-blue-700">{sourceBaskets.reduce((sum, b) => sum + (b.totalWeight || 0), 0)}</span>
+                    </div>
+                    <hr className="border-blue-200 my-2" />
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tot. Animali Venduti:</span>
+                      <span className="font-medium text-red-700">{formatNumberItalian(soldBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tot. Peso Venduto (kg):</span>
+                      <span className="font-medium text-red-700">{soldBaskets.reduce((sum, b) => sum + (b.totalWeight || 0), 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tot. Animali Riposizionati:</span>
+                      <span className="font-medium text-green-700">{formatNumberItalian(placedBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tot. Peso Riposizionato (kg):</span>
+                      <span className="font-medium text-green-700">{placedBaskets.reduce((sum, b) => sum + (b.totalWeight || 0), 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -1303,6 +1358,7 @@ export default function VagliaturaConMappa() {
                               <TableHead className="text-red-800">Cliente</TableHead>
                               <TableHead className="text-red-800">Data</TableHead>
                               <TableHead className="text-right text-red-800">Animali</TableHead>
+                              <TableHead className="text-right text-red-800">Animali/kg</TableHead>
                               <TableHead className="text-right text-red-800">Peso (kg)</TableHead>
                               <TableHead className="w-12 text-red-800"></TableHead>
                             </TableRow>
@@ -1342,9 +1398,12 @@ export default function VagliaturaConMappa() {
                                     )}
                                   </TableCell>
                                   <TableCell className="text-red-900">{basket.saleClient || 'Non specificato'}</TableCell>
-                                  <TableCell className="text-red-900">{basket.saleDate || new Date().toISOString().split('T')[0]}</TableCell>
+                                  <TableCell className="text-red-900">{formatDateEuropean(basket.saleDate || new Date().toISOString().split('T')[0])}</TableCell>
                                   <TableCell className="text-right text-red-900 font-medium">
                                     {formatNumberItalian(basket.animalCount || 0)}
+                                  </TableCell>
+                                  <TableCell className="text-right text-red-900">
+                                    {formatNumberItalian(finalAnimalsPerKg)}
                                   </TableCell>
                                   <TableCell className="text-right text-red-900">
                                     {basket.totalWeight || 0}
