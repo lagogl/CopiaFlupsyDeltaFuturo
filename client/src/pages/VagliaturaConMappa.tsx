@@ -1235,41 +1235,46 @@ export default function VagliaturaConMappa() {
                   {sourceBaskets.length === 0 ? (
                     <p className="text-muted-foreground">Nessun cestello origine selezionato</p>
                   ) : (
-                    <div className="border rounded-md overflow-hidden">
+                    <div className="border rounded-md overflow-hidden bg-blue-50">
                       <Table>
                         <TableHeader>
-                          <TableRow>
-                            <TableHead>Cestello</TableHead>
-                            <TableHead>Taglia</TableHead>
-                            <TableHead className="text-right">Animali</TableHead>
-                            <TableHead className="text-right">Animali/kg</TableHead>
-                            <TableHead className="text-right">Peso (kg)</TableHead>
+                          <TableRow className="bg-blue-100">
+                            <TableHead className="text-blue-800">Cestello</TableHead>
+                            <TableHead className="text-blue-800">Taglia</TableHead>
+                            <TableHead className="text-right text-blue-800">Animali</TableHead>
+                            <TableHead className="text-right text-blue-800">Animali/kg</TableHead>
+                            <TableHead className="text-right text-blue-800">Peso (kg)</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {sourceBaskets.map(basket => {
-                            // Trova la taglia corrispondente
-                            const basketSize = sizes?.find(size => 
-                              basket.animalsPerKg && basket.animalsPerKg >= size.min && basket.animalsPerKg <= size.max
-                            );
+                            // Trova la taglia corrispondente usando priorità sizeId
+                            const basketDetails = baskets.find(b => b.id === basket.basketId);
+                            const basketSize = basketDetails?.lastOperation?.sizeId 
+                              ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
+                              : basket.animalsPerKg 
+                                ? sizes?.find(size => 
+                                    basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max
+                                  )
+                                : null;
                             
                             return (
-                              <TableRow key={basket.basketId}>
-                                <TableCell className="font-medium">#{basket.physicalNumber}</TableCell>
+                              <TableRow key={basket.basketId} className="bg-blue-25 hover:bg-blue-100">
+                                <TableCell className="font-medium text-blue-900">#{basket.physicalNumber}</TableCell>
                                 <TableCell>
                                   {basketSize ? (
-                                    <Badge variant="outline">{basketSize.code}</Badge>
+                                    <Badge variant="outline" className="bg-blue-200 text-blue-800 border-blue-400">{basketSize.code}</Badge>
                                   ) : (
-                                    <span className="text-muted-foreground">Non determinata</span>
+                                    <span className="text-blue-600">Non determinata</span>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right text-blue-900 font-medium">
                                   {formatNumberItalian(basket.animalCount || 0)}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right text-blue-900">
                                   {formatNumberItalian(basket.animalsPerKg || 0)}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right text-blue-900">
                                   {basket.totalWeight || 0}
                                 </TableCell>
                               </TableRow>
@@ -1286,54 +1291,60 @@ export default function VagliaturaConMappa() {
                   const soldBaskets = destinationBaskets.filter(basket => basket.destinationType === 'sold');
                   return soldBaskets.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-medium mb-3">Cestelli Venduti ({soldBaskets.length})</h3>
-                      <div className="border rounded-md overflow-hidden">
+                      <h3 className="text-lg font-medium mb-3 text-red-800">Cestelli Venduti ({soldBaskets.length})</h3>
+                      <div className="border rounded-md overflow-hidden bg-red-50">
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead>Cestello</TableHead>
-                              <TableHead>Taglia</TableHead>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Data</TableHead>
-                              <TableHead className="text-right">Animali</TableHead>
-                              <TableHead className="text-right">Peso (kg)</TableHead>
-                              <TableHead className="w-12"></TableHead>
+                            <TableRow className="bg-red-100">
+                              <TableHead className="text-red-800">Cestello</TableHead>
+                              <TableHead className="text-red-800">Taglia</TableHead>
+                              <TableHead className="text-red-800">Cliente</TableHead>
+                              <TableHead className="text-red-800">Data</TableHead>
+                              <TableHead className="text-right text-red-800">Animali</TableHead>
+                              <TableHead className="text-right text-red-800">Peso (kg)</TableHead>
+                              <TableHead className="w-12 text-red-800"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {soldBaskets.map(basket => {
-                              const basketSize = sizes?.find(size => 
-                                basket.animalsPerKg && basket.animalsPerKg >= size.min && basket.animalsPerKg <= size.max
-                              );
+                              // Trova la taglia corrispondente usando priorità sizeId
+                              const basketDetails = baskets.find(b => b.id === basket.basketId);
+                              const basketSize = basketDetails?.lastOperation?.sizeId 
+                                ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
+                                : basket.animalsPerKg 
+                                  ? sizes?.find(size => 
+                                      basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max
+                                    )
+                                  : null;
                               
                               return (
-                                <TableRow key={basket.basketId}>
-                                  <TableCell className="font-medium">
+                                <TableRow key={basket.basketId} className="bg-red-25 hover:bg-red-100">
+                                  <TableCell className="font-medium text-red-900">
                                     #{basket.physicalNumber}
                                     {basket.isAlsoSource && (
-                                      <Badge variant="secondary" className="ml-2 text-xs">Origine</Badge>
+                                      <Badge variant="secondary" className="ml-2 text-xs bg-blue-200 text-blue-800">Origine</Badge>
                                     )}
                                   </TableCell>
                                   <TableCell>
                                     {basketSize ? (
-                                      <Badge variant="outline">{basketSize.code}</Badge>
+                                      <Badge variant="outline" className="bg-red-200 text-red-800 border-red-400">{basketSize.code}</Badge>
                                     ) : (
-                                      <span className="text-muted-foreground text-xs">Calcolata</span>
+                                      <span className="text-red-600 text-xs">Calcolata</span>
                                     )}
                                   </TableCell>
-                                  <TableCell>{basket.saleClient || 'Non specificato'}</TableCell>
-                                  <TableCell>{basket.saleDate || new Date().toISOString().split('T')[0]}</TableCell>
-                                  <TableCell className="text-right">
+                                  <TableCell className="text-red-900">{basket.saleClient || 'Non specificato'}</TableCell>
+                                  <TableCell className="text-red-900">{basket.saleDate || new Date().toISOString().split('T')[0]}</TableCell>
+                                  <TableCell className="text-right text-red-900 font-medium">
                                     {formatNumberItalian(basket.animalCount || 0)}
                                   </TableCell>
-                                  <TableCell className="text-right">
+                                  <TableCell className="text-right text-red-900">
                                     {basket.totalWeight || 0}
                                   </TableCell>
                                   <TableCell>
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 px-2 text-xs"
+                                      className="h-6 px-2 text-xs text-red-700 hover:bg-red-200"
                                       onClick={() => {
                                         setDirectSaleData({
                                           client: basket.saleClient || 'Cliente',
@@ -1364,50 +1375,56 @@ export default function VagliaturaConMappa() {
                   const placedBaskets = destinationBaskets.filter(basket => basket.destinationType === 'placed');
                   return placedBaskets.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-medium mb-3">Cestelli Riposizionati ({placedBaskets.length})</h3>
-                      <div className="border rounded-md overflow-hidden">
+                      <h3 className="text-lg font-medium mb-3 text-green-800">Cestelli Riposizionati ({placedBaskets.length})</h3>
+                      <div className="border rounded-md overflow-hidden bg-green-50">
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead>Cestello</TableHead>
-                              <TableHead>Taglia</TableHead>
-                              <TableHead>Posizione</TableHead>
-                              <TableHead className="text-right">Animali</TableHead>
-                              <TableHead className="text-right">Animali/kg</TableHead>
-                              <TableHead className="text-right">Peso (kg)</TableHead>
+                            <TableRow className="bg-green-100">
+                              <TableHead className="text-green-800">Cestello</TableHead>
+                              <TableHead className="text-green-800">Taglia</TableHead>
+                              <TableHead className="text-green-800">Posizione</TableHead>
+                              <TableHead className="text-right text-green-800">Animali</TableHead>
+                              <TableHead className="text-right text-green-800">Animali/kg</TableHead>
+                              <TableHead className="text-right text-green-800">Peso (kg)</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {placedBaskets.map(basket => {
-                              const basketSize = sizes?.find(size => 
-                                basket.animalsPerKg && basket.animalsPerKg >= size.min && basket.animalsPerKg <= size.max
-                              );
+                              // Trova la taglia corrispondente usando priorità sizeId
+                              const basketDetails = baskets.find(b => b.id === basket.basketId);
+                              const basketSize = basketDetails?.lastOperation?.sizeId 
+                                ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
+                                : basket.animalsPerKg 
+                                  ? sizes?.find(size => 
+                                      basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max
+                                    )
+                                  : null;
                               
                               return (
-                                <TableRow key={basket.basketId}>
-                                  <TableCell className="font-medium">
+                                <TableRow key={basket.basketId} className="bg-green-25 hover:bg-green-100">
+                                  <TableCell className="font-medium text-green-900">
                                     #{basket.physicalNumber}
                                     {basket.isAlsoSource && (
-                                      <Badge variant="secondary" className="ml-2 text-xs">Origine</Badge>
+                                      <Badge variant="secondary" className="ml-2 text-xs bg-blue-200 text-blue-800">Origine</Badge>
                                     )}
                                   </TableCell>
                                   <TableCell>
                                     {basketSize ? (
-                                      <Badge variant="outline">{basketSize.code}</Badge>
+                                      <Badge variant="outline" className="bg-green-200 text-green-800 border-green-400">{basketSize.code}</Badge>
                                     ) : (
-                                      <span className="text-muted-foreground text-xs">Calcolata</span>
+                                      <span className="text-green-600 text-xs">Calcolata</span>
                                     )}
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="outline">{basket.position || 'Non specificata'}</Badge>
+                                    <Badge variant="outline" className="bg-green-200 text-green-800 border-green-400">{basket.position || 'Non specificata'}</Badge>
                                   </TableCell>
-                                  <TableCell className="text-right">
+                                  <TableCell className="text-right text-green-900 font-medium">
                                     {formatNumberItalian(basket.animalCount || 0)}
                                   </TableCell>
-                                  <TableCell className="text-right">
+                                  <TableCell className="text-right text-green-900">
                                     {formatNumberItalian(basket.animalsPerKg || 0)}
                                   </TableCell>
-                                  <TableCell className="text-right">
+                                  <TableCell className="text-right text-green-900">
                                     {basket.totalWeight || 0}
                                   </TableCell>
                                 </TableRow>
