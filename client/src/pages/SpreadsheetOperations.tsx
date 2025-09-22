@@ -283,8 +283,10 @@ export default function SpreadsheetOperations() {
     }
     
     // Validazione date se i campi base sono presenti
-    if (editingForm.basketId && editingForm.date) {
-      const dateValidation = validateOperationDate(editingForm.basketId, editingForm.date);
+    // ⚠️ FIX CRITICO: Usa operationDate (data globale) invece di editingForm.date
+    // perché il salvataggio usa operationDate (linea 1169)
+    if (editingForm.basketId && operationDate) {
+      const dateValidation = validateOperationDate(editingForm.basketId, operationDate);
       if (!dateValidation.valid && dateValidation.error) {
         errors.push(dateValidation.error);
       }
