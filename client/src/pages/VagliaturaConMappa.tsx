@@ -278,6 +278,13 @@ export default function VagliaturaConMappa() {
     queryKey: ['/api/sizes'],
     enabled: true
   });
+
+  // Funzione per ottenere il nome del FLUPSY selezionato
+  const getSelectedFlupsyName = (): string | undefined => {
+    if (!selectedFlupsyId || !flupsys) return undefined;
+    const selectedFlupsy = flupsys.find(f => f.id === parseInt(selectedFlupsyId));
+    return selectedFlupsy?.name;
+  };
   
   // Mutazione per completare la vagliatura
   const completeScreeningMutation = useMutation({
@@ -948,6 +955,7 @@ export default function VagliaturaConMappa() {
                     ) : (
                       <FlupsyMapVisualizer 
                         flupsyId={String(selectedFlupsyId)}
+                        flupsyName={getSelectedFlupsyName()}
                         baskets={getEnhancedBaskets()}
                         selectedBaskets={sourceBaskets.map(b => b.basketId)}
                         onBasketClick={toggleSourceBasket}
@@ -1168,6 +1176,7 @@ export default function VagliaturaConMappa() {
                     ) : (
                       <FlupsyMapVisualizer 
                         flupsyId={String(selectedFlupsyId)}
+                        flupsyName={getSelectedFlupsyName()}
                         baskets={getEnhancedBaskets().map(b => ({
                           ...b,
                           // Aggiungiamo un flag per indicare se è un cestello origine

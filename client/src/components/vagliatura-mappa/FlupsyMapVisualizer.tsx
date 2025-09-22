@@ -50,6 +50,7 @@ interface Basket {
 
 interface FlupsyMapVisualizerProps {
   flupsyId: string | number;
+  flupsyName?: string; // Nome del FLUPSY da visualizzare
   baskets: Basket[];
   selectedBaskets: number[]; // Array di ID dei cestelli selezionati
   onBasketClick: (basket: Basket) => void;
@@ -62,6 +63,7 @@ interface FlupsyMapVisualizerProps {
  */
 export default function FlupsyMapVisualizer({
   flupsyId,
+  flupsyName,
   baskets,
   selectedBaskets,
   onBasketClick,
@@ -77,10 +79,8 @@ export default function FlupsyMapVisualizer({
   // Definizione delle file del FLUPSY (default: DX e SX)
   const rows = ['DX', 'SX'];
   
-  // Nome del FLUPSY
-  const flupsyName = flupsyBaskets.length > 0 ? 
-    `FLUPSY ${flupsyId}` : 
-    `FLUPSY ${flupsyId}`;
+  // Nome del FLUPSY - usa il nome fornito o fallback all'ID
+  const displayName = flupsyName || `FLUPSY ${flupsyId}`;
   
   // Funzione per ottenere un cestello in base alla posizione
   const getBasketAtPosition = (row: string, position: number): Basket | undefined => {
@@ -195,7 +195,7 @@ export default function FlupsyMapVisualizer({
         {/* Header con titolo e modalità */}
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium">
-            {flupsyName}
+            {displayName}
             {showTooltips && (
               <TooltipProvider>
                 <Tooltip>
@@ -225,21 +225,6 @@ export default function FlupsyMapVisualizer({
           </div>
         </div>
         
-        {/* Legenda colori delle taglie */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-          <h4 className="text-sm font-medium mb-2">Legenda Taglie</h4>
-          <div className="flex flex-wrap gap-2 text-xs">
-            {Object.entries(SIZE_COLORS).slice(0, 8).map(([sizeCode, colors]) => (
-              <div key={sizeCode} className="flex items-center gap-1">
-                <div className={cn("w-3 h-3 rounded border", colors.bg, colors.border)} />
-                <span>{sizeCode}</span>
-              </div>
-            ))}
-            {Object.keys(SIZE_COLORS).length > 8 && (
-              <span className="text-gray-500">...altre taglie</span>
-            )}
-          </div>
-        </div>
       </div>
       
       <div className="border rounded-lg p-4">
@@ -293,16 +278,18 @@ export default function FlupsyMapVisualizer({
                                   {row}{position}
                                 </div>
                                 
-                                {/* Taglia con Badge */}
+                                {/* Taglia con testo colorato */}
                                 <div className="flex-1 flex items-center justify-center">
                                   {basket.size?.code ? (
-                                    <Badge 
-                                      variant="outline" 
-                                      className="text-xs px-1 py-0.5 max-w-full truncate"
+                                    <span 
+                                      className={cn(
+                                        "text-xs font-bold px-1 py-0.5 max-w-full truncate",
+                                        getSizeColorClasses(basket.size.code).text
+                                      )}
                                       data-testid={`text-size-${basket.id}`}
                                     >
                                       {basket.size.code}
-                                    </Badge>
+                                    </span>
                                   ) : (
                                     <span className="text-xs text-gray-500">N/D</span>
                                   )}
