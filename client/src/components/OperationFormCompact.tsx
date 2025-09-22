@@ -173,6 +173,12 @@ export default function OperationFormCompact({
   const [isDateValid, setIsDateValid] = useState<boolean>(true);
   const [dateValidationMessage, setDateValidationMessage] = useState<string>("");
 
+  // Query per ottenere operazioni (necessarie per validazione data)
+  const { data: operations } = useQuery({
+    queryKey: ['/api/operations'],
+    enabled: !isLoading,
+  });
+
   // Funzione per validare la data confrontando con l'ultima operazione
   const validateOperationDate = useMemo(() => {
     if (!watchDate || !watchBasketId || !watchCycleId || !operations) {
@@ -320,10 +326,6 @@ export default function OperationFormCompact({
     enabled: !isLoading,
   });
   
-  const { data: operations } = useQuery({ 
-    queryKey: ['/api/operations'],
-    enabled: !isLoading,
-  });
 
 
 
