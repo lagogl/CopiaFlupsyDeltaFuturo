@@ -4,6 +4,27 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { InfoIcon } from 'lucide-react';
 
+// Mappa colori per le taglie
+const SIZE_COLORS: Record<string, {bg: string; border: string; text: string; bar: string}> = {
+  'TP-10000': { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-900', bar: 'bg-red-500' },
+  'TP-9000': { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-900', bar: 'bg-orange-500' },
+  'TP-8000': { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-900', bar: 'bg-amber-500' },
+  'TP-7000': { bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-900', bar: 'bg-yellow-500' },
+  'TP-6000': { bg: 'bg-lime-50', border: 'border-lime-300', text: 'text-lime-900', bar: 'bg-lime-500' },
+  'TP-5000': { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-900', bar: 'bg-green-500' },
+  'TP-4000': { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-900', bar: 'bg-emerald-500' },
+  'TP-3500': { bg: 'bg-teal-50', border: 'border-teal-300', text: 'text-teal-900', bar: 'bg-teal-500' },
+  'TP-3000': { bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-900', bar: 'bg-cyan-500' },
+  'TP-2800': { bg: 'bg-sky-50', border: 'border-sky-300', text: 'text-sky-900', bar: 'bg-sky-500' },
+  'TP-2500': { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-900', bar: 'bg-blue-500' },
+  'TP-2200': { bg: 'bg-indigo-50', border: 'border-indigo-300', text: 'text-indigo-900', bar: 'bg-indigo-500' },
+  'TP-2000': { bg: 'bg-violet-50', border: 'border-violet-300', text: 'text-violet-900', bar: 'bg-violet-500' },
+  'TP-1900': { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-900', bar: 'bg-purple-500' },
+  'TP-1800': { bg: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-900', bar: 'bg-fuchsia-500' },
+  'TP-1500': { bg: 'bg-pink-50', border: 'border-pink-300', text: 'text-pink-900', bar: 'bg-pink-500' },
+  'TP-1260': { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-900', bar: 'bg-rose-500' }
+};
+
 // Tipi di dati
 interface Basket {
   id: number;
@@ -88,26 +109,57 @@ export default function FlupsyMapVisualizer({
     }
   };
   
+  // Funzione per ottenere le classi di colore per la taglia
+  const getSizeColorClasses = (sizeCode?: string) => {
+    if (!sizeCode) {
+      return {
+        bg: 'bg-gray-50 dark:bg-gray-800',
+        border: 'border-gray-300 dark:border-gray-600',
+        text: 'text-gray-900 dark:text-gray-100',
+        bar: 'bg-gray-400'
+      };
+    }
+    
+    return SIZE_COLORS[sizeCode] || {
+      bg: 'bg-gray-50 dark:bg-gray-800',
+      border: 'border-gray-300 dark:border-gray-600',
+      text: 'text-gray-900 dark:text-gray-100',
+      bar: 'bg-gray-400'
+    };
+  };
+  
+  // Funzione per ottenere le classi di selezione (ring invece di background)
+  const getSelectionRingClasses = (selected: boolean, mode: string) => {
+    if (!selected) return '';
+    
+    if (mode === 'source') {
+      return 'ring-2 ring-blue-500 shadow-lg';
+    } else {
+      return 'ring-2 ring-green-500 shadow-lg';
+    }
+  };
+  
   // Funzione per ottenere la classe CSS appropriata per un cestello
   const getBasketClass = (basket: Basket | undefined) => {
     if (!basket) {
-      return 'bg-gray-100 dark:bg-gray-800'; // Posizione vuota
+      return 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600';
     }
     
-    if (isBasketSelected(basket.id)) {
-      if (mode === 'source') {
-        return 'bg-blue-500 hover:bg-blue-600 text-white'; // Cestello origine
-      } else {
-        return 'bg-green-500 hover:bg-green-600 text-white'; // Cestello destinazione
-      }
+    const sizeColors = getSizeColorClasses(basket.size?.code);
+    const isSelected = isBasketSelected(basket.id);
+    const selectionRing = getSelectionRingClasses(isSelected, mode);
+    
+    const baseClasses = `${sizeColors.bg} ${sizeColors.border} ${sizeColors.text} border-2 transition-all duration-200`;
+    
+    if (isSelected) {
+      return `${baseClasses} ${selectionRing}`;
     } else if (mode === 'source') {
-      return 'bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 border-2 border-blue-500'; // Cestello selezionabile come origine
+      return `${baseClasses} hover:ring-1 hover:ring-blue-300 cursor-pointer`;
     } else if (mode === 'destination') {
-      return 'bg-white dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-green-900 border-2 border-green-500'; // Cestello selezionabile come destinazione
+      return `${baseClasses} hover:ring-1 hover:ring-green-300 cursor-pointer`;
     }
     
-    // Cestello non selezionabile (stato non appropriato)
-    return 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed';
+    return `${baseClasses} cursor-not-allowed opacity-50`;
   };
   
   // Genera i tooltip per i cestelli
@@ -139,35 +191,54 @@ export default function FlupsyMapVisualizer({
   
   return (
     <div className="w-full">
-      <div className="mb-4 flex justify-between items-center">
-        <h3 className="text-lg font-medium">
-          {flupsyName}
-          {showTooltips && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <InfoIcon className="ml-1 inline-block h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>FLUPSY {flupsyId}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </h3>
-        <div className="flex gap-2">
-          {mode === 'source' && (
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-xs">Origine</span>
-            </div>
-          )}
-          {mode === 'destination' && (
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-xs">Destinazione</span>
-            </div>
-          )}
+      <div className="mb-4 space-y-3">
+        {/* Header con titolo e modalità */}
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">
+            {flupsyName}
+            {showTooltips && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="ml-1 inline-block h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>FLUPSY {flupsyId}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </h3>
+          <div className="flex gap-2">
+            {mode === 'source' && (
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span className="text-xs">Origine</span>
+              </div>
+            )}
+            {mode === 'destination' && (
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-xs">Destinazione</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Legenda colori delle taglie */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+          <h4 className="text-sm font-medium mb-2">Legenda Taglie</h4>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {Object.entries(SIZE_COLORS).slice(0, 8).map(([sizeCode, colors]) => (
+              <div key={sizeCode} className="flex items-center gap-1">
+                <div className={cn("w-3 h-3 rounded border", colors.bg, colors.border)} />
+                <span>{sizeCode}</span>
+              </div>
+            ))}
+            {Object.keys(SIZE_COLORS).length > 8 && (
+              <span className="text-gray-500">...altre taglie</span>
+            )}
+          </div>
         </div>
       </div>
       
@@ -194,34 +265,46 @@ export default function FlupsyMapVisualizer({
                         <TooltipTrigger asChild>
                           <div
                             className={cn(
-                              "h-16 rounded-md p-2 flex flex-col items-center justify-center transition-colors cursor-pointer",
+                              "min-h-20 rounded-md p-2 flex flex-col relative transition-all cursor-pointer overflow-hidden",
                               getBasketClass(basket)
                             )}
                             onClick={() => handlePositionClick(row, position)}
                             role="button"
                             tabIndex={0}
+                            data-testid={basket ? `card-basket-${basket.id}` : `empty-position-${row}${position}`}
                           >
                             {basket ? (
-                              <div className="text-center w-full h-full flex flex-col">
-                                {/* HEADER PROMINENTE - Numero Cestello e Ciclo */}
-                                <div className="bg-black/10 dark:bg-white/10 px-2 py-1 rounded-t-md mb-1 -mx-2 -mt-2">
-                                  <div className="font-bold text-sm truncate">
+                              <div className="text-center w-full h-full flex flex-col gap-1">
+                                {/* Barra colorata superiore per la taglia */}
+                                <div className={cn(
+                                  "absolute top-0 left-0 right-0 h-1 rounded-t-md",
+                                  getSizeColorClasses(basket.size?.code).bar
+                                )} />
+                                
+                                {/* Header - Numero Cestello */}
+                                <div className="pt-1">
+                                  <div className="font-bold text-xs truncate">
                                     Cestello #{basket.physicalNumber}
-                                  </div>
-                                  <div className="text-xs font-medium truncate">
-                                    Ciclo: {basket.currentCycleId || 'N/A'}
                                   </div>
                                 </div>
                                 
                                 {/* Posizione */}
-                                <div className="text-xs font-medium mb-1">
+                                <div className="text-xs font-medium">
                                   {row}{position}
                                 </div>
                                 
-                                {/* Contenuto principale - Taglia */}
-                                <div className="flex-1 flex flex-col justify-center">
-                                  {basket.size?.code && (
-                                    <div className="text-xs font-semibold">{basket.size.code}</div>
+                                {/* Taglia con Badge */}
+                                <div className="flex-1 flex items-center justify-center">
+                                  {basket.size?.code ? (
+                                    <Badge 
+                                      variant="outline" 
+                                      className="text-xs px-1 py-0.5 max-w-full truncate"
+                                      data-testid={`text-size-${basket.id}`}
+                                    >
+                                      {basket.size.code}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-xs text-gray-500">N/D</span>
                                   )}
                                 </div>
                               </div>
