@@ -339,11 +339,18 @@ export function implementDirectOperationRoute(app: Express) {
       // 3. VALIDAZIONI DATE - Impedire date duplicate e anteriori
       console.log("Validazione date per operazione...");
       
-      // Recupera tutte le operazioni esistenti per questa cesta
+      // Recupera tutte le operazioni esistenti per questa cesta NELLO STESSO CICLO
       const existingOperations = await db
         .select()
         .from(operations)
-        .where(eq(operations.basketId, operationData.basketId))
+        .where(
+          operationData.cycleId 
+            ? and(
+                eq(operations.basketId, operationData.basketId),
+                eq(operations.cycleId, operationData.cycleId)  // Solo stesso ciclo aperto
+              )
+            : eq(operations.basketId, operationData.basketId)  // Fallback per prima-attivazione senza cycleId
+        )
         .orderBy(sql`${operations.date} DESC`);
       
       console.log(`Trovate ${existingOperations.length} operazioni esistenti per cesta ${operationData.basketId}`);
