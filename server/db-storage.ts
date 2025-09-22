@@ -966,8 +966,8 @@ export class DbStorage implements IStorage {
       id: size.id,
       code: size.code,
       name: size.name,
-      min: size.minAnimalsPerKg,
-      max: size.maxAnimalsPerKg,
+      minAnimalsPerKg: size.minAnimalsPerKg,
+      maxAnimalsPerKg: size.maxAnimalsPerKg,
       color: size.color,
       createdAt: size.createdAt,
       updatedAt: size.updatedAt
