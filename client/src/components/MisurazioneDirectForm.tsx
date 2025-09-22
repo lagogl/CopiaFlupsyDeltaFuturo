@@ -150,6 +150,38 @@ export default function MisurazioneDirectForm({
   const [deadCount, setDeadCount] = useState<number | null>(null);
   const [totalWeight, setTotalWeight] = useState<number | null>(null);
   const [notes, setNotes] = useState<string>('');
+
+  // Stati per validazione data
+  const [isDateValid, setIsDateValid] = useState<boolean>(true);
+  const [dateValidationMessage, setDateValidationMessage] = useState<string>("");
+
+  // Validazione data ogni volta che cambia
+  useEffect(() => {
+    if (!operationDate || !lastOperationDate) {
+      setIsDateValid(true);
+      setDateValidationMessage("");
+      return;
+    }
+
+    const lastDate = new Date(lastOperationDate);
+    const selectedDate = new Date(operationDate);
+
+    // Confronta solo la data (ignora l'ora)
+    lastDate.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate <= lastDate) {
+      const nextValidDate = new Date(lastDate);
+      nextValidDate.setDate(nextValidDate.getDate() + 1);
+      const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+      
+      setIsDateValid(false);
+      setDateValidationMessage(`La data deve essere successiva all'ultima operazione del ${lastDate.toLocaleDateString('it-IT')}. Usa una data dal ${nextValidDateStr} in poi.`);
+    } else {
+      setIsDateValid(true);
+      setDateValidationMessage("");
+    }
+  }, [operationDate, lastOperationDate]);
   
   // Valori calcolati
   const [calculatedValues, setCalculatedValues] = useState<{

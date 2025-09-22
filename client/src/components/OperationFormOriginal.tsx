@@ -94,7 +94,6 @@ export default function OperationForm({
   initialCycleId = null,
 }: OperationFormProps) {
   // Stato per la gestione dei dati e degli errori
-  const [operationDateError, setOperationDateError] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
   const [pendingValues, setPendingValues] = useState<any>(null);
   const [prevOperationData, setPrevOperationData] = useState<any>(null);
@@ -129,6 +128,7 @@ export default function OperationForm({
   const watchType = form.watch("type");
   const watchBasketId = form.watch("basketId");
   const watchFlupsyId = form.watch("flupsyId");
+  const watchCycleId = form.watch("cycleId");
   const watchDate = form.watch("date");
   const watchTotalWeight = form.watch("totalWeight");
   const watchAnimalsPerKg = form.watch("animalsPerKg");
@@ -137,6 +137,48 @@ export default function OperationForm({
   const watchTotalSample = form.watch("totalSample");
   const deadCount = form.watch("deadCount") || 0;
   const watchManualCountAdjustment = form.watch("manualCountAdjustment");
+
+  // Stati per validazione data
+  const [isDateValid, setIsDateValid] = useState<boolean>(true);
+  const [dateValidationMessage, setDateValidationMessage] = useState<string>("");
+
+  // Funzione per validare la data confrontando con l'ultima operazione
+  const validateOperationDate = useMemo(() => {
+    if (!watchDate || !watchBasketId || !watchCycleId || !operations) {
+      setIsDateValid(true);
+      setDateValidationMessage("");
+      return true;
+    }
+
+    // Trova l'ultima operazione per questo cestello e ciclo
+    const basketOperations = operations
+      .filter((op: any) => op.basketId === watchBasketId && op.cycleId === watchCycleId)
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    if (basketOperations.length > 0) {
+      const lastOperation = basketOperations[0];
+      const selectedDate = new Date(watchDate);
+      const lastOperationDate = new Date(lastOperation.date);
+
+      // Confronta solo la data (ignora l'ora)
+      selectedDate.setHours(0, 0, 0, 0);
+      lastOperationDate.setHours(0, 0, 0, 0);
+
+      if (selectedDate <= lastOperationDate) {
+        const nextValidDate = new Date(lastOperationDate);
+        nextValidDate.setDate(nextValidDate.getDate() + 1);
+        const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+        
+        setIsDateValid(false);
+        setDateValidationMessage(`La data deve essere successiva all'ultima operazione del ${lastOperationDate.toLocaleDateString('it-IT')}. Usa una data dal ${nextValidDateStr} in poi.`);
+        return false;
+      }
+    }
+
+    setIsDateValid(true);
+    setDateValidationMessage("");
+    return true;
+  }, [watchDate, watchBasketId, watchCycleId, operations]);
 
   // Query per ottenere dati da database
   const { data: flupsys } = useQuery({ 
@@ -560,28 +602,15 @@ export default function OperationForm({
                       date={field.value as Date}
                       setDate={(date) => {
                         field.onChange(date);
-                        // Verifica operazioni esistenti nella stessa data
-                        if (watchBasketId && date) {
-                          const dateStr = format(date, 'yyyy-MM-dd');
-                          const existingOp = basketOperations.length > 0 && operations?.find((op: any) => 
-                            op.basketId === watchBasketId && 
-                            op.date.toString().substring(0, 10) === dateStr
-                          );
-                          
-                          if (existingOp) {
-                            setOperationDateError(`Attenzione: esiste già un'operazione di tipo "${existingOp.type}" per questa data`);
-                          } else {
-                            setOperationDateError(null);
-                          }
-                        }
+                        // La validazione della data è gestita dal useMemo validateOperationDate
                       }}
                       disabled={isLoading}
                     />
                     <FormMessage />
-                    {operationDateError && (
-                      <div className="text-yellow-600 text-xs mt-0.5">
+                    {!isDateValid && dateValidationMessage && (
+                      <div className="text-red-600 text-xs mt-0.5">
                         <AlertTriangle className="h-3 w-3 inline-block mr-1" />
-                        {operationDateError}
+                        {dateValidationMessage}
                       </div>
                     )}
                   </FormItem>
@@ -1408,7 +1437,7 @@ export default function OperationForm({
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !watchBasketId || !watchFlupsyId || !watchType || !watchDate}
+              disabled={isLoading || !watchBasketId || !watchFlupsyId || !watchType || !watchDate || !isDateValid}
             >
               {isLoading ? (
                 <>
