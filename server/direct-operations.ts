@@ -352,10 +352,10 @@ export function implementDirectOperationRoute(app: Express) {
       const operationDate = new Date(operationData.date);
       const operationDateString = operationData.date;
       
-      // Validazione 1: Operazioni multiple nella stessa data (solo per causali diverse da "peso")
+      // Validazione 1: Operazioni multiple nella stessa data (TUTTE le causali, incluso peso)
       const sameDate = existingOperations.find(op => op.date === operationDateString);
-      if (sameDate && operationData.type !== 'peso') {
-        throw new Error(`Esiste già un'operazione per la cesta ${basket.physicalNumber} nella data ${operationDateString}. Per causali diverse da "peso", ogni cesta può avere massimo una operazione per data.`);
+      if (sameDate) {
+        throw new Error(`Esiste già un'operazione per la cesta ${basket.physicalNumber} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
       }
       
       // Validazione 2: Data non anteriore alla ultima operazione
