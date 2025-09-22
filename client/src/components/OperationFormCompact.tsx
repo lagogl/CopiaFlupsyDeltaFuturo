@@ -158,6 +158,7 @@ export default function OperationFormCompact({
   const watchType = form.watch("type");
   const watchBasketId = form.watch("basketId");
   const watchFlupsyId = form.watch("flupsyId");
+  const watchCycleId = form.watch("cycleId");
   const watchDate = form.watch("date");
   const watchLotId = form.watch("lotId");
   const watchTotalWeight = form.watch("totalWeight");
@@ -169,10 +170,57 @@ export default function OperationFormCompact({
   const watchManualCountAdjustment = form.watch("manualCountAdjustment");
   const watchAnimalCount = form.watch("animalCount");
 
+  // Stati per validazione data
+  const [isDateValid, setIsDateValid] = useState<boolean>(true);
+  const [dateValidationMessage, setDateValidationMessage] = useState<string>("");
+
+  // Funzione per validare la data confrontando con l'ultima operazione
+  const validateOperationDate = useMemo(() => {
+    if (!watchDate || !watchBasketId || !watchCycleId || !operations) {
+      setIsDateValid(true);
+      setDateValidationMessage("");
+      return true;
+    }
+
+    // Trova l'ultima operazione per questo cestello e ciclo
+    const basketOperations = operations
+      .filter((op: any) => op.basketId === watchBasketId && op.cycleId === watchCycleId)
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    if (basketOperations.length > 0) {
+      const lastOperation = basketOperations[0];
+      const selectedDate = new Date(watchDate);
+      const lastOperationDate = new Date(lastOperation.date);
+
+      // Confronta solo la data (ignora l'ora)
+      selectedDate.setHours(0, 0, 0, 0);
+      lastOperationDate.setHours(0, 0, 0, 0);
+
+      if (selectedDate <= lastOperationDate) {
+        const nextValidDate = new Date(lastOperationDate);
+        nextValidDate.setDate(nextValidDate.getDate() + 1);
+        const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+        
+        setIsDateValid(false);
+        setDateValidationMessage(`La data deve essere successiva all'ultima operazione del ${lastOperationDate.toLocaleDateString('it-IT')}. Usa una data dal ${nextValidDateStr} in poi.`);
+        return false;
+      }
+    }
+
+    setIsDateValid(true);
+    setDateValidationMessage("");
+    return true;
+  }, [watchDate, watchBasketId, watchCycleId, operations]);
+
   // Validazione completa campi obbligatori
   const isFormValid = useMemo(() => {
     // Campi base sempre obbligatori
     if (!watchFlupsyId || !watchBasketId || !watchType || !watchDate || !watchLotId) {
+      return false;
+    }
+
+    // Controlla validazione della data
+    if (!isDateValid) {
       return false;
     }
 
