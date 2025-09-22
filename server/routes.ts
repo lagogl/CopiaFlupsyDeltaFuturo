@@ -1973,7 +1973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("🚀 CREATE-OPERATION - Body:", JSON.stringify(req.body, null, 2));
     
     try {
-      const { basketId, date, animalCount, sizeId, totalWeight, notes } = req.body;
+      const { basketId, date, animalCount, sizeId, totalWeight, notes, cycleId } = req.body;
       
       if (!basketId || !date) {
         return res.status(400).json({ message: "basketId e date sono obbligatori" });
@@ -1999,6 +1999,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+      
+      // VALIDAZIONE DATE per ciclo specifico - CREATE-OPERATION
+      console.log(`🔍 VALIDAZIONE CICLO CREATE-OP: Cercando operazioni per cestello ${basketId}, cycleId: ${cycleId}`);
+      
+      const existingOperationsForValidation = await db
+        .select()
+        .from(schema.operations)
+        .where(
+          cycleId 
+            ? and(
+                eq(schema.operations.basketId, basketId),
+                eq(schema.operations.cycleId, cycleId)  // Solo stesso ciclo aperto
+              )
+            : eq(schema.operations.basketId, basketId)  // Fallback per operazioni senza cycleId
+        )
+        .orderBy(sql`${schema.operations.date} DESC`);
+
+      console.log(`🔍 VALIDAZIONE CICLO CREATE-OP: Trovate ${existingOperationsForValidation.length} operazioni esistenti per cesta ${basketId} ${cycleId ? `nel ciclo ${cycleId}` : '(tutti i cicli)'}`);
+      
+      if (existingOperationsForValidation.length > 0) {
+        console.log(`🔍 OPERAZIONI TROVATE CREATE-OP:`, existingOperationsForValidation.map(op => ({ id: op.id, date: op.date, cycleId: op.cycleId, type: op.type })));
+      }
+
+      // Validazione 1: Data duplicata
+      const sameDateValidation = existingOperationsForValidation.find(op => op.date === formattedDate);
+      if (sameDateValidation) {
+        throw new Error(`Esiste già un'operazione per la cesta ${basket.physicalNumber} nella data ${formattedDate}. Ogni cesta può avere massimo una operazione per data.`);
+      }
+      
+      // Validazione 2: Data non anteriore o uguale alla ultima operazione del ciclo
+      if (existingOperationsForValidation.length > 0) {
+        const lastOperationValidation = existingOperationsForValidation[0]; // Prima operazione = più recente
+        const lastDateValidation = new Date(lastOperationValidation.date);
+        const operationDateValidation = new Date(date);
+        
+        console.log(`Ultima operazione: ${lastOperationValidation.date}, Nuova operazione: ${formattedDate}`);
+        
+        if (operationDateValidation <= lastDateValidation) { // <= per bloccare anche date uguali
+          console.log(`❌ BLOCCO CREATE-OP: Data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationValidation.date}) del ciclo ${cycleId || 'qualsiasi'}`);
+          throw new Error(`La data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationValidation.date}) per la cesta ${basket.physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
+        }
+      }
+      
+      console.log("✅ Validazione date CREATE-OP completata con successo");
       
       // Prima crea o trova un lotto appropriato
       let lotId = null;
@@ -2108,6 +2152,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         
+        const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+        
+        // VALIDAZIONE DATE per ciclo specifico - OPERATIONS-BYPASS  
+        const { cycleId: bypassCycleId } = req.body;
+        console.log(`🔍 VALIDAZIONE CICLO BYPASS: Cercando operazioni per cestello ${basketId}, cycleId: ${bypassCycleId}`);
+        
+        const existingOperationsForBypass = await db
+          .select()
+          .from(schema.operations)
+          .where(
+            bypassCycleId 
+              ? and(
+                  eq(schema.operations.basketId, basketId),
+                  eq(schema.operations.cycleId, bypassCycleId)  // Solo stesso ciclo aperto
+                )
+              : eq(schema.operations.basketId, basketId)  // Fallback per operazioni senza cycleId
+          )
+          .orderBy(sql`${schema.operations.date} DESC`);
+
+        console.log(`🔍 VALIDAZIONE CICLO BYPASS: Trovate ${existingOperationsForBypass.length} operazioni esistenti per cesta ${basketId} ${bypassCycleId ? `nel ciclo ${bypassCycleId}` : '(tutti i cicli)'}`);
+        
+        if (existingOperationsForBypass.length > 0) {
+          console.log(`🔍 OPERAZIONI TROVATE BYPASS:`, existingOperationsForBypass.map(op => ({ id: op.id, date: op.date, cycleId: op.cycleId, type: op.type })));
+        }
+
+        // Validazione 1: Data duplicata
+        const sameDateBypass = existingOperationsForBypass.find(op => op.date === formattedDate);
+        if (sameDateBypass) {
+          throw new Error(`Esiste già un'operazione per la cesta ${basket.physicalNumber} nella data ${formattedDate}. Ogni cesta può avere massimo una operazione per data.`);
+        }
+        
+        // Validazione 2: Data non anteriore o uguale alla ultima operazione del ciclo
+        if (existingOperationsForBypass.length > 0) {
+          const lastOperationBypass = existingOperationsForBypass[0]; // Prima operazione = più recente
+          const lastDateBypass = new Date(lastOperationBypass.date);
+          const operationDateBypass = new Date(date);
+          
+          console.log(`Ultima operazione: ${lastOperationBypass.date}, Nuova operazione: ${formattedDate}`);
+          
+          if (operationDateBypass <= lastDateBypass) { // <= per bloccare anche date uguali
+            console.log(`❌ BLOCCO BYPASS: Data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationBypass.date}) del ciclo ${bypassCycleId || 'qualsiasi'}`);
+            throw new Error(`La data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationBypass.date}) per la cesta ${basket.physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
+          }
+        }
+        
+        console.log("✅ Validazione date BYPASS completata con successo");
+        
         // Prima crea o trova un lotto appropriato
         let lotId = null;
         
@@ -2145,7 +2236,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Crea ciclo con riferimento al lotto
-        const formattedDate = format(new Date(date), 'yyyy-MM-dd');
         const [newCycle] = await db.insert(schema.cycles).values({
           basketId: basketId,
           startDate: formattedDate,
