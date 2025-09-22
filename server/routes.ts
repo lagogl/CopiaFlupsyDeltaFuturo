@@ -5181,7 +5181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 1. Crea il cestello con stato 'available' (non 'active' perché non ha ancora un ciclo)
         const basketToCreate = {
           ...basketData,
-          state: 'disponibile' as const
+          state: 'available' as const
         };
         
         const newBasket = await storage.createBasket(basketToCreate);
