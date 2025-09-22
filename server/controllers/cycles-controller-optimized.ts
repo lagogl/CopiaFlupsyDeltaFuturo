@@ -250,5 +250,8 @@ export async function getCyclesOptimized(req: Request, res: Response) {
 }
 
 export function invalidateCache(): void {
-  cacheService.invalidate();
+  cacheService.clear();
 }
+
+// Export alias per compatibilità con direct-operations.ts
+export const invalidateCyclesCache = invalidateCache;
