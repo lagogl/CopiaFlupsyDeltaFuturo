@@ -952,7 +952,6 @@ export default function VagliaturaConMappa() {
                         onBasketClick={toggleSourceBasket}
                         mode="source"
                         showTooltips={true}
-                        maxPositions={flupsys.find(f => f.id === Number(selectedFlupsyId))?.maxPositions || 10}
                       />
                     )}
                   </div>
@@ -1177,9 +1176,6 @@ export default function VagliaturaConMappa() {
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"
                         showTooltips={true}
-                        maxPositions={flupsys.find(f => f.id === Number(selectedFlupsyId))?.maxPositions || 10}
-                        sourceBasketIds={sourceBaskets.map(sb => sb.basketId)}
-                        soldBasketIds={destinationBaskets.filter(db => db.destinationType === 'sold').map(db => db.basketId)}
                       />
                     )}
                   </div>
