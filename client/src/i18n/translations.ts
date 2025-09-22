@@ -28,7 +28,6 @@ export interface MenuTranslations {
     operations: string;
     advancedOperations: string;
     spreadsheetOperations: string;
-    operationsDragDrop: string;
     screeningWithMap: string;
     nfcFirstActivation: string;
     flupsyScanMobile: string;
@@ -88,7 +87,6 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       operations: "Operazioni",
       advancedOperations: "Operazioni Avanzate",
       spreadsheetOperations: "Spreadsheet Operazioni",
-      operationsDragDrop: "Operazioni Drag&Drop",
       screeningWithMap: "Vagliatura con Mappa",
       nfcFirstActivation: "Prima Attivazione NFC",
       flupsyScanMobile: "FlupsyScan Mobile",
@@ -144,7 +142,6 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       operations: "Operations",
       advancedOperations: "Advanced Operations",
       spreadsheetOperations: "Spreadsheet Operations",
-      operationsDragDrop: "Drag&Drop Operations",
       screeningWithMap: "Screening with Map",
       nfcFirstActivation: "NFC First Activation",
       flupsyScanMobile: "FlupsyScan Mobile",

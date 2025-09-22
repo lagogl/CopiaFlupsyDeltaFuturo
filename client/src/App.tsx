@@ -11,7 +11,6 @@ import Operations from "@/pages/Operations";
 import OperationDetail from "@/pages/OperationDetail";
 import EditOperation from "@/pages/EditOperation";
 import SpreadsheetOperations from "@/pages/SpreadsheetOperations";
-import OperationsDragDrop from "@/pages/OperationsDragDrop";
 import Cycles from "@/pages/Cycles";
 import CyclesPaginated from "@/pages/CyclesPaginated";
 import CycleDetail from "@/pages/CycleDetail";
@@ -27,7 +26,6 @@ import FlupsyPositions from "@/pages/FlupsyPositions";
 import FlupsyBaskets from "@/pages/FlupsyBaskets";
 import FlupsyComparison from "@/pages/FlupsyComparison";
 import FlupsyComparisonEnhanced from "@/pages/FlupsyComparisonEnhanced";
-import FlupsyDragDrop from "@/pages/FlupsyDragDrop";
 import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
 import NFCScan from "@/pages/NFCScan";
@@ -81,7 +79,6 @@ function Router() {
       <ProtectedRoute path="/flupsys/:id" component={FlupsyDetails}/>
       <ProtectedRoute path="/flupsys/:id/positions" component={FlupsyPositions}/>
       <ProtectedRoute path="/flupsys/:id/baskets" component={FlupsyBaskets}/>
-      <ProtectedRoute path="/flupsy-positions" component={FlupsyDragDrop}/>
       <ProtectedRoute path="/flupsy-view" component={FlupsyFullView}/>
 
       <ProtectedRoute path="/flupsy-comparison" component={FlupsyComparison}/>
@@ -93,7 +90,6 @@ function Router() {
       <ProtectedRoute path="/operations/edit/:id" component={EditOperation}/>
       <ProtectedRoute path="/operations/:id" component={OperationDetail}/>
       <ProtectedRoute path="/spreadsheet-operations" component={SpreadsheetOperations}/>
-      <ProtectedRoute path="/operations-drag-drop" component={OperationsDragDrop}/>
       <ProtectedRoute path="/cycles" component={CyclesPaginated}/>
       <ProtectedRoute path="/cycles/:id" component={CycleDetail}/>
       <ProtectedRoute path="/lots" component={Lots}/>

@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { 
   Home, Package, FileText, RefreshCw, Package2, BarChart2, 
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
-  User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
+  User, Waves, Zap, Move, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, BarChart3, Filter,
   FileJson, Download, Database, Leaf, LogOut, LayoutGrid,
@@ -105,10 +105,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Home className="h-6 w-6 mr-2 text-black font-bold" />, label: translations.menuItems.dashboard, path: "/" },
         { icon: <Package2 className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.lotManagement, path: "/lots" },
         { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.basketManagement, path: "/baskets" },
-        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.positionManagement, path: "/flupsy-positions" },
         { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.operations, path: "/operations" },
         { icon: <Table className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.spreadsheetOperations, path: "/spreadsheet-operations" },
-        { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.operationsDragDrop, path: "/operations-drag-drop" },
         { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.screeningWithMap, path: "/vagliatura-con-mappa" },
         { icon: <Smartphone className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.nfcFirstActivation, path: "/nfc-prima-attivazione" },
         { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.flupsyScanMobile, path: "/nfc-scan" }
