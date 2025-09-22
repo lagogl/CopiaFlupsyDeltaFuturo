@@ -571,7 +571,12 @@ export default function SpreadsheetOperations() {
           type: selectedOperationType,
           date: operationDate,
           // CAMPI OBBLIGATORI - usa dati reali da ultima operazione se esiste
-          lotId: fullOp?.lotId || ((lots as any[]) || [])[0]?.id || null,
+          // Distribuisci lotti diversi tra cestelli diversi
+          lotId: fullOp?.lotId || (
+            ((lots as any[]) || []).length > 0 
+              ? ((lots as any[]) || [])[basket.id % ((lots as any[]) || []).length]?.id 
+              : null
+          ),
           animalCount: fullOp?.animalCount || null,
           totalWeight: fullOp?.totalWeight || null,
           animalsPerKg: fullOp?.animalsPerKg || null,
@@ -1118,7 +1123,10 @@ export default function SpreadsheetOperations() {
       basketId: row.basketId,
       type: selectedOperationType,
       date: operationDate, // Usa la data selezionata nei controlli
-      lotId: ((lots as any[]) || [])[0]?.id || 1, // Usa il primo lotto disponibile
+      // Distribuisci lotti diversi tra cestelli diversi
+      lotId: ((lots as any[]) || []).length > 0 
+        ? ((lots as any[]) || [])[basketId % ((lots as any[]) || []).length]?.id 
+        : 1,
       sampleWeight: undefined,
       liveAnimals: undefined,
       deadCount: undefined,
@@ -1477,7 +1485,12 @@ export default function SpreadsheetOperations() {
       sizeId: row.type === 'misura' ? row.sizeId : null,       // integer size_id (nullable)
       sgrId: null,                                              // integer sgr_id (nullable)
       // lotId è sempre richiesto per operazioni su ceste attive (FISSO IL BUG: era null!)
-      lotId: row.lotId || ((lots as any[]) || [])[0]?.id || 1, // integer lot_id (obbligatorio per operazioni normali)
+      // Distribuisci lotti diversi tra cestelli diversi
+      lotId: row.lotId || (
+        ((lots as any[]) || []).length > 0 
+          ? ((lots as any[]) || [])[row.basketId % ((lots as any[]) || []).length]?.id 
+          : 1
+      ), // integer lot_id (obbligatorio per operazioni normali)
       animalCount: row.animalCount || null,                     // integer animal_count (nullable)
       totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
       animalsPerKg: row.animalsPerKg || null,                  // integer animals_per_kg (nullable)
