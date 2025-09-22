@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -142,6 +142,42 @@ export default function OperationForm({
   const [isDateValid, setIsDateValid] = useState<boolean>(true);
   const [dateValidationMessage, setDateValidationMessage] = useState<string>("");
 
+  // Query per ottenere dati da database
+  const { data: flupsys } = useQuery({ 
+    queryKey: ['/api/flupsys'],
+    enabled: !isLoading,
+  });
+  
+  const { data: sizes } = useQuery({ 
+    queryKey: ['/api/sizes'],
+    enabled: !isLoading,
+  });
+  
+  const { data: sgrs } = useQuery({ 
+    queryKey: ['/api/sgr'],
+    enabled: !isLoading,
+  });
+  
+  const { data: baskets } = useQuery({ 
+    queryKey: ['/api/baskets'],
+    enabled: !isLoading,
+  });
+  
+  const { data: cycles } = useQuery({ 
+    queryKey: ['/api/cycles'],
+    enabled: !isLoading,
+  });
+  
+  const { data: lots } = useQuery({ 
+    queryKey: ['/api/lots/active'],
+    enabled: !isLoading,
+  });
+  
+  const { data: operations } = useQuery({ 
+    queryKey: ['/api/operations'],
+    enabled: !isLoading,
+  });
+
   // Funzione per validare la data confrontando con l'ultima operazione
   const validateOperationDate = useMemo(() => {
     if (!watchDate || !watchBasketId || !watchCycleId || !operations) {
@@ -179,42 +215,6 @@ export default function OperationForm({
     setDateValidationMessage("");
     return true;
   }, [watchDate, watchBasketId, watchCycleId, operations]);
-
-  // Query per ottenere dati da database
-  const { data: flupsys } = useQuery({ 
-    queryKey: ['/api/flupsys'],
-    enabled: !isLoading,
-  });
-  
-  const { data: sizes } = useQuery({ 
-    queryKey: ['/api/sizes'],
-    enabled: !isLoading,
-  });
-  
-  const { data: sgrs } = useQuery({ 
-    queryKey: ['/api/sgr'],
-    enabled: !isLoading,
-  });
-  
-  const { data: baskets } = useQuery({ 
-    queryKey: ['/api/baskets'],
-    enabled: !isLoading,
-  });
-  
-  const { data: cycles } = useQuery({ 
-    queryKey: ['/api/cycles'],
-    enabled: !isLoading,
-  });
-  
-  const { data: lots } = useQuery({ 
-    queryKey: ['/api/lots/active'],
-    enabled: !isLoading,
-  });
-  
-  const { data: operations } = useQuery({ 
-    queryKey: ['/api/operations'],
-    enabled: !isLoading,
-  });
 
   // Filtra i cestelli per FLUPSY selezionato
   const [flupsyBaskets, setFlupsyBaskets] = useState<any[]>([]);
