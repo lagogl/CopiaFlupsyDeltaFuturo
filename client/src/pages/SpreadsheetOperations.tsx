@@ -466,8 +466,13 @@ export default function SpreadsheetOperations() {
       })
       .map((basket: any) => {
         const flupsy = ((flupsys as any[]) || []).find((f: any) => f.id === basket.flupsyId);
-        // Recupera TUTTE le operazioni per questa cesta per trovare davvero l'ultima
+        // Recupera TUTTE le operazioni per questa cesta
         const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basket.id);
+        
+        // Trova l'operazione di prima-attivazione per determinare il lotto del cestello
+        const activationOp = basketOperations.find((op: any) => op.type === 'prima-attivazione');
+        
+        // Trova l'ultima operazione per altri dati (peso, taglia, etc.)
         const lastOp = basketOperations.length > 0 
           ? basketOperations.sort((a: any, b: any) => {
               // Prima ordina per ID (più recente = ID più alto)
@@ -490,7 +495,8 @@ export default function SpreadsheetOperations() {
           currentCycleId: basket.currentCycleId,
           state: basket.state,
           flupsyName: flupsy?.name,
-          lastOperation: lastOp
+          lastOperation: lastOp,
+          activationOperation: activationOp
         };
       })
       .sort((a, b) => a.physicalNumber - b.physicalNumber);
@@ -570,13 +576,19 @@ export default function SpreadsheetOperations() {
           physicalNumber: basket.physicalNumber,
           type: selectedOperationType,
           date: operationDate,
-          // CAMPI OBBLIGATORI - usa dati reali da ultima operazione se esiste
-          // Distribuisci lotti diversi tra cestelli diversi
-          lotId: fullOp?.lotId || (
-            ((lots as any[]) || []).length > 0 
-              ? ((lots as any[]) || [])[basket.id % ((lots as any[]) || []).length]?.id 
-              : null
-          ),
+          // CAMPI OBBLIGATORI - usa il lotto dalla prima attivazione del cestello
+          lotId: (() => {
+            // Trova l'operazione di prima-attivazione per questo cestello
+            const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basket.id);
+            const activationOp = basketOperations.find((op: any) => op.type === 'prima-attivazione');
+            
+            if (activationOp?.lotId) {
+              return activationOp.lotId;
+            }
+            
+            // Fallback: usa il lotto dell'ultima operazione o il primo disponibile
+            return fullOp?.lotId || ((lots as any[]) || [])[0]?.id || null;
+          })(),
           animalCount: fullOp?.animalCount || null,
           totalWeight: fullOp?.totalWeight || null,
           animalsPerKg: fullOp?.animalsPerKg || null,
@@ -1484,13 +1496,21 @@ export default function SpreadsheetOperations() {
       // CAMPI OPZIONALI secondo lo schema operations  
       sizeId: row.type === 'misura' ? row.sizeId : null,       // integer size_id (nullable)
       sgrId: null,                                              // integer sgr_id (nullable)
-      // lotId è sempre richiesto per operazioni su ceste attive (FISSO IL BUG: era null!)
-      // Distribuisci lotti diversi tra cestelli diversi
-      lotId: row.lotId || (
-        ((lots as any[]) || []).length > 0 
-          ? ((lots as any[]) || [])[row.basketId % ((lots as any[]) || []).length]?.id 
-          : 1
-      ), // integer lot_id (obbligatorio per operazioni normali)
+      // lotId è sempre richiesto per operazioni su ceste attive - USA IL LOTTO DALLA PRIMA-ATTIVAZIONE!
+      lotId: row.lotId || (() => {
+        // Trova l'operazione di prima-attivazione per questo cestello per ottenere il lotto corretto
+        const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === row.basketId);
+        const activationOp = basketOperations.find((op: any) => op.type === 'prima-attivazione');
+        
+        if (activationOp?.lotId) {
+          console.log(`🔍 Cestello ${row.basketId}: Usando lotto ${activationOp.lotId} dalla prima-attivazione`);
+          return activationOp.lotId;
+        }
+        
+        // Fallback: usa il primo lotto disponibile
+        console.warn(`⚠️ Cestello ${row.basketId}: Nessuna prima-attivazione trovata, usando lotto predefinito`);
+        return ((lots as any[]) || [])[0]?.id || 1;
+      })(), // integer lot_id (obbligatorio per operazioni normali)
       animalCount: row.animalCount || null,                     // integer animal_count (nullable)
       totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
       animalsPerKg: row.animalsPerKg || null,                  // integer animals_per_kg (nullable)
