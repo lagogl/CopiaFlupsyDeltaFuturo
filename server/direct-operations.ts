@@ -353,7 +353,12 @@ export function implementDirectOperationRoute(app: Express) {
         )
         .orderBy(sql`${operations.date} DESC`);
       
-      console.log(`Trovate ${existingOperations.length} operazioni esistenti per cesta ${operationData.basketId}`);
+      console.log(`🔍 VALIDAZIONE CICLO: Cercando operazioni per cestello ${operationData.basketId}, cycleId: ${operationData.cycleId}`);
+      console.log(`🔍 VALIDAZIONE CICLO: Trovate ${existingOperations.length} operazioni esistenti per cesta ${operationData.basketId} ${operationData.cycleId ? `nel ciclo ${operationData.cycleId}` : '(tutti i cicli)'}`);
+      
+      if (existingOperations.length > 0) {
+        console.log(`🔍 OPERAZIONI TROVATE:`, existingOperations.map(op => ({ id: op.id, date: op.date, cycleId: op.cycleId, type: op.type })));
+      }
       
       // Converti la data dell'operazione corrente in formato Date per confronti
       const operationDate = new Date(operationData.date);
@@ -372,8 +377,9 @@ export function implementDirectOperationRoute(app: Express) {
         
         console.log(`Ultima operazione: ${lastOperation.date}, Nuova operazione: ${operationDateString}`);
         
-        if (operationDate < lastDate) {
-          throw new Error(`La data ${operationDateString} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${basket.physicalNumber}. Le operazioni devono essere inserite in ordine cronologico.`);
+        if (operationDate <= lastDate) { // <= per bloccare anche date uguali
+          console.log(`❌ BLOCCO: Data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) del ciclo ${operationData.cycleId || 'qualsiasi'}`);
+          throw new Error(`La data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) per la cesta ${basket.physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
         }
       }
       

@@ -2473,14 +2473,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // VALIDAZIONI DATE per operazioni standard
         console.log("Validazione date per operazione standard...");
         
-        // Recupera tutte le operazioni esistenti per questa cesta
+        // Recupera operazioni esistenti per questa cesta NELLO STESSO CICLO
+        const { cycleId: currentCycleId } = parsedData.data;
+        console.log(`🔍 VALIDAZIONE CICLO STANDARD: Cercando operazioni per cestello ${basketId}, cycleId: ${currentCycleId}`);
+        
         const existingOperations = await db
           .select()
           .from(operations)
-          .where(eq(operations.basketId, basketId))
+          .where(
+            currentCycleId 
+              ? and(
+                  eq(operations.basketId, basketId),
+                  eq(operations.cycleId, currentCycleId)  // Solo stesso ciclo aperto
+                )
+              : eq(operations.basketId, basketId)  // Fallback per operazioni senza cycleId
+          )
           .orderBy(sql`${operations.date} DESC`);
+
+        console.log(`🔍 VALIDAZIONE CICLO STANDARD: Trovate ${existingOperations.length} operazioni esistenti per cesta ${basketId} ${currentCycleId ? `nel ciclo ${currentCycleId}` : '(tutti i cicli)'}`);
         
-        console.log(`Trovate ${existingOperations.length} operazioni esistenti per cesta ${basketId}`);
+        if (existingOperations.length > 0) {
+          console.log(`🔍 OPERAZIONI TROVATE STANDARD:`, existingOperations.map(op => ({ id: op.id, date: op.date, cycleId: op.cycleId, type: op.type })));
+        }
         
         // Converti la data in formato stringa per confronti
         const operationDateString = format(date, 'yyyy-MM-dd');
@@ -2501,10 +2515,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Ultima operazione: ${lastOperation.date}, Nuova operazione: ${operationDateString}`);
           
-          if (operationDate < lastDate) {
+          if (operationDate <= lastDate) { // <= per bloccare anche date uguali
             const basket = await storage.getBasket(basketId);
             const physicalNumber = basket?.physicalNumber || basketId;
-            throw new Error(`La data ${operationDateString} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${physicalNumber}. Le operazioni devono essere inserite in ordine cronologico.`);
+            console.log(`❌ BLOCCO STANDARD: Data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) del ciclo ${currentCycleId || 'qualsiasi'}`);
+            throw new Error(`La data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) per la cesta ${physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
           }
         }
         
