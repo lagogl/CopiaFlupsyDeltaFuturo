@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
-import { Scale, Ruler } from 'lucide-react';
+import { Scale, Ruler, AlertTriangle } from 'lucide-react';
 
 interface MisurazioneDirectFormProps {
   basketId: number;
@@ -556,6 +556,12 @@ export default function MisurazioneDirectForm({
             <p className="text-xs text-slate-500 mt-1">
               Data dell'operazione (deve essere successiva all'ultima operazione)
             </p>
+            {!isDateValid && dateValidationMessage && (
+              <div className="text-red-600 text-xs mt-0.5">
+                <AlertTriangle className="h-3 w-3 inline-block mr-1" />
+                {dateValidationMessage}
+              </div>
+            )}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -830,7 +836,7 @@ export default function MisurazioneDirectForm({
           </Button>
           <Button 
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={isLoading || !isDateValid}
           >
             {isLoading ? (
               <>
