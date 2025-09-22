@@ -118,7 +118,6 @@ export default function OperationFormCompact({
   defaultOperationDate,
 }: OperationFormProps) {
   // Stato per la gestione dei dati e degli errori
-  const [operationDateError, setOperationDateError] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
   const queryClient = useQueryClient();
   const [pendingValues, setPendingValues] = useState<any>(null);
@@ -274,7 +273,7 @@ export default function OperationFormCompact({
       default:
         return false;
     }
-  }, [watchFlupsyId, watchBasketId, watchType, watchDate, watchLotId, watchAnimalsPerKg, watchSampleWeight, watchLiveAnimals, watchTotalWeight, watchManualCountAdjustment, watchAnimalCount, form]);
+  }, [watchFlupsyId, watchBasketId, watchType, watchDate, watchLotId, watchAnimalsPerKg, watchSampleWeight, watchLiveAnimals, watchTotalWeight, watchManualCountAdjustment, watchAnimalCount, isDateValid, form]);
 
   // Query per ottenere dati da database
   const { data: flupsys } = useQuery({ 
@@ -810,16 +809,7 @@ export default function OperationFormCompact({
     
     console.log("FORM SUBMIT MANUALE ATTIVATO");
     
-    // Verifica se c'è un errore di operazione sulla stessa data, ma consenti di procedere con conferma
-    if (operationDateError) {
-      console.warn("Potenziale problema con operazione sulla stessa data:", operationDateError);
-      const confirmProceed = window.confirm(
-        "Esiste già un'operazione registrata oggi per questo cestello. Vuoi comunque procedere con il salvataggio?"
-      );
-      if (!confirmProceed) {
-        return;
-      }
-    }
+    // La validazione della data è già gestita dal form tramite isFormValid
     
     // Ottieni i valori dal form
     const values = form.getValues();
@@ -1001,28 +991,15 @@ export default function OperationFormCompact({
                         date={field.value as Date}
                         setDate={(date) => {
                           field.onChange(date);
-                          // Verifica operazioni esistenti nella stessa data
-                          if (watchBasketId && date) {
-                            const dateStr = format(date, 'yyyy-MM-dd');
-                            const existingOp = basketOperations.length > 0 && operations?.find((op: any) => 
-                              op.basketId === watchBasketId && 
-                              op.date.toString().substring(0, 10) === dateStr
-                            );
-                            
-                            if (existingOp) {
-                              setOperationDateError(`Attenzione: esiste già un'operazione di tipo "${existingOp.type}" per questa data`);
-                            } else {
-                              setOperationDateError(null);
-                            }
-                          }
+                          // La validazione della data è gestita dal useMemo validateOperationDate
                         }}
                         disabled={isLoading}
                       />
                       <FormMessage />
-                      {operationDateError && (
-                        <div className="text-yellow-600 text-xs mt-0.5">
+                      {!isDateValid && dateValidationMessage && (
+                        <div className="text-red-600 text-xs mt-0.5">
                           <AlertTriangle className="h-3 w-3 inline-block mr-1" />
-                          {operationDateError}
+                          {dateValidationMessage}
                         </div>
                       )}
                     </FormItem>
