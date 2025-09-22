@@ -379,7 +379,11 @@ export function implementDirectOperationRoute(app: Express) {
         
         if (operationDate <= lastDate) { // <= per bloccare anche date uguali
           console.log(`❌ BLOCCO: Data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) del ciclo ${operationData.cycleId || 'qualsiasi'}`);
-          throw new Error(`La data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) per la cesta ${basket.physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
+          const nextValidDate = new Date(lastDate);
+          nextValidDate.setDate(nextValidDate.getDate() + 1);
+          const lastDateFormatted = new Date(lastOperation.date).toLocaleDateString('it-IT');
+          const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+          throw new Error(`⚠️ Data non valida: Il cestello #${basket.physicalNumber} ha già un'operazione più recente del ${lastDateFormatted}. Per registrare una nuova operazione, usa una data dal ${nextValidDateStr} in poi.`);
         }
       }
       

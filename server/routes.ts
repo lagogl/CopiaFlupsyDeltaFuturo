@@ -2038,7 +2038,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (operationDateValidation <= lastDateValidation) { // <= per bloccare anche date uguali
           console.log(`❌ BLOCCO CREATE-OP: Data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationValidation.date}) del ciclo ${cycleId || 'qualsiasi'}`);
-          throw new Error(`La data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationValidation.date}) per la cesta ${basket.physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
+          const nextValidDate = new Date(lastDateValidation);
+          nextValidDate.setDate(nextValidDate.getDate() + 1);
+          const lastDateFormatted = new Date(lastOperationValidation.date).toLocaleDateString('it-IT');
+          const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+          throw new Error(`⚠️ Data non valida: Il cestello #${basket.physicalNumber} ha già un'operazione più recente del ${lastDateFormatted}. Per registrare una nuova operazione, usa una data dal ${nextValidDateStr} in poi.`);
         }
       }
       
@@ -2193,7 +2197,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (operationDateBypass <= lastDateBypass) { // <= per bloccare anche date uguali
             console.log(`❌ BLOCCO BYPASS: Data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationBypass.date}) del ciclo ${bypassCycleId || 'qualsiasi'}`);
-            throw new Error(`La data ${formattedDate} è anteriore o uguale all'ultima operazione (${lastOperationBypass.date}) per la cesta ${basket.physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
+            const nextValidDate = new Date(lastDateBypass);
+            nextValidDate.setDate(nextValidDate.getDate() + 1);
+            const lastDateFormatted = new Date(lastOperationBypass.date).toLocaleDateString('it-IT');
+            const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+            throw new Error(`⚠️ Data non valida: Il cestello #${basket.physicalNumber} ha già un'operazione più recente del ${lastDateFormatted}. Per registrare una nuova operazione, usa una data dal ${nextValidDateStr} in poi.`);
           }
         }
         
@@ -2609,7 +2617,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const basket = await storage.getBasket(basketId);
             const physicalNumber = basket?.physicalNumber || basketId;
             console.log(`❌ BLOCCO STANDARD: Data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) del ciclo ${currentCycleId || 'qualsiasi'}`);
-            throw new Error(`La data ${operationDateString} è anteriore o uguale all'ultima operazione (${lastOperation.date}) per la cesta ${physicalNumber} nel ciclo corrente. Le operazioni devono essere in ordine cronologico crescente.`);
+            const nextValidDate = new Date(lastDate);
+            nextValidDate.setDate(nextValidDate.getDate() + 1);
+            const lastDateFormatted = new Date(lastOperation.date).toLocaleDateString('it-IT');
+            const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+            throw new Error(`⚠️ Data non valida: Il cestello #${physicalNumber} ha già un'operazione più recente del ${lastDateFormatted}. Per registrare una nuova operazione, usa una data dal ${nextValidDateStr} in poi.`);
           }
         }
         
