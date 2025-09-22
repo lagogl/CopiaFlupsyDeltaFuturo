@@ -100,9 +100,10 @@ export default function Baskets() {
     queryKey: ['/api/flupsys'],
   }) as { data: any[] };
 
-  // Query operations for calculating missing data
+  // Query operations for calculating missing data - ottimizzata per performance
   const { data: operations = [] } = useQuery({
-    queryKey: ['/api/operations?includeAll=true&pageSize=1000'],
+    queryKey: ['/api/operations', { includeAll: true, pageSize: 100 }],
+    staleTime: 60000 // Cache for 1 minute per performance
   });
 
   // Query sizes for size calculation

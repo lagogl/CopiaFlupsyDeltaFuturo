@@ -119,28 +119,21 @@ export default function CyclesPaginated() {
   // Filtro FLUPSY locale che può essere inizializzato dai filtri dashboard
   const [flupsyFilter, setFlupsyFilter] = useState<number | null>(null);
   
-  // Query per i dati necessari
+  // Query per i dati necessari - ottimizzata per performance
   const { data: allCycles = [], isLoading: isAllCyclesLoading } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles', 'all'],
     queryFn: async () => {
-      // Prova prima la query normale
-      let response = await fetch('/api/cycles?includeAll=true');
-      let data = await response.json();
-      
-      // Se non ci sono cicli, forza il refresh del cache
-      if (!data || data.length === 0) {
-        console.log('🔄 Nessun ciclo trovato nella pagina CyclesPaginated, forzando refresh cache...');
-        response = await fetch('/api/cycles?includeAll=true&force_refresh=true');
-        data = await response.json();
-        console.log(`✅ Dopo refresh cache: ${data?.length || 0} cicli trovati`);
-      }
-      
+      // Usa cache ottimizzata per performance
+      const response = await fetch('/api/cycles?includeAll=true');
+      const data = await response.json();
       return data;
     },
+    staleTime: 60000, // Cache for 1 minute per performance
   });
   
   const { data: operations = [] } = useQuery<Operation[]>({
-    queryKey: ['/api/operations?includeAll=true&pageSize=1000'],
+    queryKey: ['/api/operations', { includeAll: true, pageSize: 100 }],
+    staleTime: 60000 // Cache for 1 minute per performance
   });
   
   const { data: flupsys = [] } = useQuery<Flupsy[]>({

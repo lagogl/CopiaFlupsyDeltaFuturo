@@ -333,14 +333,14 @@ export default function SpreadsheetOperations() {
     queryKey: ['/api/baskets'],
   });
 
-  // Query per TUTTE le operazioni per Spreadsheet - BYPASS CACHE E LIMITAZIONI  
+  // Query operazioni ottimizzata - usa cache e paginazione efficiente
   const { data: operations, isLoading: operationsLoading, error: operationsError } = useQuery({
-    queryKey: ['/api/operations', 'spreadsheet', 'unlimited'],
+    queryKey: ['/api/operations', 'spreadsheet'],
     queryFn: () => {
-      // Usa l'endpoint operations diretto con parametri per bypassare cache e limitazioni
-      return apiRequest('/api/operations?pageSize=1000&sortBy=id&sortOrder=desc&force_refresh=true&original=true');
+      // Usa cache ottimizzata e paginazione ridotta per performance
+      return apiRequest('/api/operations?pageSize=100&sortBy=id&sortOrder=desc');
     },
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 120000, // Cache for 2 minuti per performance
     refetchOnWindowFocus: false
   });
 

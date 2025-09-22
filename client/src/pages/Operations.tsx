@@ -583,9 +583,9 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // PERFORMANCE OTTIMIZZATA: Cache 15 minuti (sweet spot)
+  // PERFORMANCE OTTIMIZZATA: Cache 15 minuti e pageSize ridotto per performance
   const { data: operations = [], isLoading: operationsLoading, error: operationsError } = useQuery({
-    queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
+    queryKey: ['/api/operations', { includeAll: true, pageSize: 100 }],
     staleTime: 900000, // 15 minuti - compromesso perfetto velocità/aggiornamento
     cacheTime: 1800000, // 30 minuti background
     refetchOnWindowFocus: false, // Non rifare richieste quando torni nella pagina

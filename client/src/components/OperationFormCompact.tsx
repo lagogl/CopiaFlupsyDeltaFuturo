@@ -247,42 +247,25 @@ export default function OperationFormCompact({
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
     queryKey: ['/api/baskets', 'includeAll'],
     queryFn: async () => {
-      // Prova prima la query normale
-      let response = await fetch('/api/baskets?includeAll=true');
-      let data = await response.json();
-      
-      // Se non ci sono cestelli ma dovrebbero esserci, forza il refresh del cache
-      if (!data || data.length === 0) {
-        console.log('🔄 Nessun cestello trovato, forzando refresh cache...');
-        response = await fetch('/api/baskets?includeAll=true&force_refresh=true');
-        data = await response.json();
-        console.log(`✅ Dopo refresh cache: ${data?.length || 0} cestelli trovati`);
-      }
-      
+      // Usa cache ottimizzata senza bypass per performance
+      const response = await fetch('/api/baskets?includeAll=true');
+      const data = await response.json();
       return data;
     },
     enabled: !isLoading,
+    staleTime: 60000, // Cache for 1 minute
   });
   
   const { data: cycles, refetch: refetchCycles } = useQuery({ 
     queryKey: ['/api/cycles'],
     queryFn: async () => {
-      // Prova prima la query normale
-      let response = await fetch('/api/cycles?includeAll=true');
-      let data = await response.json();
-      
-      // Se non ci sono cicli, forza il refresh del cache
-      if (!data || data.length === 0) {
-        console.log(`🔄 Nessun ciclo trovato, forzando refresh cache...`);
-        response = await fetch('/api/cycles?includeAll=true&force_refresh=true');
-        data = await response.json();
-        console.log(`✅ Dopo refresh cache: ${data?.length || 0} cicli trovati`);
-      }
-      
+      // Usa cache ottimizzata per performance
+      const response = await fetch('/api/cycles?includeAll=true');
+      const data = await response.json();
       return data;
     },
     enabled: !isLoading,
-    staleTime: 0, // Nessuna cache - sempre dati freschi per cicli
+    staleTime: 60000, // Cache for 1 minute per performance
   });
   
   const { data: lots } = useQuery({ 

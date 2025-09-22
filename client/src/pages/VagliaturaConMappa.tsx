@@ -136,10 +136,11 @@ export default function VagliaturaConMappa() {
     enabled: true
   });
   
-  // Query specifica per recuperare le operazioni più recenti
+  // Query specifica per recuperare le operazioni più recenti - ottimizzata per performance
   const { data: operations = [], isLoading: isLoadingOperations } = useQuery({
-    queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
-    enabled: true
+    queryKey: ['/api/operations', { includeAll: true, pageSize: 100 }],
+    enabled: true,
+    staleTime: 60000 // Cache for 1 minute per performance
   });
   
   // Funzione per arricchire i cestelli con i dati delle operazioni e taglie
