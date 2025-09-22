@@ -2550,7 +2550,10 @@ export default function SpreadsheetOperations() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center cursor-help">
-                              L{row.lotId || '1'}
+                              {(() => {
+                                const lot = ((lots as any[]) || []).find((l: any) => l.id === (row.lotId || 1));
+                                return lot ? lot.supplier : `L${row.lotId || '1'}`;
+                              })()}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
