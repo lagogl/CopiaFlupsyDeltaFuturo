@@ -119,17 +119,20 @@ export default function CyclesPaginated() {
   // Filtro FLUPSY locale che può essere inizializzato dai filtri dashboard
   const [flupsyFilter, setFlupsyFilter] = useState<number | null>(null);
   
-  // Query per i dati necessari - ottimizzata per performance
-  const { data: allCycles = [], isLoading: isAllCyclesLoading } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles', 'all'],
+  // Query per i dati necessari - paginazione server-side per performance
+  const { data: cyclesResponse, isLoading: isAllCyclesLoading } = useQuery<{cycles: Cycle[], totalCount: number}>({
+    queryKey: ['/api/cycles', { page: 1, pageSize: 50 }],
     queryFn: async () => {
-      // Usa cache ottimizzata per performance
-      const response = await fetch('/api/cycles?includeAll=true');
+      // Usa paginazione server-side invece di includeAll
+      const response = await fetch('/api/cycles?page=1&pageSize=50');
       const data = await response.json();
-      return data;
+      return data.cycles ? data : { cycles: data, totalCount: data.length };
     },
     staleTime: 60000, // Cache for 1 minute per performance
   });
+  
+  // Estrai i cicli dalla response
+  const allCycles = cyclesResponse?.cycles || [];
   
   const { data: operations = [] } = useQuery<Operation[]>({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 100 }],
