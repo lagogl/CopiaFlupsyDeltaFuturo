@@ -779,7 +779,7 @@ export default function VagliaturaConMappa() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(sourceBasketData)
+        body: JSON.stringify({ sourceBaskets: sourceBasketData })
       });
       
       if (!sourceResponse.ok) {
@@ -1208,6 +1208,7 @@ export default function VagliaturaConMappa() {
                           isSourceBasket: sourceBaskets.some(sb => sb.basketId === b.id)
                         }))}
                         selectedBaskets={destinationBaskets.map(b => b.basketId)}
+                        soldBasketIds={destinationBaskets.filter(b => b.destinationType === 'sold').map(b => b.basketId)}
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"
                         showTooltips={true}

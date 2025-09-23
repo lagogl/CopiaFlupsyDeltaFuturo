@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, ShoppingCart } from 'lucide-react';
 
 // Mappa colori per le taglie
 const SIZE_COLORS: Record<string, {bg: string; border: string; text: string; bar: string}> = {
@@ -56,6 +56,7 @@ interface FlupsyMapVisualizerProps {
   onBasketClick: (basket: Basket) => void;
   mode: 'source' | 'destination'; // Modalità di selezione
   showTooltips?: boolean;
+  soldBasketIds?: number[]; // Array di ID dei cestelli destinati alla vendita
 }
 
 /**
@@ -68,7 +69,8 @@ export default function FlupsyMapVisualizer({
   selectedBaskets,
   onBasketClick,
   mode,
-  showTooltips = true
+  showTooltips = true,
+  soldBasketIds = []
 }: FlupsyMapVisualizerProps) {
   // Trova i cestelli del FLUPSY selezionato
   const flupsyBaskets = baskets.filter(b => b.flupsyId === Number(flupsyId));
@@ -95,6 +97,12 @@ export default function FlupsyMapVisualizer({
   const isBasketSelected = (basketId: number | undefined): boolean => {
     if (!basketId) return false;
     return selectedBaskets.includes(basketId);
+  };
+  
+  // Funzione per verificare se un cestello è destinato alla vendita
+  const isBasketForSale = (basketId: number | undefined): boolean => {
+    if (!basketId) return false;
+    return soldBasketIds.includes(basketId);
   };
   
   // Funzione per gestire il click su una posizione
@@ -277,6 +285,15 @@ export default function FlupsyMapVisualizer({
                                 <div className="text-xs font-medium">
                                   {row}{position}
                                 </div>
+                                
+                                {/* Icona di vendita se destinato alla vendita */}
+                                {isBasketForSale(basket.id) && (
+                                  <div className="absolute top-1 right-1">
+                                    <div className="bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                      <ShoppingCart className="w-3 h-3" />
+                                    </div>
+                                  </div>
+                                )}
                                 
                                 {/* Taglia con testo colorato */}
                                 <div className="flex-1 flex items-center justify-center">
