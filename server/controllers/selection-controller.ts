@@ -735,8 +735,8 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       // ====== FASE 2: ATTIVAZIONE CESTELLI DESTINAZIONE ======
       console.log(`🆕 FASE 2: Attivazione ${destinationBaskets.length} cestelli destinazione`);
       
-      // ====== CALCOLO LOTTO DOMINANTE (APPROCCIO IBRIDO) ======
-      // Raccogli lotti dalle origini con quantità per trovare il dominante
+      // ====== DISTRIBUZIONE PROPORZIONALE DEI LOTTI ======
+      // Raccogli lotti dalle origini con quantità per distribuzione proporzionale
       const lotComposition = new Map<number, number>();
       
       for (const sourceBasket of sourceBaskets) {
@@ -746,25 +746,44 @@ export async function completeSelectionFixed(req: Request, res: Response) {
         }
       }
       
+      // Gestione caso senza lotti: usa lotto di default
+      let primaryLotId: number;
+      let lotPercentages = new Map<number, number>();
+      let isMixedLot = false;
+      
       if (lotComposition.size === 0) {
-        await tx.rollback();
-        return res.status(400).json({
-          success: false,
-          error: "ERRORE CRITICO: Impossibile completare vagliatura senza lotti validi nelle origini"
-        });
-      }
-      
-      // Trova il lotto DOMINANTE (maggior quantità di animali)
-      const dominantLot = Array.from(lotComposition.entries())
-        .sort(([, a], [, b]) => b - a)[0]; // Ordina per quantità decrescente
-      
-      const primaryLotId = dominantLot[0];
-      const isMixedLot = lotComposition.size > 1;
-      
-      console.log(`🎯 Lotto dominante: ${primaryLotId} (${dominantLot[1]} animali)`);
-      if (isMixedLot) {
-        console.log(`🔀 Vagliatura MISTA rilevata: ${lotComposition.size} lotti diversi`);
-        console.log(`📊 Composizione:`, Array.from(lotComposition.entries()));
+        console.log(`⚠️ ATTENZIONE: Nessun lotto trovato nei cestelli origine, uso lotto di default`);
+        // Usa il primo lotto disponibile nel sistema come default
+        const [defaultLot] = await tx.select({ id: lots.id }).from(lots).limit(1);
+        if (!defaultLot) {
+          await tx.rollback();
+          return res.status(400).json({
+            success: false,
+            error: "ERRORE CRITICO: Nessun lotto disponibile nel sistema per completare la vagliatura"
+          });
+        }
+        primaryLotId = defaultLot.id;
+        lotPercentages.set(primaryLotId, 1.0); // 100% al lotto default
+        console.log(`🎯 Lotto default assegnato: ${primaryLotId} (100%)`);
+      } else {
+        // Calcola percentuali per distribuzione proporzionale
+        const totalAnimals = Array.from(lotComposition.values()).reduce((a, b) => a + b, 0);
+        isMixedLot = lotComposition.size > 1;
+        
+        for (const [lotId, count] of Array.from(lotComposition.entries())) {
+          lotPercentages.set(lotId, count / totalAnimals);
+        }
+        
+        // Trova il lotto PRINCIPALE per il ciclo (maggior quantità)
+        const dominantLot = Array.from(lotComposition.entries())
+          .sort(([, a], [, b]) => b - a)[0];
+        primaryLotId = dominantLot[0];
+        
+        console.log(`🎯 Lotto principale: ${primaryLotId} (${dominantLot[1]} animali)`);
+        if (isMixedLot) {
+          console.log(`🔀 Vagliatura MISTA rilevata: ${lotComposition.size} lotti diversi`);
+          console.log(`📊 Composizione percentuale:`, Array.from(lotPercentages.entries()).map(([id, perc]) => `Lotto ${id}: ${(perc * 100).toFixed(1)}%`));
+        }
       }
       
       for (const destBasket of destinationBaskets) {
@@ -773,10 +792,47 @@ export async function completeSelectionFixed(req: Request, res: Response) {
         // 1. CREA NUOVO CICLO
         const [newCycle] = await tx.insert(cycles).values({
           basketId: destBasket.basketId,
-          lotId: primaryLotId, // ✅ AGGIUNTO LOTTO OBBLIGATORIO AL CICLO
+          lotId: primaryLotId, // ✅ LOTTO PRINCIPALE per compatibilità DB
           startDate: selection[0].date,
           state: 'active'
         }).returning();
+
+        // 1.5. DISTRIBUZIONE PROPORZIONALE DEI LOTTI
+        console.log(`   📊 Distribuzione proporzionale ${lotPercentages.size} lotti nel cestello ${destBasket.basketId}:`);
+        let totalDistributed = 0;
+        const lotDistributions: { lotId: number; animals: number }[] = [];
+        
+        // Calcola animali per ogni lotto secondo le percentuali  
+        const basketAnimalCount = destBasket.animalCount || 0;
+        for (const [lotId, percentage] of Array.from(lotPercentages.entries())) {
+          const proportionalAnimals = Math.round(basketAnimalCount * percentage);
+          lotDistributions.push({ lotId, animals: proportionalAnimals });
+          totalDistributed += proportionalAnimals;
+          console.log(`      Lotto ${lotId}: ${proportionalAnimals} animali (${(percentage * 100).toFixed(1)}%)`);
+        }
+        
+        // Gestione remainder per arrotondamenti
+        const remainder = basketAnimalCount - totalDistributed;
+        if (remainder !== 0 && lotDistributions.length > 0) {
+          lotDistributions[0].animals += remainder; // Assegna il remainder al lotto principale
+          console.log(`      Remainder ${remainder} animali assegnati al lotto principale ${lotDistributions[0].lotId}`);
+        }
+        
+        // Registra composizione nella tabella basketLotComposition
+        for (const { lotId, animals } of lotDistributions) {
+          if (animals > 0) { // Solo se ci sono animali da registrare
+            const percentage = basketAnimalCount > 0 ? (animals / basketAnimalCount) : 0;
+            await tx.insert(basketLotComposition).values({
+              basketId: destBasket.basketId,
+              cycleId: newCycle.id,
+              lotId: lotId,
+              animalCount: animals,
+              percentage: percentage,
+              sourceSelectionId: Number(id), // Tracciabilità della vagliatura
+              notes: `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
+            });
+          }
+        }
 
         // 2. DETERMINA TAGLIA
         let actualSizeId = destBasket.sizeId;
