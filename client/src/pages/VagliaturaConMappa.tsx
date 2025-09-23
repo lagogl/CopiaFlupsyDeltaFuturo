@@ -37,7 +37,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Fish, ShoppingCart, MoveRight, Calendar, Hash } from 'lucide-react';
 
 // Types
-import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket, Size } from '@/types';
+import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket } from '@/types';
+import { Size } from '@shared/schema';
 
 // Componenti specifici per la vagliatura con mappa
 import FlupsyMapVisualizer from '@/components/vagliatura-mappa/FlupsyMapVisualizer';
@@ -357,7 +358,7 @@ export default function VagliaturaConMappa() {
     let sizeId = null;
     if (animalsPerKg > 0 && sizes) {
       const matchingSize = sizes.find(size => 
-        animalsPerKg >= size.min && animalsPerKg <= size.max
+        animalsPerKg >= (size.minAnimalsPerKg ?? 0) && animalsPerKg <= (size.maxAnimalsPerKg ?? Infinity)
       );
       if (matchingSize) {
         sizeId = matchingSize.id;
@@ -528,7 +529,7 @@ export default function VagliaturaConMappa() {
     // Determina la taglia in base agli animali per kg
     if (newData.animalsPerKg > 0 && sizes) {
       const matchingSize = sizes.find(size => 
-        newData.animalsPerKg >= size.min && newData.animalsPerKg <= size.max
+        newData.animalsPerKg >= (size.minAnimalsPerKg ?? 0) && newData.animalsPerKg <= (size.maxAnimalsPerKg ?? Infinity)
       );
       if (matchingSize) {
         newData.sizeId = matchingSize.id;
@@ -807,7 +808,7 @@ export default function VagliaturaConMappa() {
         let finalSizeId = basket.sizeId || 0;
         if (finalAnimalsPerKg > 0 && sizes) {
           const matchingSize = sizes.find(size => 
-            finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
+            finalAnimalsPerKg >= (size.minAnimalsPerKg ?? 0) && finalAnimalsPerKg <= (size.maxAnimalsPerKg ?? Infinity)
           );
           if (matchingSize) {
             finalSizeId = matchingSize.id;
@@ -929,8 +930,8 @@ export default function VagliaturaConMappa() {
                               ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
                               : basketDetails?.lastOperation?.animalsPerKg 
                                 ? sizes?.find(size => 
-                                    basketDetails.lastOperation!.animalsPerKg! >= size.min && 
-                                    basketDetails.lastOperation!.animalsPerKg! <= size.max
+                                    basketDetails.lastOperation!.animalsPerKg! >= (size.minAnimalsPerKg ?? 0) && 
+                                    basketDetails.lastOperation!.animalsPerKg! <= (size.maxAnimalsPerKg ?? Infinity)
                                   )
                                 : null;
 
@@ -1150,8 +1151,8 @@ export default function VagliaturaConMappa() {
                               ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
                               : basket.animalsPerKg 
                                 ? sizes?.find(size => 
-                                    basket.animalsPerKg! >= size.min && 
-                                    basket.animalsPerKg! <= size.max
+                                    basket.animalsPerKg! >= (size.minAnimalsPerKg ?? 0) && 
+                                    basket.animalsPerKg! <= (size.maxAnimalsPerKg ?? Infinity)
                                   )
                                 : null;
                             
@@ -1414,7 +1415,7 @@ export default function VagliaturaConMappa() {
                               ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
                               : basket.animalsPerKg 
                                 ? sizes?.find(size => 
-                                    basket.animalsPerKg! >= size.minAnimalsPerKg && basket.animalsPerKg! <= size.maxAnimalsPerKg
+                                    basket.animalsPerKg! >= (size.minAnimalsPerKg ?? 0) && basket.animalsPerKg! <= (size.maxAnimalsPerKg ?? Infinity)
                                   )
                                 : null;
                             
@@ -1481,7 +1482,7 @@ export default function VagliaturaConMappa() {
                                 ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
                                 : finalAnimalsPerKg > 0
                                   ? sizes?.find(size => 
-                                      finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
+                                      finalAnimalsPerKg >= (size.minAnimalsPerKg ?? 0) && finalAnimalsPerKg <= (size.maxAnimalsPerKg ?? Infinity)
                                     )
                                   : null;
                               
@@ -1590,7 +1591,7 @@ export default function VagliaturaConMappa() {
                                 ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
                                 : finalAnimalsPerKg > 0
                                   ? sizes?.find(size => 
-                                      finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
+                                      finalAnimalsPerKg >= (size.minAnimalsPerKg ?? 0) && finalAnimalsPerKg <= (size.maxAnimalsPerKg ?? Infinity)
                                     )
                                   : null;
                               
