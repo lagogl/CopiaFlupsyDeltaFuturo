@@ -482,6 +482,13 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       });
     }
     
+    if (destinationBaskets.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Devi selezionare almeno un cestello destinazione per completare la vagliatura"
+      });
+    }
+    
     // Inserisci tutti i cestelli destinazione
     for (const destBasket of destinationBaskets) {
       await db.insert(selectionDestinationBaskets).values({
