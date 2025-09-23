@@ -395,6 +395,12 @@ export default function VagliaturaConMappa() {
   
   // Funzione per selezionare/deselezionare un cestello origine
   const toggleSourceBasket = (basket: any) => {
+    console.log('🎯 DEBUG - toggleSourceBasket chiamato:', {
+      basket_id: basket.id,
+      basket_physicalNumber: basket.physicalNumber,
+      current_sourceBaskets_length: sourceBaskets.length
+    });
+    
     // Verifica se il cestello è già selezionato
     const isAlreadySelected = sourceBaskets.some(sb => sb.basketId === basket.id);
     
@@ -744,10 +750,28 @@ export default function VagliaturaConMappa() {
 
       // Passo 3: Aggiungere i cestelli origine
       updateStep('add-sources', 'in-progress', 2);
+      
+      // DEBUG: Log dettagliato per identificare il problema
+      console.log('🔍 DEBUG - Cestelli origine prima dell\'invio:', {
+        sourceBaskets,
+        sourceBaskets_length: sourceBaskets.length,
+        sourceBaskets_isArray: Array.isArray(sourceBaskets)
+      });
+      
+      // Verifica di sicurezza aggiuntiva
+      if (!sourceBaskets || sourceBaskets.length === 0) {
+        throw new Error('Nessun cestello origine selezionato. Impossibile procedere.');
+      }
+      
       const sourceBasketData = sourceBaskets.map(basket => ({
         ...basket,
         selectionId
       }));
+      
+      console.log('🔍 DEBUG - Dati cestelli origine preparati per invio:', {
+        sourceBasketData,
+        sourceBasketData_length: sourceBasketData.length
+      });
       
       const sourceResponse = await fetch(`/api/selections/${selectionId}/source-baskets`, {
         method: 'POST',
