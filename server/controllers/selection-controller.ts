@@ -736,13 +736,18 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       console.log(`🆕 FASE 2: Attivazione ${destinationBaskets.length} cestelli destinazione`);
       
       // ====== DISTRIBUZIONE PROPORZIONALE DEI LOTTI ======
-      // Raccogli lotti dalle origini con quantità per distribuzione proporzionale
+      // Raccogli lotti dalle origini REALI nel database (non dai dati input)
+      const sourceBasketData = await tx.select()
+        .from(selectionSourceBaskets)
+        .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+      
       const lotComposition = new Map<number, number>();
       
-      for (const sourceBasket of sourceBaskets) {
+      for (const sourceBasket of sourceBasketData) {
         if (sourceBasket.lotId) {
           const current = lotComposition.get(sourceBasket.lotId) || 0;
           lotComposition.set(sourceBasket.lotId, current + (sourceBasket.animalCount || 0));
+          console.log(`🔍 Lotto trovato: ${sourceBasket.lotId} con ${sourceBasket.animalCount} animali (cestello ${sourceBasket.basketId})`);
         }
       }
       
