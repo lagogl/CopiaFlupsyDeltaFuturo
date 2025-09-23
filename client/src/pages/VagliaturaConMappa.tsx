@@ -1414,7 +1414,7 @@ export default function VagliaturaConMappa() {
                               ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
                               : basket.animalsPerKg 
                                 ? sizes?.find(size => 
-                                    basket.animalsPerKg! >= size.min && basket.animalsPerKg! <= size.max
+                                    basket.animalsPerKg! >= size.minAnimalsPerKg && basket.animalsPerKg! <= size.maxAnimalsPerKg
                                   )
                                 : null;
                             
