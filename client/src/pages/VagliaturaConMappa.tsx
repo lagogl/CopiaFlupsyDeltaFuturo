@@ -830,7 +830,7 @@ export default function VagliaturaConMappa() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(destinationBasketData)
+        body: JSON.stringify({ destinationBaskets: destinationBasketData })
       });
       
       if (!destinationResponse.ok) {
