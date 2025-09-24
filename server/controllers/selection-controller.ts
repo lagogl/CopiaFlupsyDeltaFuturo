@@ -15,6 +15,7 @@ import {
   selectionBasketHistory, 
   selectionLotReferences,
   basketLotComposition,
+  lotLedger,
   operations,
   cycles,
   baskets,
@@ -23,6 +24,11 @@ import {
   lots
 } from "../../shared/schema";
 import { format } from "date-fns";
+import { 
+  balancedRounding, 
+  generateIdempotencyKey, 
+  createAllocationBasis 
+} from "../utils/balanced-rounding";
 
 // =============== COMPOSIZIONE LOTTI ===============
 
@@ -940,6 +946,133 @@ export async function completeSelectionFixed(req: Request, res: Response) {
 
         console.log(`   ✅ Cestello ${destBasket.basketId} attivato correttamente`);
       }
+
+      // ====== FASE 2.5: REGISTRAZIONE LOT LEDGER (TRACCIABILITÀ PRECISA) ======
+      console.log(`📋 FASE 2.5: Registrazione lot ledger per tracciabilità precisa`);
+      
+      // Prepara allocation basis per audit trail
+      const allocationBasis = createAllocationBasis(
+        'proportional',
+        lotComposition,
+        Array.from(lotComposition.values()).reduce((a, b) => a + b, 0),
+        'balanced_rounding_v1'
+      );
+      
+      // REGISTRA TRANSFER_OUT dalle ceste origine (usando arrotondamento bilanciato)
+      console.log(`   📤 Registrando ${lotComposition.size} lotti in uscita dalle origine`);
+      for (const [lotId, totalAnimals] of Array.from(lotComposition.entries())) {
+        const idempotencyKey = generateIdempotencyKey('transfer_out', Number(id), lotId);
+        
+        try {
+          await tx.insert(lotLedger).values({
+            date: selection[0].date,
+            lotId: lotId,
+            type: 'transfer_out',
+            quantity: totalAnimals.toString(),
+            selectionId: Number(id),
+            allocationMethod: 'proportional',
+            allocationBasis: allocationBasis,
+            idempotencyKey: idempotencyKey,
+            notes: `Uscita da vagliatura #${selection[0].selectionNumber} - ${totalAnimals} animali`
+          });
+          console.log(`      ✅ Transfer_out lotto ${lotId}: ${totalAnimals} animali`);
+        } catch (error: any) {
+          if (error.code === '23505') { // Unique constraint violation
+            console.log(`      ⚠️ Transfer_out lotto ${lotId} già registrato (idempotent)`);
+          } else {
+            throw error;
+          }
+        }
+      }
+      
+      // REGISTRA TRANSFER_IN/SALE nelle ceste destinazione (usando arrotondamento bilanciato)
+      console.log(`   📥 Registrando distribuzione nelle ${destinationBaskets.length} ceste destinazione`);
+      for (const destBasket of destinationBaskets) {
+        const basketAnimalCount = destBasket.animalCount || 0;
+        
+        if (basketAnimalCount > 0) {
+          // Usa arrotondamento bilanciato per preservare totali esatti
+          const balancedResult = balancedRounding(basketAnimalCount, lotPercentages);
+          
+          console.log(`      📊 Cestello ${destBasket.basketId} (${basketAnimalCount} animali):`);
+          
+          for (const allocation of balancedResult.allocations) {
+            const ledgerType = destBasket.destinationType === 'sold' ? 'sale' : 'transfer_in';
+            const idempotencyKey = generateIdempotencyKey(
+              ledgerType, 
+              Number(id), 
+              allocation.lotId, 
+              destBasket.basketId
+            );
+            
+            try {
+              await tx.insert(lotLedger).values({
+                date: selection[0].date,
+                lotId: allocation.lotId,
+                type: ledgerType,
+                quantity: allocation.roundedQuantity.toString(),
+                destCycleId: destBasket.destinationType === 'sold' ? null : undefined,
+                selectionId: Number(id),
+                basketId: destBasket.basketId,
+                allocationMethod: 'proportional',
+                allocationBasis: allocationBasis,
+                idempotencyKey: idempotencyKey,
+                notes: `${ledgerType === 'sale' ? 'Vendita' : 'Ingresso'} da vagliatura #${selection[0].selectionNumber} - ${allocation.roundedQuantity} animali (${(allocation.percentage * 100).toFixed(1)}%)`
+              });
+              
+              console.log(`         ✅ ${ledgerType} lotto ${allocation.lotId}: ${allocation.roundedQuantity} animali (${(allocation.percentage * 100).toFixed(1)}%)`);
+            } catch (error: any) {
+              if (error.code === '23505') { // Unique constraint violation
+                console.log(`         ⚠️ ${ledgerType} lotto ${allocation.lotId} già registrato (idempotent)`);
+              } else {
+                throw error;
+              }
+            }
+          }
+          
+          // Verifica matematica
+          const totalAllocated = balancedResult.allocations.reduce((sum, alloc) => sum + alloc.roundedQuantity, 0);
+          if (totalAllocated !== basketAnimalCount) {
+            console.error(`❌ ERRORE MATEMATICO: Cestello ${destBasket.basketId} atteso ${basketAnimalCount}, allocato ${totalAllocated}`);
+          } else {
+            console.log(`         ✅ Verifica matematica: ${totalAllocated} = ${basketAnimalCount} ✓`);
+          }
+        }
+      }
+      
+      // REGISTRA MORTALITÀ (usando arrotondamento bilanciato)
+      if (mortality > 0) {
+        console.log(`   💀 Registrando mortalità di ${mortality} animali`);
+        const mortalityResult = balancedRounding(mortality, lotPercentages);
+        
+        for (const allocation of mortalityResult.allocations) {
+          const idempotencyKey = generateIdempotencyKey('mortality', Number(id), allocation.lotId);
+          
+          try {
+            await tx.insert(lotLedger).values({
+              date: selection[0].date,
+              lotId: allocation.lotId,
+              type: 'mortality',
+              quantity: allocation.roundedQuantity.toString(),
+              selectionId: Number(id),
+              allocationMethod: 'proportional',
+              allocationBasis: allocationBasis,
+              idempotencyKey: idempotencyKey,
+              notes: `Mortalità da vagliatura #${selection[0].selectionNumber} - ${allocation.roundedQuantity} animali (${(allocation.percentage * 100).toFixed(1)}%)`
+            });
+            
+            console.log(`      ✅ Mortalità lotto ${allocation.lotId}: ${allocation.roundedQuantity} animali (${(allocation.percentage * 100).toFixed(1)}%)`);
+          } catch (error: any) {
+            if (error.code === '23505') { // Unique constraint violation
+              console.log(`      ⚠️ Mortalità lotto ${allocation.lotId} già registrata (idempotent)`);
+            } else {
+              throw error;
+            }
+          }
+        }
+      }
+      
+      console.log(`✅ FASE 2.5 COMPLETATA: Lot ledger registrato con arrotondamento bilanciato`);
 
       // ====== FASE 3: GESTIONE MORTALITÀ MISTA AVANZATA ======
       console.log(`🧮 FASE 3: Calcolo composizione aggregata e mortalità proporzionale`);
