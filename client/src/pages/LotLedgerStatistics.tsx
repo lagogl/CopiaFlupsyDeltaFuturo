@@ -27,8 +27,8 @@ interface LotLedgerEntry {
   id: number;
   date: string;
   lotId: number;
-  lotCode: string;
-  lotName: string;
+  lotSupplierNumber: string;
+  lotSupplier: string;
   type: 'in' | 'transfer_out' | 'transfer_in' | 'sale' | 'mortality';
   quantity: number;
   sourceCycleId?: number;
@@ -271,7 +271,7 @@ export default function LotLedgerStatistics() {
                         <SelectItem value="">Tutti i lotti</SelectItem>
                         {allLots?.map((lot: any) => (
                           <SelectItem key={lot.id} value={lot.id.toString()}>
-                            {lot.code} - {lot.name}
+                            {lot.supplierLotNumber} - {lot.supplier}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -430,7 +430,7 @@ export default function LotLedgerStatistics() {
                         <tr key={entry.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
                           <td className="p-2">{format(new Date(entry.date), 'dd/MM/yyyy')}</td>
                           <td className="p-2">
-                            <Badge variant="outline">{entry.lotCode}</Badge>
+                            <Badge variant="outline">{entry.lotSupplierNumber}</Badge>
                           </td>
                           <td className="p-2">
                             <Badge 
@@ -483,7 +483,7 @@ export default function LotLedgerStatistics() {
                   <SelectContent>
                     {allLots?.map((lot: any) => (
                       <SelectItem key={lot.id} value={lot.id.toString()}>
-                        {lot.code} - {lot.name} ({lot.supplier})
+                        {lot.supplierLotNumber} - {lot.supplier}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -499,7 +499,7 @@ export default function LotLedgerStatistics() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Package className="w-5 h-5" />
-                      Bilancio Attuale - {lotStats.lot.code}
+                      Bilancio Attuale - {lotStats.lot.supplierLotNumber}
                     </CardTitle>
                     <CardDescription>
                       {lotStats.lot.name} • {lotStats.lot.supplier} • 
