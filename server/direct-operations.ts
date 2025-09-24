@@ -482,6 +482,7 @@ export function implementDirectOperationRoute(app: Express) {
           console.log("Creazione ciclo per prima attivazione...");
           const cycleData = {
             basketId: operationData.basketId,
+            lotId: operationData.lotId, // ✅ CORREZIONE: Includi il lotId nel ciclo!
             startDate: operationData.date,
             state: 'active' as const,
           };
