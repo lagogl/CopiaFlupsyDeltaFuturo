@@ -586,8 +586,15 @@ export default function SpreadsheetOperations() {
               return activationOp.lotId;
             }
             
-            // Fallback: usa il lotto dell'ultima operazione o il primo disponibile
-            return fullOp?.lotId || ((lots as any[]) || [])[0]?.id || null;
+            // Fallback: cerca il lotto dal ciclo del cestello
+            const currentCycle = ((cycles as any[]) || []).find((c: any) => c.id === basket.currentCycleId);
+            if (currentCycle?.lotId) {
+              console.log(`🔍 Cestello ${basket.id}: Usando lotto ${currentCycle.lotId} dal ciclo ${basket.currentCycleId}`);
+              return currentCycle.lotId;
+            }
+            
+            // Solo come ultimo fallback, usa il lotto dell'ultima operazione
+            return fullOp?.lotId || null;
           })(),
           animalCount: fullOp?.animalCount || null,
           totalWeight: fullOp?.totalWeight || null,
@@ -1507,9 +1514,15 @@ export default function SpreadsheetOperations() {
           return activationOp.lotId;
         }
         
-        // Fallback: usa il primo lotto disponibile
-        console.warn(`⚠️ Cestello ${row.basketId}: Nessuna prima-attivazione trovata, usando lotto predefinito`);
-        return ((lots as any[]) || [])[0]?.id || 1;
+        // Fallback: cerca il lotto dal ciclo del cestello
+        const currentCycle = ((cycles as any[]) || []).find((c: any) => c.id === basket.currentCycleId);
+        if (currentCycle?.lotId) {
+          console.log(`🔍 Cestello ${row.basketId}: Usando lotto ${currentCycle.lotId} dal ciclo ${basket.currentCycleId}`);
+          return currentCycle.lotId;
+        }
+        
+        console.warn(`⚠️ Cestello ${row.basketId}: Nessuna prima-attivazione o ciclo con lotto trovati, usando fallback`);
+        return 1;
       })(), // integer lot_id (obbligatorio per operazioni normali)
       animalCount: row.animalCount || null,                     // integer animal_count (nullable)
       totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
