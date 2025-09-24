@@ -106,7 +106,7 @@ export default function LotLedgerStatistics() {
     page: 1,
     pageSize: 50,
     lotId: undefined as number | undefined,
-    type: '',
+    type: 'all',
     startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd')
   });
@@ -117,7 +117,7 @@ export default function LotLedgerStatistics() {
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(timelineFilters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
+        if (value !== undefined && value !== '' && value !== 'all') {
           params.append(key, String(value));
         }
       });
@@ -249,7 +249,7 @@ export default function LotLedgerStatistics() {
                         <SelectValue placeholder="Tutti i tipi" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Tutti i tipi</SelectItem>
+                        <SelectItem value="all">Tutti i tipi</SelectItem>
                         <SelectItem value="in">Ingresso</SelectItem>
                         <SelectItem value="transfer_in">Trasferimento Entrata</SelectItem>
                         <SelectItem value="transfer_out">Trasferimento Uscita</SelectItem>
@@ -261,14 +261,14 @@ export default function LotLedgerStatistics() {
                   <div className="space-y-2">
                     <Label>Lotto Specifico</Label>
                     <Select 
-                      value={timelineFilters.lotId?.toString() || ''} 
-                      onValueChange={(value) => setTimelineFilters(prev => ({ ...prev, lotId: value ? parseInt(value) : undefined }))}
+                      value={timelineFilters.lotId?.toString() || 'all'} 
+                      onValueChange={(value) => setTimelineFilters(prev => ({ ...prev, lotId: value && value !== 'all' ? parseInt(value) : undefined }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Tutti i lotti" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Tutti i lotti</SelectItem>
+                        <SelectItem value="all">Tutti i lotti</SelectItem>
                         {allLots?.map((lot: any) => (
                           <SelectItem key={lot.id} value={lot.id.toString()}>
                             {lot.supplierLotNumber} - {lot.supplier}
@@ -474,8 +474,8 @@ export default function LotLedgerStatistics() {
               </CardHeader>
               <CardContent>
                 <Select 
-                  value={selectedLotId?.toString() || ''} 
-                  onValueChange={(value) => setSelectedLotId(value ? parseInt(value) : null)}
+                  value={selectedLotId?.toString() || 'all'} 
+                  onValueChange={(value) => setSelectedLotId(value && value !== 'all' ? parseInt(value) : null)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Seleziona un lotto per vedere le statistiche dettagliate" />
