@@ -382,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(lots)
         .where(eq(lots.active, true))
-        .orderBy(lots.name);
+        .orderBy(lots.supplier, lots.supplierLotNumber);
 
       // 4. OPERAZIONI RECENTI (ultime 50)
       const recentOperations = await db
@@ -390,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           operation: operations,
           basketPhysical: baskets.physicalNumber,
           flupsyName: flupsys.name,
-          cycleName: cycles.name,
+          cycleName: sql`CONCAT('Ciclo-', ${cycles.id})`.as('cycleName'),
           sizeName: sizes.name
         })
         .from(operations)
@@ -412,12 +412,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalRecentOperations: recentOperations.length
       };
       
-      for (const flupsyData of flupsysMap.values()) {
+      flupsysMap.forEach((flupsyData) => {
         stats.totalBaskets += flupsyData.totalBaskets;
         stats.totalActiveBaskets += flupsyData.activeBaskets;
         stats.totalAnimals += flupsyData.totalAnimals;
         stats.totalWeight += flupsyData.totalWeight;
-      }
+      });
 
       const snapshot = {
         timestamp: new Date().toISOString(),
@@ -1105,7 +1105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Trova la prima posizione disponibile per ogni fila
       const availablePositions: { [key: string]: number } = {};
       
-      for (const [currentRow, positions] of occupiedPositions.entries()) {
+      occupiedPositions.forEach((positions, currentRow) => {
         let nextPosition = 1;
         while (positions.includes(nextPosition) && nextPosition <= maxPositions) {
           nextPosition++;
@@ -1117,7 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           availablePositions[currentRow] = nextPosition;
         }
-      }
+      });
       
       res.json({ 
         maxPositions, 
