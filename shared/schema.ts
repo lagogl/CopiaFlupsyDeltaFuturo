@@ -321,6 +321,29 @@ export const lots = pgTable("lots", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Lot Ledger (Libro Mastro per Lotti) - Tracciabilità precisa movimenti per lotto
+export const lotLedger = pgTable("lot_ledger", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull(), // Data del movimento
+  lotId: integer("lot_id").notNull(), // Reference al lotto
+  type: text("type", { 
+    enum: ["in", "transfer_out", "transfer_in", "sale", "mortality"] 
+  }).notNull(), // Tipo di movimento
+  quantity: numeric("quantity", { precision: 18, scale: 3 }).notNull(), // Quantità animali (con decimali per precisione)
+  sourceCycleId: integer("source_cycle_id"), // Ciclo origine (per transfer_out)
+  destCycleId: integer("dest_cycle_id"), // Ciclo destinazione (per transfer_in)
+  selectionId: integer("selection_id"), // Reference alla vagliatura
+  operationId: integer("operation_id"), // Reference all'operazione
+  basketId: integer("basket_id"), // Reference al cestello
+  allocationMethod: text("allocation_method", { 
+    enum: ["proportional", "measured"] 
+  }).notNull().default("proportional"), // Metodo di allocazione
+  allocationBasis: jsonb("allocation_basis"), // Dati base per allocazione (percentuali, totali, algoritmo)
+  idempotencyKey: text("idempotency_key").unique(), // Chiave per evitare duplicati
+  notes: text("notes"), // Note opzionali
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Position History removed for performance optimization
 
 // Mortality Rate (Tasso di mortalità previsto per taglia e mese)
@@ -384,6 +407,11 @@ export const insertSgrGiornalieriSchema = createInsertSchema(sgrGiornalieri).omi
 export const insertLotSchema = createInsertSchema(lots).omit({ 
   id: true,
   state: true 
+});
+
+export const insertLotLedgerSchema = createInsertSchema(lotLedger).omit({
+  id: true,
+  createdAt: true
 });
 
 
@@ -492,6 +520,9 @@ export type InsertSgrGiornaliero = z.infer<typeof insertSgrGiornalieriSchema>;
 
 export type Lot = typeof lots.$inferSelect;
 export type InsertLot = z.infer<typeof insertLotSchema>;
+
+export type LotLedger = typeof lotLedger.$inferSelect;
+export type InsertLotLedger = z.infer<typeof insertLotLedgerSchema>;
 
 
 export type MortalityRate = typeof mortalityRates.$inferSelect;
