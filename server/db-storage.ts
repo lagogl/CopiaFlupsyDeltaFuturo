@@ -957,21 +957,26 @@ export class DbStorage implements IStorage {
   }
 
   // SIZES
+  // Cache per sizes (cambiano raramente)
+  private sizesCache: Size[] | null = null;
+  private sizesCacheTimestamp = 0;
+  private SIZES_CACHE_TTL = 300000; // 5 minuti
+
   async getSizes(): Promise<Size[]> {
-    // Ordina per minAnimalsPerKg crescente (meno animali per kg = animali più grandi)
+    // 🚀 OTTIMIZZAZIONE: Cache per sizes
+    const now = Date.now();
+    if (this.sizesCache && (now - this.sizesCacheTimestamp) < this.SIZES_CACHE_TTL) {
+      return this.sizesCache;
+    }
+
+    // Query ottimizzata senza mapping inutile
     const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
     
-    // Mappa i campi del database ai campi attesi dal frontend
-    return allSizes.map(size => ({
-      id: size.id,
-      code: size.code,
-      name: size.name,
-      minAnimalsPerKg: size.minAnimalsPerKg,
-      maxAnimalsPerKg: size.maxAnimalsPerKg,
-      color: size.color,
-      createdAt: size.createdAt,
-      updatedAt: size.updatedAt
-    }));
+    // Salva in cache
+    this.sizesCache = allSizes;
+    this.sizesCacheTimestamp = now;
+    
+    return allSizes;
   }
   
   // Added this method to support FLUPSY units view with main sizes data
@@ -1073,9 +1078,9 @@ export class DbStorage implements IStorage {
   }
   
   /**
-   * Ottiene i lotti con supporto paginazione e filtri
+   * 🚀 OTTIMIZZAZIONE: Ottiene i lotti con JOIN per includere sizes in una query
    * @param options Opzioni di paginazione e filtraggio
-   * @returns Lista paginata di lotti e conteggio totale
+   * @returns Lista paginata di lotti con sizes e conteggio totale
    */
   async getLotsOptimized(options: {
     page?: number;
@@ -1085,7 +1090,7 @@ export class DbStorage implements IStorage {
     dateFrom?: Date;
     dateTo?: Date;
     sizeId?: number;
-  }): Promise<{ lots: Lot[], totalCount: number }> {
+  }): Promise<{ lots: (Lot & { size?: Size })[], totalCount: number }> {
     try {
       // Valori predefiniti
       const page = options.page || 1;
@@ -1095,8 +1100,38 @@ export class DbStorage implements IStorage {
       // Costruisci la query base per il conteggio totale
       let countQuery = db.select({ count: sql<number>`count(*)` }).from(lots);
       
-      // Costruisci la query principale
-      let query = db.select().from(lots);
+      // 🚀 OTTIMIZZAZIONE: Query principale con LEFT JOIN per includere sizes
+      let query = db.select({
+        // Campi del lotto
+        id: lots.id,
+        arrivalDate: lots.arrivalDate,
+        supplier: lots.supplier,
+        supplierLotNumber: lots.supplierLotNumber,
+        quality: lots.quality,
+        animalCount: lots.animalCount,
+        weight: lots.weight,
+        sizeId: lots.sizeId,
+        notes: lots.notes,
+        state: lots.state,
+        active: lots.active,
+        externalId: lots.externalId,
+        description: lots.description,
+        origin: lots.origin,
+        totalMortality: lots.totalMortality,
+        lastMortalityDate: lots.lastMortalityDate,
+        mortalityNotes: lots.mortalityNotes,
+        createdAt: lots.createdAt,
+        // Campi della size
+        sizeCode: sizes.code,
+        sizeName: sizes.name,
+        sizeMinAnimalsPerKg: sizes.minAnimalsPerKg,
+        sizeMaxAnimalsPerKg: sizes.maxAnimalsPerKg,
+        sizeColor: sizes.color,
+        sizeCreatedAt: sizes.createdAt,
+        sizeUpdatedAt: sizes.updatedAt
+      })
+      .from(lots)
+      .leftJoin(sizes, eq(lots.sizeId, sizes.id));
       
       // Applica i filtri a entrambe le query
       const filters = [];
@@ -1130,18 +1165,59 @@ export class DbStorage implements IStorage {
         query = query.where(condition);
       }
       
-      // Esegui la query di conteggio
-      const countResult = await countQuery;
+      // Esegui entrambe le query in parallelo per performance
+      const [countResult, results] = await Promise.all([
+        countQuery,
+        query
+          .orderBy(desc(lots.arrivalDate))
+          .limit(pageSize)
+          .offset(offset)
+      ]);
+      
       const totalCount = countResult[0]?.count || 0;
       
-      // Esegui la query principale con paginazione e ordinamento
-      const results = await query
-        .orderBy(desc(lots.arrivalDate))
-        .limit(pageSize)
-        .offset(offset);
+      // Trasforma i risultati nel formato atteso
+      const lotsWithSizes = results.map(row => {
+        const lot: Lot & { size?: Size } = {
+          id: row.id,
+          arrivalDate: row.arrivalDate,
+          supplier: row.supplier,
+          supplierLotNumber: row.supplierLotNumber,
+          quality: row.quality,
+          animalCount: row.animalCount,
+          weight: row.weight,
+          sizeId: row.sizeId,
+          notes: row.notes,
+          state: row.state,
+          active: row.active,
+          externalId: row.externalId,
+          description: row.description,
+          origin: row.origin,
+          totalMortality: row.totalMortality,
+          lastMortalityDate: row.lastMortalityDate,
+          mortalityNotes: row.mortalityNotes,
+          createdAt: row.createdAt
+        };
+        
+        // Aggiungi size se presente
+        if (row.sizeCode) {
+          lot.size = {
+            id: row.sizeId!,
+            code: row.sizeCode,
+            name: row.sizeName!,
+            minAnimalsPerKg: row.sizeMinAnimalsPerKg!,
+            maxAnimalsPerKg: row.sizeMaxAnimalsPerKg!,
+            color: row.sizeColor!,
+            createdAt: row.sizeCreatedAt,
+            updatedAt: row.sizeUpdatedAt
+          };
+        }
+        
+        return lot;
+      });
       
       return {
-        lots: results,
+        lots: lotsWithSizes,
         totalCount
       };
     } catch (error) {
@@ -1165,19 +1241,10 @@ export class DbStorage implements IStorage {
       lot.arrivalDate = lot.arrivalDate.toISOString().split('T')[0];
     }
     
-    // Importazione dinamica per evitare dipendenze circolari
-    const { getNextSequentialLotId, resetLotIdSequence } = await import('./controllers/lot-sequence-controller');
-    
-    // Ottiene il prossimo ID sequenziale
-    const nextId = await getNextSequentialLotId();
-    
-    // Reset della sequenza per assicurarsi che il prossimo ID generato sia quello corretto
-    await resetLotIdSequence(nextId);
-    
-    // Inserimento con ID esplicito per garantire la sequenzialità
+    // 🚀 OTTIMIZZAZIONE: Inserimento diretto senza sequence management
+    // PostgreSQL gestisce automaticamente l'auto-increment
     const results = await db.insert(lots).values({
       ...lot,
-      id: nextId,
       state: 'active'
     }).returning();
     

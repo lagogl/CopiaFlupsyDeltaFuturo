@@ -4331,7 +4331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Data di fine non valida" });
       }
       
-      // Ottieni i lotti con paginazione e filtri
+      // 🚀 OTTIMIZZAZIONE: I lotti vengono già restituiti con le sizes dal JOIN
       const result = await storage.getLotsOptimized({
         page,
         pageSize,
@@ -4342,13 +4342,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sizeId
       });
       
-      // Arricchisci i dati recuperando le informazioni sulle taglie
-      const lotsWithSizes = await Promise.all(
-        result.lots.map(async (lot) => {
-          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
-          return { ...lot, size };
-        })
-      );
+      // Le sizes sono già incluse nella query, nessuna query aggiuntiva necessaria
+      const lotsWithSizes = result.lots;
       
       // Calcolo le statistiche sulla qualità per i lotti filtrati
       const qualityStats = {
