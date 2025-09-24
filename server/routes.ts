@@ -1813,7 +1813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let additionalLots = [];
           let hasMultipleLots = false;
           
-          if (op.type === 'prima-attivazione-da-vagliatura' && op.basketId) {
+          if (op.type === 'prima-attivazione' && op.basketId) {
             try {
               // Cerca riferimenti ai lotti nella tabella selectionLotReferences
               const lotRefs = await db.select().from(selectionLotReferences)
@@ -3664,8 +3664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(activeCyclesWithDetails);
     } catch (error) {
-      console.error("Error fetching active cycles with details:", error);
-      res.status(400).json({ message: error.message || "Error fetching active cycles with details" });
+      return sendError(res, error, "Error fetching active cycles with details", 400);
     }
   });
 
