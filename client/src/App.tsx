@@ -56,6 +56,7 @@ import GiacenzeRange from "@/pages/GiacenzeRange";
 // Importazione Lots Analytics
 import LotsAnalytics from "@/pages/LotsAnalytics";
 import MixedLotsAnalytics from "@/pages/MixedLotsAnalytics";
+import LotLedgerStatistics from "@/pages/LotLedgerStatistics";
 // Operazioni Avanzate rimosse per ottimizzazione prestazioni
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
@@ -96,6 +97,7 @@ function Router() {
       <ProtectedRoute path="/statistics" component={Statistics}/>
       <ProtectedRoute path="/lots-analytics" component={LotsAnalytics}/>
       <ProtectedRoute path="/mixed-lots-analytics" component={MixedLotsAnalytics}/>
+      <ProtectedRoute path="/lot-ledger-statistics" component={LotLedgerStatistics}/>
       <ProtectedRoute path="/inventory" component={Inventory}/>
       <ProtectedRoute path="/export" component={ExportPage}/>
       <ProtectedRoute path="/sizes" component={Sizes}/>
