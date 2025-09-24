@@ -43,6 +43,17 @@ import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
 // import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
+
+// Utility per gestire errori unknown nei catch blocks
+function sendError(res: Response, error: unknown, message: string = "Errore interno del server", statusCode: number = 500) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  console.error(`${message}:`, error);
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    error: errorMessage
+  });
+}
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
 import * as AnalyticsController from "./controllers/analytics-controller";
@@ -435,12 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error) {
-      console.error('❌ Errore generazione snapshot:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Errore durante la generazione dello snapshot del database',
-        error: error.message
-      });
+      return sendError(res, error, 'Errore durante la generazione dello snapshot del database');
     }
   });
 
@@ -661,12 +667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
     } catch (error) {
-      console.error('Errore nella ricerca cestello via NFC:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Errore interno del server durante la ricerca cestello',
-        details: error instanceof Error ? error.message : 'Errore sconosciuto'
-      });
+      return sendError(res, error, 'Errore interno del server durante la ricerca cestello');
     }
   });
 
@@ -1719,11 +1720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(response);
     } catch (error) {
-      console.error("Errore nell'endpoint ottimizzato delle operazioni:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Errore sconosciuto' 
-      });
+      return sendError(res, error, "Errore nell'endpoint ottimizzato delle operazioni");
     }
   });
 
@@ -1963,8 +1960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("🧪 TEST DATABASE - Query completata");
       res.json({ success: true, message: "Database POST funziona!", count: basketCount.length });
     } catch (error) {
-      console.error("🧪 TEST DATABASE - Errore:", error);
-      res.json({ success: false, error: error.message });
+      return sendError(res, error, "🧪 TEST DATABASE - Errore");
     }
   });
 
@@ -2129,8 +2125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
     } catch (error) {
-      console.error("❌ ERRORE:", error);
-      return res.status(500).json({ message: "Errore server", error: error.message });
+      return sendError(res, error, "Errore server");
     }
   });
 
@@ -2343,8 +2338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(400).json({ message: "Tipo operazione non supportato" });
     } catch (error) {
-      console.error("❌ ERRORE CREAZIONE OPERAZIONE:", error);
-      res.status(500).json({ message: "Errore interno server", error: error.message });
+      return sendError(res, error, "Errore interno server");
     }
   });
 
@@ -2549,10 +2543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("===== FINE ENDPOINT POST /api/operations (prima-attivazione) - SUCCESSO =====");
         return res.status(201).json(operation.operation);
         } catch (error) {
-          console.error("ERRORE DURANTE CREAZIONE OPERAZIONE PRIMA-ATTIVAZIONE:", error);
-          return res.status(500).json({ 
-            message: `Errore durante la creazione dell'operazione di prima attivazione: ${error instanceof Error ? error.message : String(error)}` 
-          });
+          return sendError(res, error, "Errore durante la creazione dell'operazione di prima attivazione");
         }
       } else {
         // Per le altre operazioni utilizziamo il validator completo
@@ -8373,12 +8364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results: syncResults
       });
     } catch (error) {
-      console.error("❌ Errore durante la sincronizzazione:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: error.message,
-        message: "Errore durante la sincronizzazione con il database esterno"
-      });
+      return sendError(res, error, "Errore durante la sincronizzazione con il database esterno");
     }
   });
 
@@ -8419,11 +8405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      console.error("Errore nel controllo stato sincronizzazione:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: error.message 
-      });
+      return sendError(res, error, "Errore nel controllo stato sincronizzazione");
     }
   });
 
@@ -8572,12 +8554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Eliminazione dati lotti completata con successo. Tutti i dati relativi ai lotti sono stati cancellati."
       });
     } catch (error) {
-      console.error("Errore durante l'eliminazione dei dati lotti:", error);
-      res.status(500).json({ 
-        success: false,
-        message: "Errore durante l'eliminazione dei dati lotti",
-        error: error instanceof Error ? error.message : "Errore sconosciuto"
-      });
+      return sendError(res, error, "Errore durante l'eliminazione dei dati lotti");
     }
   });
   
