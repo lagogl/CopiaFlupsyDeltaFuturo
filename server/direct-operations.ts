@@ -9,6 +9,7 @@ import { broadcastMessage } from './websocket';
 import { BasketsCache } from './baskets-cache-service.js';
 import { OperationsCache } from './operations-cache-service.js';
 import { invalidateUnifiedCache } from './controllers/operations-unified-controller.js';
+import { LotAutoStatsService } from './services/lot-auto-stats-service.js';
 
 /**
  * Trova automaticamente il sizeId corretto in base al numero di animali per kg.
@@ -535,6 +536,9 @@ export function implementDirectOperationRoute(app: Express) {
           
           console.log("Operazione creata con successo:", newOperation[0]);
           
+          // 🔄 AUTO-STATS: Aggiorna automaticamente statistiche lotto
+          await LotAutoStatsService.onOperationCreated(newOperation[0]);
+          
           // 4. Genera il cicle code nel formato corretto: numeroCesta-numeroFlupsy-YYMM
           const operationYear = new Date(operationData.date).getFullYear();
           const operationMonth = new Date(operationData.date).getMonth() + 1; // getMonth() restituisce 0-11
@@ -621,6 +625,9 @@ export function implementDirectOperationRoute(app: Express) {
           }
           
           console.log("Operazione creata con successo:", newOperation[0]);
+          
+          // 🔄 AUTO-STATS: Aggiorna automaticamente statistiche lotto
+          await LotAutoStatsService.onOperationCreated(newOperation[0]);
           
           // 1.1 Crea notifica per operazione di vendita se è di tipo vendita
           if (operationData.type === 'vendita' && app.locals.createSaleNotification) {
@@ -757,6 +764,9 @@ export function implementDirectOperationRoute(app: Express) {
         
         const createdOperation = insertResult[0];
         console.log("Operazione creata con successo:", createdOperation);
+        
+        // 🔄 AUTO-STATS: Aggiorna automaticamente statistiche lotto
+        await LotAutoStatsService.onOperationCreated(createdOperation);
         
         // Invalidazione cache del server
         try {

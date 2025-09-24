@@ -43,6 +43,7 @@ import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
 // import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
+import { LotLifecycleController } from "./controllers/lot-lifecycle-controller";
 
 // Utility per gestire errori unknown nei catch blocks
 function sendError(res: Response, error: unknown, message: string = "Errore interno del server", statusCode: number = 500) {
@@ -593,6 +594,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === AI Routes ===
   registerAIRoutes(app);
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
+  
+  // === Lot Lifecycle Management Routes ===
+  app.post("/api/lot-lifecycle/check-all-lots", LotLifecycleController.checkAllLotsStatus);
+  app.post("/api/lot-lifecycle/recalculate-lot/:lotId", LotLifecycleController.recalculateLotStats);
+  app.get("/api/lot-lifecycle/stats", LotLifecycleController.getLifecycleStats);
   
   // === Basket routes ===
   
