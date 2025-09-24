@@ -389,7 +389,35 @@ export function implementDirectOperationRoute(app: Express) {
       
       console.log("✅ Validazioni date completate con successo");
       
-      // 3. Calcola averageWeight e sizeId appropriato se viene fornito animalsPerKg
+      // 3. ENFORZA IL LOTTO DEL CICLO ATTIVO per operazioni peso/misura
+      if (operationData.type === 'peso' || operationData.type === 'misura') {
+        const activeCycleResult = await db
+          .select()
+          .from(cycles)
+          .where(
+            and(
+              eq(cycles.basketId, operationData.basketId),
+              eq(cycles.state, 'active')
+            )
+          )
+          .limit(1);
+          
+        if (activeCycleResult.length > 0) {
+          const activeCycle = activeCycleResult[0];
+          if (activeCycle.lotId && activeCycle.lotId !== operationData.lotId) {
+            console.log(`🔄 CORREZIONE AUTOMATICA: Operazione ${operationData.type} su cestello ${operationData.basketId} - sostituendo lotId ${operationData.lotId} con lotId ciclo attivo ${activeCycle.lotId}`);
+            operationData.lotId = activeCycle.lotId;
+          } else if (!activeCycle.lotId) {
+            console.warn(`⚠️ AVVISO: Ciclo attivo ${activeCycle.id} per cestello ${operationData.basketId} non ha lotId - mantengo lotId ${operationData.lotId} dall'operazione`);
+          } else {
+            console.log(`✅ VALIDAZIONE: Operazione ${operationData.type} ha già il lotId corretto ${operationData.lotId} dal ciclo attivo`);
+          }
+        } else {
+          console.warn(`⚠️ AVVISO: Nessun ciclo attivo trovato per cestello ${operationData.basketId} - operazione ${operationData.type} procede con lotId ${operationData.lotId}`);
+        }
+      }
+      
+      // 4. Calcola averageWeight e sizeId appropriato se viene fornito animalsPerKg
       if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
         // Calcola il peso medio in mg per ogni animale
         const averageWeight = 1000000 / operationData.animalsPerKg;

@@ -1503,26 +1503,51 @@ export default function SpreadsheetOperations() {
       // CAMPI OPZIONALI secondo lo schema operations  
       sizeId: row.type === 'misura' ? row.sizeId : null,       // integer size_id (nullable)
       sgrId: null,                                              // integer sgr_id (nullable)
-      // lotId è sempre richiesto per operazioni su ceste attive - USA IL LOTTO DALLA PRIMA-ATTIVAZIONE!
+      // lotId è sempre richiesto per operazioni su ceste attive - USA IL LOTTO DAL CICLO ATTIVO!
       lotId: row.lotId || (() => {
-        // Trova l'operazione di prima-attivazione per questo cestello per ottenere il lotto corretto
+        console.log(`🔍 LOTTO DEBUG - Cestello ${row.basketId}: Ricerca lotto in corso...`);
+        
+        // PRIORITÀ 1: Cerca il lotto dal ciclo ATTIVO del cestello (più affidabile)
+        const activeCycle = ((cycles as any[]) || []).find((c: any) => 
+          c.basketId === row.basketId && c.state === 'active' && !c.endDate
+        );
+        if (activeCycle?.lotId) {
+          console.log(`✅ Cestello ${row.basketId}: Lotto ${activeCycle.lotId} trovato dal CICLO ATTIVO ${activeCycle.id}`);
+          return activeCycle.lotId;
+        }
+        
+        // PRIORITÀ 2: Cerca il lotto dall'operazione di prima-attivazione
         const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === row.basketId);
         const activationOp = basketOperations.find((op: any) => op.type === 'prima-attivazione');
-        
         if (activationOp?.lotId) {
-          console.log(`🔍 Cestello ${row.basketId}: Usando lotto ${activationOp.lotId} dalla prima-attivazione`);
+          console.log(`✅ Cestello ${row.basketId}: Lotto ${activationOp.lotId} trovato dalla PRIMA-ATTIVAZIONE`);
           return activationOp.lotId;
         }
         
-        // Fallback: cerca il lotto dal ciclo del cestello
+        // PRIORITÀ 3: Cerca il lotto dal ciclo tramite currentCycleId (fallback)
         const currentCycle = ((cycles as any[]) || []).find((c: any) => c.id === basket.currentCycleId);
         if (currentCycle?.lotId) {
-          console.log(`🔍 Cestello ${row.basketId}: Usando lotto ${currentCycle.lotId} dal ciclo ${basket.currentCycleId}`);
+          console.log(`✅ Cestello ${row.basketId}: Lotto ${currentCycle.lotId} trovato dal CICLO ${basket.currentCycleId}`);
           return currentCycle.lotId;
         }
         
-        console.warn(`⚠️ Cestello ${row.basketId}: Nessuna prima-attivazione o ciclo con lotto trovati, usando fallback`);
-        return 1;
+        // ULTIMO RESORT: Cerca l'ultimo lotto usato in qualsiasi operazione di questo cestello
+        const basketOpsWithLot = basketOperations.filter((op: any) => op.lotId).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (basketOpsWithLot.length > 0) {
+          const lastLot = basketOpsWithLot[0].lotId;
+          console.log(`⚠️ Cestello ${row.basketId}: Usando ULTIMO LOTTO ${lastLot} dall'operazione più recente`);
+          return lastLot;
+        }
+        
+        // ERRORE CRITICO: Non dovrebbe mai succedere per cestelli attivi
+        console.error(`❌ ERRORE CRITICO - Cestello ${row.basketId}: Nessun lotto trovato! Dati disponibili:`, {
+          activeCycle,
+          activationOp,
+          currentCycle,
+          basketOpsWithLot: basketOpsWithLot.length,
+          basketCurrentCycleId: basket.currentCycleId
+        });
+        throw new Error(`Impossibile determinare il lotto per il cestello ${row.basketId}. Verifica che il cestello abbia un ciclo attivo.`);
       })(), // integer lot_id (obbligatorio per operazioni normali)
       animalCount: row.animalCount || null,                     // integer animal_count (nullable)
       totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
