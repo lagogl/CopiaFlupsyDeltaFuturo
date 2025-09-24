@@ -43,6 +43,7 @@ export interface MenuTranslations {
     aiDashboard: string;
     statistics: string;
     lotsAnalytics: string;
+    lotLedgerStatistics: string;
     sgrIndices: string;
     salesReports: string;
     plantDiary: string;
@@ -102,6 +103,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       aiDashboard: "AI Dashboard",
       statistics: "Statistiche",
       lotsAnalytics: "Analisi Lotti",
+      lotLedgerStatistics: "Statistiche Lot Ledger",
       sgrIndices: "Indici SGR",
       salesReports: "Report di Vendita",
       plantDiary: "Diario di Impianto",
@@ -157,6 +159,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       aiDashboard: "AI Dashboard",
       statistics: "Statistics",
       lotsAnalytics: "Lots Analytics",
+      lotLedgerStatistics: "Lot Ledger Statistics",
       sgrIndices: "SGR Indices",
       salesReports: "Sales Reports",
       plantDiary: "Plant Diary",
