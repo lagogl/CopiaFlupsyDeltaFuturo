@@ -18,6 +18,7 @@ import {
   flupsys,
   baskets,
   lots,
+  lotLedger,
   users,
   screeningOperations,
   screeningSourceBaskets,
@@ -4406,6 +4407,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === LOT STATISTICS ROUTES ===
+  app.get("/api/lots/timeline", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 50;
+      const lotId = req.query.lotId ? parseInt(req.query.lotId as string) : undefined;
+      const type = req.query.type as string;
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      const offset = (page - 1) * pageSize;
+      
+      // Query base con join ai lotti per info aggiuntive
+      let query = db
+        .select({
+          id: lotLedger.id,
+          date: lotLedger.date,
+          lotId: lotLedger.lotId,
+          lotCode: lots.code,
+          lotName: lots.name,
+          type: lotLedger.type,
+          quantity: lotLedger.quantity,
+          sourceCycleId: lotLedger.sourceCycleId,
+          destCycleId: lotLedger.destCycleId,
+          selectionId: lotLedger.selectionId,
+          operationId: lotLedger.operationId,
+          basketId: lotLedger.basketId,
+          allocationMethod: lotLedger.allocationMethod,
+          notes: lotLedger.notes,
+          createdAt: lotLedger.createdAt
+        })
+        .from(lotLedger)
+        .leftJoin(lots, eq(lotLedger.lotId, lots.id));
+      
+      // Applica filtri
+      const conditions = [];
+      if (lotId) {
+        conditions.push(eq(lotLedger.lotId, lotId));
+      }
+      if (type) {
+        conditions.push(eq(lotLedger.type, type));
+      }
+      if (startDate) {
+        conditions.push(sql`${lotLedger.date} >= ${startDate}`);
+      }
+      if (endDate) {
+        conditions.push(sql`${lotLedger.date} <= ${endDate}`);
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      // Ordina per data discendente e ID per consistenza
+      const timeline = await query
+        .orderBy(desc(lotLedger.date), desc(lotLedger.id))
+        .limit(pageSize)
+        .offset(offset);
+      
+      // Conta il totale per paginazione
+      let countQuery = db
+        .select({ count: count() })
+        .from(lotLedger);
+      
+      if (conditions.length > 0) {
+        countQuery = countQuery.where(and(...conditions));
+      }
+      
+      const [{ count: totalCount }] = await countQuery;
+      
+      res.json({
+        success: true,
+        timeline,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages: Math.ceil(totalCount / pageSize),
+          hasNextPage: page < Math.ceil(totalCount / pageSize),
+          hasPreviousPage: page > 1
+        }
+      });
+      
+    } catch (error) {
+      console.error("Error fetching lot timeline:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Errore nel recupero della timeline dei lotti",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   app.get("/api/lots/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -4428,6 +4522,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching lot:", error);
       res.status(500).json({ message: "Failed to fetch lot" });
+    }
+  });
+
+  app.get("/api/lots/:id/stats", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid lot ID" });
+      }
+
+      // Verifica che il lotto esista
+      const lot = await storage.getLot(id);
+      if (!lot) {
+        return res.status(404).json({ message: "Lot not found" });
+      }
+
+      // Query per aggregare le statistiche dal lot_ledger
+      const movements = await db
+        .select({
+          type: lotLedger.type,
+          totalQuantity: sql<number>`SUM(CAST(${lotLedger.quantity} AS DECIMAL))`,
+          movementCount: count(),
+          earliestDate: sql<string>`MIN(${lotLedger.date})`,
+          latestDate: sql<string>`MAX(${lotLedger.date})`
+        })
+        .from(lotLedger)
+        .where(eq(lotLedger.lotId, id))
+        .groupBy(lotLedger.type);
+
+      // Query per timeline dettagliata (ultimi 50 movimenti)
+      const recentMovements = await db
+        .select({
+          id: lotLedger.id,
+          date: lotLedger.date,
+          type: lotLedger.type,
+          quantity: lotLedger.quantity,
+          selectionId: lotLedger.selectionId,
+          operationId: lotLedger.operationId,
+          basketId: lotLedger.basketId,
+          allocationMethod: lotLedger.allocationMethod,
+          notes: lotLedger.notes,
+          createdAt: lotLedger.createdAt
+        })
+        .from(lotLedger)
+        .where(eq(lotLedger.lotId, id))
+        .orderBy(desc(lotLedger.date), desc(lotLedger.id))
+        .limit(50);
+
+      // Calcola bilancio e statistiche
+      const stats = {
+        in: 0,
+        transfer_out: 0,
+        transfer_in: 0,
+        sale: 0,
+        mortality: 0
+      };
+
+      movements.forEach(movement => {
+        const type = movement.type as keyof typeof stats;
+        if (type in stats) {
+          stats[type] = Number(movement.totalQuantity);
+        }
+      });
+
+      // Calcola bilancio attuale
+      const currentBalance = stats.in + stats.transfer_in - stats.transfer_out - stats.sale - stats.mortality;
+      
+      // Calcola percentuali (solo se ci sono ingressi)
+      const totalInflow = stats.in + stats.transfer_in;
+      const totalOutflow = stats.transfer_out + stats.sale + stats.mortality;
+      
+      const percentages = totalInflow > 0 ? {
+        survival: totalInflow > 0 ? Math.round(((totalInflow - stats.mortality) / totalInflow) * 100) : 0,
+        sold: Math.round((stats.sale / totalInflow) * 100),
+        mortality: Math.round((stats.mortality / totalInflow) * 100),
+        transferred: Math.round((stats.transfer_out / totalInflow) * 100)
+      } : {
+        survival: 0,
+        sold: 0,
+        mortality: 0,
+        transferred: 0
+      };
+
+      // Raggruppa movimenti per tipo per il summary
+      const summaryByType = movements.map(m => ({
+        type: m.type,
+        totalQuantity: Number(m.totalQuantity),
+        movementCount: Number(m.movementCount),
+        earliestDate: m.earliestDate,
+        latestDate: m.latestDate
+      }));
+
+      // Calcola periodo di attività
+      const allDates = movements.filter(m => m.earliestDate && m.latestDate);
+      const activityPeriod = allDates.length > 0 ? {
+        firstMovement: Math.min(...allDates.map(m => new Date(m.earliestDate).getTime())),
+        lastMovement: Math.max(...allDates.map(m => new Date(m.latestDate).getTime())),
+        daysSinceFirst: allDates.length > 0 ? 
+          Math.ceil((Date.now() - Math.min(...allDates.map(m => new Date(m.earliestDate).getTime()))) / (1000 * 60 * 60 * 24)) : 0
+      } : null;
+
+      res.json({
+        success: true,
+        lotId: id,
+        lot: {
+          ...lot,
+          size: lot.sizeId ? await storage.getSize(lot.sizeId) : null
+        },
+        currentBalance,
+        stats,
+        percentages,
+        totals: {
+          totalInflow,
+          totalOutflow,
+          netBalance: currentBalance
+        },
+        summaryByType,
+        activityPeriod,
+        recentMovements: recentMovements.map(movement => ({
+          ...movement,
+          quantity: Number(movement.quantity)
+        })),
+        metadata: {
+          totalMovements: movements.reduce((sum, m) => sum + Number(m.movementCount), 0),
+          calculatedAt: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error("Error fetching lot statistics:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Errore nel recupero delle statistiche del lotto",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
