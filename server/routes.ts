@@ -4304,48 +4304,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/lots/optimized", async (req, res) => {
     try {
+      // 🚨 SOLUZIONE DRASTICA: Usa esattamente il codice che funziona da /api/lots
+      const lots = await storage.getLots();
+      
+      // Fetch size for each lot (stesso codice che funziona)
+      const lotsWithSizes = await Promise.all(
+        lots.map(async (lot) => {
+          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
+          return { ...lot, size };
+        })
+      );
+      
+      // Applica filtri manualmente (paginazione simulata)
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
       const supplier = req.query.supplier as string;
       const quality = req.query.quality as string;
       const sizeId = req.query.sizeId ? parseInt(req.query.sizeId as string) : undefined;
       
-      // Gestione delle date
-      let dateFrom: Date | undefined;
-      let dateTo: Date | undefined;
-      
-      if (req.query.dateFrom) {
-        dateFrom = new Date(req.query.dateFrom as string);
+      // Filtri
+      let filteredLots = lotsWithSizes;
+      if (supplier) {
+        filteredLots = filteredLots.filter(lot => lot.supplier === supplier);
+      }
+      if (quality) {
+        filteredLots = filteredLots.filter(lot => lot.quality === quality);
+      }
+      if (sizeId) {
+        filteredLots = filteredLots.filter(lot => lot.sizeId === sizeId);
       }
       
-      if (req.query.dateTo) {
-        dateTo = new Date(req.query.dateTo as string);
-      }
+      // Paginazione
+      const totalCount = filteredLots.length;
+      const startIndex = (page - 1) * pageSize;
+      const paginatedLots = filteredLots.slice(startIndex, startIndex + pageSize);
       
-      // Verifica che le date siano valide
-      if (dateFrom && isNaN(dateFrom.getTime())) {
-        return res.status(400).json({ message: "Data di inizio non valida" });
-      }
-      
-      if (dateTo && isNaN(dateTo.getTime())) {
-        return res.status(400).json({ message: "Data di fine non valida" });
-      }
-      
-      // 🚀 OTTIMIZZAZIONE: I lotti vengono già restituiti con le sizes dal JOIN
-      const result = await storage.getLotsOptimized({
-        page,
-        pageSize,
-        supplier,
-        quality,
-        dateFrom,
-        dateTo,
-        sizeId
-      });
-      
-      // Le sizes sono già incluse nella query, nessuna query aggiuntiva necessaria
-      const lotsWithSizes = result.lots;
-      
-      // Calcolo le statistiche sulla qualità per i lotti filtrati
+      // Statistiche (stesso calcolo)
       const qualityStats = {
         normali: 0,
         teste: 0,
@@ -4353,7 +4347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totale: 0
       };
       
-      result.lots.forEach(lot => {
+      filteredLots.forEach(lot => {
         const count = lot.animalCount || 0;
         qualityStats.totale += count;
         
@@ -4362,7 +4356,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (lot.quality === 'code') qualityStats.code += count;
       });
       
-      // Prepara percentuali
       const percentages = {
         normali: qualityStats.totale > 0 ? Math.round((qualityStats.normali / qualityStats.totale) * 100) : 0,
         teste: qualityStats.totale > 0 ? Math.round((qualityStats.teste / qualityStats.totale) * 100) : 0,
@@ -4370,11 +4363,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       res.json({
-        lots: lotsWithSizes,
-        totalCount: result.totalCount,
+        lots: paginatedLots,
+        totalCount,
         currentPage: page,
         pageSize,
-        totalPages: Math.ceil(result.totalCount / pageSize),
+        totalPages: Math.ceil(totalCount / pageSize),
         statistics: {
           counts: qualityStats,
           percentages

@@ -1078,9 +1078,9 @@ export class DbStorage implements IStorage {
   }
   
   /**
-   * 🚀 OTTIMIZZAZIONE: Ottiene i lotti con JOIN per includere sizes in una query
+   * 🔧 FALLBACK: Versione semplificata che funziona - senza sizes integrate
    * @param options Opzioni di paginazione e filtraggio
-   * @returns Lista paginata di lotti con sizes e conteggio totale
+   * @returns Lista paginata di lotti e conteggio totale
    */
   async getLotsOptimized(options: {
     page?: number;
@@ -1090,7 +1090,7 @@ export class DbStorage implements IStorage {
     dateFrom?: Date;
     dateTo?: Date;
     sizeId?: number;
-  }): Promise<{ lots: (Lot & { size?: Size })[], totalCount: number }> {
+  }): Promise<{ lots: Lot[], totalCount: number }> {
     try {
       // Valori predefiniti
       const page = options.page || 1;
@@ -1100,38 +1100,8 @@ export class DbStorage implements IStorage {
       // Costruisci la query base per il conteggio totale
       let countQuery = db.select({ count: sql<number>`count(*)` }).from(lots);
       
-      // 🚀 OTTIMIZZAZIONE: Query principale con LEFT JOIN per includere sizes
-      let query = db.select({
-        // Campi del lotto
-        id: lots.id,
-        arrivalDate: lots.arrivalDate,
-        supplier: lots.supplier,
-        supplierLotNumber: lots.supplierLotNumber,
-        quality: lots.quality,
-        animalCount: lots.animalCount,
-        weight: lots.weight,
-        sizeId: lots.sizeId,
-        notes: lots.notes,
-        state: lots.state,
-        active: lots.active,
-        externalId: lots.externalId,
-        description: lots.description,
-        origin: lots.origin,
-        totalMortality: lots.totalMortality,
-        lastMortalityDate: lots.lastMortalityDate,
-        mortalityNotes: lots.mortalityNotes,
-        createdAt: lots.createdAt,
-        // Campi della size
-        sizeCode: sizes.code,
-        sizeName: sizes.name,
-        sizeMinAnimalsPerKg: sizes.minAnimalsPerKg,
-        sizeMaxAnimalsPerKg: sizes.maxAnimalsPerKg,
-        sizeColor: sizes.color,
-        sizeCreatedAt: sizes.createdAt,
-        sizeUpdatedAt: sizes.updatedAt
-      })
-      .from(lots)
-      .leftJoin(sizes, eq(lots.sizeId, sizes.id));
+      // Query principale - semplice e sicura
+      let query = db.select().from(lots);
       
       // Applica i filtri a entrambe le query
       const filters = [];
@@ -1165,59 +1135,18 @@ export class DbStorage implements IStorage {
         query = query.where(condition);
       }
       
-      // Esegui entrambe le query in parallelo per performance
-      const [countResult, results] = await Promise.all([
-        countQuery,
-        query
-          .orderBy(desc(lots.arrivalDate))
-          .limit(pageSize)
-          .offset(offset)
-      ]);
-      
+      // Esegui la query di conteggio
+      const countResult = await countQuery;
       const totalCount = countResult[0]?.count || 0;
       
-      // Trasforma i risultati nel formato atteso
-      const lotsWithSizes = results.map(row => {
-        const lot: Lot & { size?: Size } = {
-          id: row.id,
-          arrivalDate: row.arrivalDate,
-          supplier: row.supplier,
-          supplierLotNumber: row.supplierLotNumber,
-          quality: row.quality,
-          animalCount: row.animalCount,
-          weight: row.weight,
-          sizeId: row.sizeId,
-          notes: row.notes,
-          state: row.state,
-          active: row.active,
-          externalId: row.externalId,
-          description: row.description,
-          origin: row.origin,
-          totalMortality: row.totalMortality,
-          lastMortalityDate: row.lastMortalityDate,
-          mortalityNotes: row.mortalityNotes,
-          createdAt: row.createdAt
-        };
-        
-        // Aggiungi size se presente
-        if (row.sizeCode) {
-          lot.size = {
-            id: row.sizeId!,
-            code: row.sizeCode,
-            name: row.sizeName!,
-            minAnimalsPerKg: row.sizeMinAnimalsPerKg!,
-            maxAnimalsPerKg: row.sizeMaxAnimalsPerKg!,
-            color: row.sizeColor!,
-            createdAt: row.sizeCreatedAt,
-            updatedAt: row.sizeUpdatedAt
-          };
-        }
-        
-        return lot;
-      });
+      // Esegui la query principale con paginazione e ordinamento
+      const results = await query
+        .orderBy(desc(lots.arrivalDate))
+        .limit(pageSize)
+        .offset(offset);
       
       return {
-        lots: lotsWithSizes,
+        lots: results,
         totalCount
       };
     } catch (error) {
