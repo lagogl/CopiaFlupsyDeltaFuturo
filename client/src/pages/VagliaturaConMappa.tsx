@@ -1207,7 +1207,12 @@ export default function VagliaturaConMappa() {
                           // Aggiungiamo un flag per indicare se è un cestello origine
                           isSourceBasket: sourceBaskets.some(sb => sb.basketId === b.id)
                         }))}
-                        selectedBaskets={destinationBaskets.map(b => b.basketId)}
+                        selectedBaskets={(() => {
+                          const selectedIds = destinationBaskets.map(b => b.basketId);
+                          console.log('DEBUG: selectedBaskets passati a FlupsyMapVisualizer:', selectedIds);
+                          console.log('DEBUG: destinationBaskets completa:', destinationBaskets);
+                          return selectedIds;
+                        })()}
                         soldBasketIds={destinationBaskets.filter(b => b.destinationType === 'sold').map(b => b.basketId)}
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"

@@ -96,7 +96,14 @@ export default function FlupsyMapVisualizer({
   // Funzione per verificare se un cestello è selezionato
   const isBasketSelected = (basketId: number | undefined): boolean => {
     if (!basketId) return false;
-    return selectedBaskets.includes(basketId);
+    const isSelected = selectedBaskets.includes(basketId);
+    
+    // Debug logging per cestello #1
+    if (basketId === 1) {
+      console.log(`DEBUG Cestello #1: basketId=${basketId}, selectedBaskets=${JSON.stringify(selectedBaskets)}, isSelected=${isSelected}, mode=${mode}`);
+    }
+    
+    return isSelected;
   };
   
   // Funzione per verificare se un cestello è destinato alla vendita
