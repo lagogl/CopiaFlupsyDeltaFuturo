@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/queryClient';
 import { getOperationTypeLabel, getOperationTypeColor, getSizeColor, formatNumberWithCommas } from '@/lib/utils';
@@ -565,6 +566,30 @@ export default function CycleDetail() {
   const [, params] = useRoute('/cycles/:id');
   const cycleId = params?.id ? parseInt(params.id) : null;
   const [activeTab, setActiveTab] = useState('operations');
+  const [isCloseCycleDialogOpen, setIsCloseCycleDialogOpen] = useState(false);
+  const [isClosingCycle, setIsClosingCycle] = useState(false);
+  
+  // Funzione per gestire la chiusura del ciclo
+  const handleCloseCycle = async () => {
+    setIsClosingCycle(true);
+    try {
+      await apiRequest({
+        url: `/api/cycles/${cycle.id}/close`,
+        method: 'POST',
+        body: {
+          endDate: new Date().toISOString()
+        }
+      });
+      
+      // Chiudi il dialog e ricarica la pagina
+      setIsCloseCycleDialogOpen(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Errore nella chiusura del ciclo:', error);
+    } finally {
+      setIsClosingCycle(false);
+    }
+  };
   
   // Fetch cycle details
   const { data: cycle, isLoading: cycleLoading } = useQuery({
@@ -785,24 +810,7 @@ export default function CycleDetail() {
             <Button 
               variant="outline" 
               className="text-red-600 border-red-600 hover:bg-red-50"
-              onClick={() => {
-                if (window.confirm('Sei sicuro di voler chiudere questo ciclo? Questa operazione non può essere annullata.')) {
-                  // Creare qui l'API call per chiudere il ciclo
-                  apiRequest({
-                    url: `/api/cycles/${cycle.id}/close`,
-                    method: 'POST',
-                    body: {
-                      endDate: new Date().toISOString()
-                    }
-                  }).then(() => {
-                    // Ricaricare la pagina o aggiornare i dati
-                    window.location.reload();
-                  }).catch(error => {
-                    console.error('Errore nella chiusura del ciclo:', error);
-                    alert('Si è verificato un errore durante la chiusura del ciclo. Riprova.');
-                  });
-                }
-              }}
+              onClick={() => setIsCloseCycleDialogOpen(true)}
             >
               Chiudi Ciclo
             </Button>
@@ -957,6 +965,58 @@ export default function CycleDetail() {
           <NotesTab />
         </TabsContent>
       </Tabs>
+      
+      {/* Dialog per conferma chiusura ciclo */}
+      <Dialog open={isCloseCycleDialogOpen} onOpenChange={setIsCloseCycleDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Box className="mr-2 h-5 w-5 text-red-600" />
+              Chiudi Ciclo
+            </DialogTitle>
+            <DialogDescription>
+              Stai per chiudere definitivamente il <strong>Ciclo #{cycle.id}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <h4 className="font-medium text-red-900 mb-2">⚠️ Attenzione</h4>
+              <ul className="text-sm text-red-800 space-y-1">
+                <li>• Questa operazione è <strong>irreversibile</strong></li>
+                <li>• Il ciclo verrà contrassegnato come completato</li>
+                <li>• Non sarà più possibile aggiungere operazioni</li>
+                <li>• La data di chiusura sarà impostata a oggi</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex-col-reverse sm:flex-row">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCloseCycleDialogOpen(false)}
+              disabled={isClosingCycle}
+            >
+              Annulla
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleCloseCycle}
+              disabled={isClosingCycle}
+              className="mb-2 sm:mb-0 sm:ml-2"
+            >
+              {isClosingCycle ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Chiusura in corso...
+                </>
+              ) : (
+                'Conferma Chiusura'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

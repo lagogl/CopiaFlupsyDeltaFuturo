@@ -147,41 +147,96 @@ export default function FlupsyMapVisualizer({
     }
   };
   
-  // Funzione per ottenere la classe CSS appropriata per un cestello
+  // 🎨 NUOVO SCHEMA COLORAZIONE - Funzione per ottenere la classe CSS appropriata per un cestello
   const getBasketClass = (basket: Basket | undefined) => {
     if (!basket) {
       return 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600';
     }
     
-    const sizeColors = getSizeColorClasses(basket.size?.code);
+    const hasActiveCycle = basket.currentCycleId !== null;
     const isSelected = isBasketSelected(basket.id);
-    const selectionRing = getSelectionRingClasses(isSelected, mode);
     
+    // 🔥 1. CESTE CON CICLO ATTIVO - Sfondo distintivo
+    if (hasActiveCycle) {
+      // Se ha un ciclo attivo, usa uno sfondo speciale
+      let activeCycleBackground = 'bg-amber-100 dark:bg-amber-900/20';
+      let activeCycleBorder = 'border-amber-400 dark:border-amber-500';
+      let activeCycleText = 'text-amber-900 dark:text-amber-100';
+      
+      // 🎯 2. CESTE ORIGINE - Quando selezionate come origine
+      if (isSelected && mode === 'source') {
+        return `${activeCycleBackground} ${activeCycleBorder} ${activeCycleText} border-2 ring-4 ring-blue-500 shadow-lg transform scale-105 cursor-pointer transition-all duration-200`;
+      }
+      
+      // 🎯 3. CESTE DESTINAZIONE - Quando selezionate come destinazione  
+      if (isSelected && mode === 'destination') {
+        return `${activeCycleBackground} ${activeCycleBorder} ${activeCycleText} border-2 ring-4 ring-green-500 shadow-lg transform scale-105 cursor-pointer transition-all duration-200`;
+      }
+      
+      // Ceste con ciclo attivo non selezionate
+      if (mode === 'source') {
+        return `${activeCycleBackground} ${activeCycleBorder} ${activeCycleText} border-2 hover:ring-2 hover:ring-blue-300 hover:shadow-md cursor-pointer transition-all duration-200`;
+      } else if (mode === 'destination') {
+        return `${activeCycleBackground} ${activeCycleBorder} ${activeCycleText} border-2 hover:ring-2 hover:ring-green-300 hover:shadow-md cursor-pointer transition-all duration-200`;
+      }
+      
+      // Ciclo attivo ma non in modalità di selezione
+      return `${activeCycleBackground} ${activeCycleBorder} ${activeCycleText} border-2 transition-all duration-200`;
+    }
+    
+    // 🔒 4. CESTE SENZA CICLO ATTIVO - Schema tradizionale con taglia
+    const sizeColors = getSizeColorClasses(basket.size?.code);
     const baseClasses = `${sizeColors.bg} ${sizeColors.border} ${sizeColors.text} border-2 transition-all duration-200`;
     
     if (isSelected) {
-      return `${baseClasses} ${selectionRing}`;
-    } else if (mode === 'source') {
-      return `${baseClasses} hover:ring-1 hover:ring-blue-300 cursor-pointer`;
-    } else if (mode === 'destination') {
-      return `${baseClasses} hover:ring-1 hover:ring-green-300 cursor-pointer`;
+      if (mode === 'source') {
+        return `${baseClasses} ring-3 ring-blue-500 shadow-md cursor-pointer`;
+      } else if (mode === 'destination') {
+        return `${baseClasses} ring-3 ring-green-500 shadow-md cursor-pointer`;
+      }
     }
     
+    // Ceste senza ciclo - disponibili per selezione ma con opacità ridotta
+    if (mode === 'source') {
+      return `${baseClasses} hover:ring-1 hover:ring-blue-200 cursor-pointer opacity-75 hover:opacity-100`;
+    } else if (mode === 'destination') {
+      return `${baseClasses} hover:ring-1 hover:ring-green-200 cursor-pointer opacity-75 hover:opacity-100`;
+    }
+    
+    // Default: non selezionabile
     return `${baseClasses} cursor-not-allowed opacity-50`;
   };
   
-  // Genera i tooltip per i cestelli
+  // 💡 TOOLTIP MIGLIORATI - Genera i tooltip per i cestelli con informazioni sui cicli
   const getBasketTooltip = (basket: Basket | undefined) => {
     if (!basket) return "Posizione vuota";
     
     const isSelected = isBasketSelected(basket.id);
+    const hasActiveCycle = basket.currentCycleId !== null;
     
     let tooltip = `Cestello #${basket.physicalNumber}`;
     
-    if (isSelected) {
-      tooltip += ` (Selezionato)`;
+    // 🔥 Informazioni sui cicli attivi
+    if (hasActiveCycle) {
+      tooltip += `\n🔄 Ciclo Attivo: #${basket.currentCycleId}`;
+      tooltip += `\n✅ Disponibile per selezione`;
+    } else {
+      tooltip += `\n⚪ Nessun ciclo attivo`;
+      tooltip += `\n⚠️ Disponibilità limitata`;
     }
     
+    // Informazioni sulla selezione
+    if (isSelected) {
+      if (mode === 'source') {
+        tooltip += `\n🔵 ORIGINE - Selezionato`;
+      } else if (mode === 'destination') {
+        tooltip += `\n🟢 DESTINAZIONE - Selezionato`;
+      } else {
+        tooltip += ` (Selezionato)`;
+      }
+    }
+    
+    // Dati operativi
     if (basket.lastOperation?.animalCount) {
       tooltip += `\nAnimali: ${basket.lastOperation.animalCount.toLocaleString()}`;
     }
