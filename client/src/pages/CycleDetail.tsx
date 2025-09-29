@@ -172,7 +172,7 @@ function StatisticsTab({
   const [bestVariation, setBestVariation] = useState(20); // default: +20%
   const [worstVariation, setWorstVariation] = useState(30); // default: -30%
   const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
-  const [growthPrediction, setGrowthPrediction] = useState(null);
+  const [growthPrediction, setGrowthPrediction] = useState<any>(null);
 
   const fetchGrowthPrediction = useCallback(() => {
     if (!cycleId || !latestOperation?.animalsPerKg || isLoadingPrediction) return;
@@ -697,7 +697,7 @@ export default function CycleDetail() {
   }
   
   // Helper function to format dates
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
     } catch (error) {
@@ -707,7 +707,7 @@ export default function CycleDetail() {
   };
   
   // Verifica se il ciclo è stato venduto
-  const isSoldCycle = operations?.some(op => op.type === 'vendita' && op.cycleId === cycle.id);
+  const isSoldCycle = operations?.some((op: any) => op.type === 'vendita' && op.cycleId === cycle.id);
 
   return (
     <div className={`container mx-auto px-4 py-8 relative ${
@@ -738,7 +738,7 @@ export default function CycleDetail() {
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>
                 Flupsy #{cycle.basket?.flupsyId}
-                {flupsys && cycle.basket?.flupsyId && (
+                {flupsys && Array.isArray(flupsys) && cycle.basket?.flupsyId && (
                   <> - {flupsys.find((f: any) => f.id === cycle.basket?.flupsyId)?.name || 'Sconosciuto'}</>
                 )}
               </span>
@@ -747,7 +747,7 @@ export default function CycleDetail() {
             </div>
             {(() => {
               // Trova l'operazione di prima attivazione che contiene i dati del lotto
-              const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
+              const firstActivation = operations?.find((op: any) => op.type === 'prima-attivazione');
               
               // Caso 1: L'operazione ha già il lotto completo
               if (firstActivation?.lot) {
@@ -767,7 +767,7 @@ export default function CycleDetail() {
               // Caso 2: L'operazione ha solo il lotId, ma non l'oggetto lot completo
               if (firstActivation?.lotId) {
                 // Cerca il lotto completo tra tutte le operazioni
-                const operationWithCompleteLot = operations?.find(op => 
+                const operationWithCompleteLot = operations?.find((op: any) => 
                   op.lotId === firstActivation.lotId && op.lot
                 );
                 
@@ -832,13 +832,13 @@ export default function CycleDetail() {
               <span className={`px-2 py-1 rounded-full text-xs ${
                 cycle.state === 'active' 
                   ? 'bg-green-100 text-green-800' 
-                  : operations?.some(op => op.type === 'vendita' && op.cycleId === cycle.id)
+                  : operations?.some((op: any) => op.type === 'vendita' && op.cycleId === cycle.id)
                     ? 'bg-red-100 text-red-800'
                     : 'bg-blue-100 text-blue-800'
               }`}>
                 {cycle.state === 'active' 
                   ? 'In corso'
-                  : operations?.some(op => op.type === 'vendita' && op.cycleId === cycle.id)
+                  : operations?.some((op: any) => op.type === 'vendita' && op.cycleId === cycle.id)
                     ? 'Venduto'
                     : 'Completato'
                 }
@@ -957,7 +957,7 @@ export default function CycleDetail() {
           <StatisticsTab 
             cycle={cycle} 
             latestOperation={latestOperation} 
-            cycleId={cycleId} 
+            cycleId={cycleId || 0} 
           />
         </TabsContent>
         
