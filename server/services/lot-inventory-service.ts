@@ -22,27 +22,26 @@ export class LotInventoryService {
 
       const initialCount = lot.animalCount || 0;
       
-      // 2. Calcola il conteggio attuale in base alle transazioni
-      // Verificare se la tabella esiste prima di fare la query
+      // 2. Calcola il conteggio attuale in base alle transazioni dal ledger
       try {
-        // Calcola le vendite
+        // Calcola le vendite dal ledger
         const [soldResult] = await db.execute(
-          sql`SELECT COALESCE(SUM(animal_count), 0) as sold_count FROM lot_inventory_transactions 
-              WHERE lot_id = ${lotId} AND transaction_type = 'vendita'`
+          sql`SELECT COALESCE(SUM(quantity), 0) as sold_count FROM lot_ledger 
+              WHERE lot_id = ${lotId} AND type = 'sale'`
         );
         const soldCount = Number(soldResult?.sold_count || 0);
         
-        // Calcola la mortalità (assumiamo che sia sempre negativa)
+        // Calcola la mortalità dal ledger
         const [mortalityResult] = await db.execute(
-          sql`SELECT COALESCE(SUM(animal_count), 0) as mortality_count FROM lot_inventory_transactions 
-              WHERE lot_id = ${lotId} AND transaction_type = 'mortalita'`
+          sql`SELECT COALESCE(SUM(quantity), 0) as mortality_count FROM lot_ledger 
+              WHERE lot_id = ${lotId} AND type = 'mortality'`
         );
         const mortalityCount = Math.abs(Number(mortalityResult?.mortality_count || 0));
         
-        // Calcola il totale di tutte le transazioni (escluso arrivo lotto che è già nel conteggio iniziale)
+        // Calcola il totale di tutte le transazioni (escluso ingresso che è già nel conteggio iniziale)
         const [transactionsResult] = await db.execute(
-          sql`SELECT COALESCE(SUM(animal_count), 0) as total_change FROM lot_inventory_transactions 
-              WHERE lot_id = ${lotId} AND transaction_type != 'arrivo-lotto'`
+          sql`SELECT COALESCE(SUM(CASE WHEN type = 'mortality' THEN -quantity WHEN type = 'sale' THEN -quantity ELSE 0 END), 0) as total_change FROM lot_ledger 
+              WHERE lot_id = ${lotId} AND type != 'in'`
         );
         const totalChange = Number(transactionsResult?.total_change || 0);
         
@@ -141,10 +140,11 @@ export class LotInventoryService {
    */
   async getLotTransactions(lotId: number) {
     try {
-      // Ottieni le transazioni ordinate per data
+      // Ottieni le transazioni dal ledger ordinate per data
       const results = await db.execute(
-        sql`SELECT * FROM lot_inventory_transactions 
-            WHERE lot_id = ${lotId}
+        sql`SELECT id, date as created_at, lot_id, type as transaction_type, quantity as animal_count, notes
+            FROM lot_ledger 
+            WHERE lot_id = ${lotId} 
             ORDER BY date DESC`
       );
       
