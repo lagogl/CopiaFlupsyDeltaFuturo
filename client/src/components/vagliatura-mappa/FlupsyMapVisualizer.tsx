@@ -117,7 +117,13 @@ export default function FlupsyMapVisualizer({
     const basket = getBasketAtPosition(row, position);
     
     if (basket) {
-      // Se c'è un cestello in questa posizione, invia l'evento di click
+      // 🔒 VALIDAZIONE: In modalità "source", solo cestelli con ciclo attivo sono selezionabili
+      if (mode === 'source' && basket.currentCycleId === null) {
+        console.log(`❌ Cestello #${basket.physicalNumber} non selezionabile come origine: nessun ciclo attivo`);
+        return; // Blocca la selezione
+      }
+      
+      // Se c'è un cestello in questa posizione ed è valido, invia l'evento di click
       onBasketClick(basket);
     } else {
       console.log(`Nessun cestello nella posizione ${row}${position}`);
@@ -203,10 +209,11 @@ export default function FlupsyMapVisualizer({
       }
     }
     
-    // Ceste senza ciclo - disponibili per selezione ma con opacità ridotta
+    // 🔒 Ceste senza ciclo - NON selezionabili come origine
     if (mode === 'source') {
-      return `${baseClasses} hover:ring-1 hover:ring-blue-200 cursor-pointer opacity-75 hover:opacity-100`;
+      return `${baseClasses} cursor-not-allowed opacity-50`;
     } else if (mode === 'destination') {
+      // In modalità destinazione, cestelli senza ciclo sono selezionabili (con opacità ridotta)
       return `${baseClasses} hover:ring-1 hover:ring-green-200 cursor-pointer opacity-75 hover:opacity-100`;
     }
     
