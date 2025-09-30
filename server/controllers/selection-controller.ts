@@ -808,6 +808,16 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           state: 'active'
         }).returning();
 
+        // 1.1. AGGIORNA cycle_id in selection_destination_baskets
+        await tx.update(selectionDestinationBaskets)
+          .set({ cycleId: newCycle.id })
+          .where(
+            and(
+              eq(selectionDestinationBaskets.selectionId, Number(id)),
+              eq(selectionDestinationBaskets.basketId, destBasket.basketId)
+            )
+          );
+
         // 1.5. DISTRIBUZIONE PROPORZIONALE DEI LOTTI
         console.log(`   📊 Distribuzione proporzionale ${lotPercentages.size} lotti nel cestello ${destBasket.basketId}:`);
         let totalDistributed = 0;
