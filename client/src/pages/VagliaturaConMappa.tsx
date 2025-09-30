@@ -1226,6 +1226,30 @@ export default function VagliaturaConMappa() {
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"
                         showTooltips={true}
+                        destinationData={destinationBaskets.map(basket => {
+                          // Calcola animali/kg se non presente
+                          let finalAnimalsPerKg = basket.animalsPerKg || 0;
+                          if ((!finalAnimalsPerKg || finalAnimalsPerKg === 0) && 
+                              basket.sampleWeight && basket.sampleCount && 
+                              basket.sampleWeight > 0 && basket.sampleCount > 0) {
+                            finalAnimalsPerKg = Math.round((basket.sampleCount / basket.sampleWeight) * 1000);
+                          }
+                          
+                          // Trova la taglia corrispondente
+                          const basketSize = finalAnimalsPerKg > 0
+                            ? sizes?.find(size => 
+                                finalAnimalsPerKg >= (size.minAnimalsPerKg ?? 0) && 
+                                finalAnimalsPerKg <= (size.maxAnimalsPerKg ?? Infinity)
+                              )
+                            : null;
+                          
+                          return {
+                            basketId: basket.basketId,
+                            animalCount: basket.animalCount || 0,
+                            animalsPerKg: finalAnimalsPerKg,
+                            sizeCode: basketSize?.code
+                          };
+                        })}
                       />
                     )}
                   </div>

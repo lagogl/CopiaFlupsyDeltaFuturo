@@ -57,6 +57,12 @@ interface FlupsyMapVisualizerProps {
   mode: 'source' | 'destination'; // Modalità di selezione
   showTooltips?: boolean;
   soldBasketIds?: number[]; // Array di ID dei cestelli destinati alla vendita
+  destinationData?: Array<{
+    basketId: number;
+    animalCount: number;
+    animalsPerKg: number;
+    sizeCode?: string;
+  }>; // Dati ricalcolati dei cestelli destinazione
 }
 
 /**
@@ -70,7 +76,8 @@ export default function FlupsyMapVisualizer({
   onBasketClick,
   mode,
   showTooltips = true,
-  soldBasketIds = []
+  soldBasketIds = [],
+  destinationData = []
 }: FlupsyMapVisualizerProps) {
   // Trova i cestelli del FLUPSY selezionato
   const flupsyBaskets = baskets.filter(b => b.flupsyId === Number(flupsyId));
@@ -228,11 +235,17 @@ export default function FlupsyMapVisualizer({
     const isSelected = isBasketSelected(basket.id);
     const hasActiveCycle = basket.currentCycleId !== null;
     
+    // 🎯 Cerca dati ricalcolati se è un cestello destinazione
+    const destData = mode === 'destination' 
+      ? destinationData.find(d => d.basketId === basket.id)
+      : null;
+    
     let tooltip = `Cestello #${basket.physicalNumber}`;
     
-    // 🏷️ Informazioni sulla taglia (subito dopo il numero)
-    if (basket.size?.code) {
-      tooltip += `\n📏 Taglia: ${basket.size.code}`;
+    // 🏷️ Informazioni sulla taglia - usa dati ricalcolati se disponibili
+    const sizeToShow = destData?.sizeCode || basket.size?.code;
+    if (sizeToShow) {
+      tooltip += `\n📏 Taglia: ${sizeToShow}`;
     }
     
     // 🔥 Informazioni sui cicli attivi
@@ -259,13 +272,15 @@ export default function FlupsyMapVisualizer({
       }
     }
     
-    // Dati operativi
-    if (basket.lastOperation?.animalCount) {
-      tooltip += `\nAnimali: ${basket.lastOperation.animalCount.toLocaleString()}`;
+    // Dati operativi - usa dati ricalcolati se disponibili
+    const animalCount = destData?.animalCount || basket.lastOperation?.animalCount;
+    if (animalCount) {
+      tooltip += `\nAnimali: ${animalCount.toLocaleString()}`;
     }
     
-    if (basket.lastOperation?.animalsPerKg) {
-      tooltip += `\nAnimali/kg: ${basket.lastOperation.animalsPerKg.toLocaleString()}`;
+    const animalsPerKg = destData?.animalsPerKg || basket.lastOperation?.animalsPerKg;
+    if (animalsPerKg) {
+      tooltip += `\nAnimali/kg: ${animalsPerKg.toLocaleString()}`;
     }
     
     return tooltip;
@@ -341,51 +356,62 @@ export default function FlupsyMapVisualizer({
                             data-testid={basket ? `card-basket-${basket.id}` : `empty-position-${row}${position}`}
                           >
                             {basket ? (
-                              <div className="text-center w-full h-full flex flex-col gap-1">
-                                {/* Barra colorata superiore per la taglia */}
-                                <div className={cn(
-                                  "absolute top-0 left-0 right-0 h-1 rounded-t-md",
-                                  getSizeColorClasses(basket.size?.code).bar
-                                )} />
+                              (() => {
+                                // 🎯 Cerca dati ricalcolati se è un cestello destinazione
+                                const destData = mode === 'destination' 
+                                  ? destinationData.find(d => d.basketId === basket.id)
+                                  : null;
+                                const displaySizeCode = destData?.sizeCode || basket.size?.code;
                                 
-                                {/* Header - Numero Cestello */}
-                                <div className="pt-1">
-                                  <div className="font-bold text-xs truncate">
-                                    Cestello #{basket.physicalNumber}
-                                  </div>
-                                </div>
-                                
-                                {/* Posizione */}
-                                <div className="text-xs font-medium">
-                                  {row}{position}
-                                </div>
-                                
-                                {/* Icona di vendita se destinato alla vendita */}
-                                {isBasketForSale(basket.id) && (
-                                  <div className="absolute top-1 right-1">
-                                    <div className="bg-red-500 text-white rounded-full p-1 shadow-lg">
-                                      <ShoppingCart className="w-3 h-3" />
+                                return (
+                                  <div className="text-center w-full h-full flex flex-col gap-1">
+                                    {/* Barra colorata superiore per la taglia */}
+                                    <div className={cn(
+                                      "absolute top-0 left-0 right-0 h-1 rounded-t-md",
+                                      getSizeColorClasses(displaySizeCode).bar
+                                    )} />
+                                    
+                                    {/* Header - Numero Cestello */}
+                                    <div className="pt-1">
+                                      <div className="font-bold text-xs truncate">
+                                        Cestello #{basket.physicalNumber}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Posizione */}
+                                    <div className="text-xs font-medium">
+                                      {row}{position}
+                                    </div>
+                                    
+                                    {/* Icona di vendita se destinato alla vendita */}
+                                    {isBasketForSale(basket.id) && (
+                                      <div className="absolute top-1 right-1">
+                                        <div className="bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                          <ShoppingCart className="w-3 h-3" />
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Taglia con testo colorato - usa dati ricalcolati se disponibili */}
+                                    <div className="flex-1 flex items-center justify-center">
+                                      {displaySizeCode ? (
+                                        <span 
+                                          className={cn(
+                                            "text-xs font-bold px-1 py-0.5 max-w-full truncate",
+                                            getSizeColorClasses(displaySizeCode).text
+                                          )}
+                                          data-testid={`text-size-${basket.id}`}
+                                        >
+                                          {displaySizeCode}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-gray-500">N/D</span>
+                                      )}
                                     </div>
                                   </div>
-                                )}
-                                
-                                {/* Taglia con testo colorato */}
-                                <div className="flex-1 flex items-center justify-center">
-                                  {basket.size?.code ? (
-                                    <span 
-                                      className={cn(
-                                        "text-xs font-bold px-1 py-0.5 max-w-full truncate",
-                                        getSizeColorClasses(basket.size.code).text
-                                      )}
-                                      data-testid={`text-size-${basket.id}`}
-                                    >
-                                      {basket.size.code}
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-gray-500">N/D</span>
-                                  )}
-                                </div>
-                              </div>
+                                );
+                              })()
+                            
                             ) : (
                               <div className="text-center w-full h-full flex flex-col justify-center">
                                 <div className="text-xs font-semibold mb-1">
