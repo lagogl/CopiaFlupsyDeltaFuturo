@@ -197,9 +197,9 @@ export default function FlupsyMapVisualizer({
     
     if (isSelected) {
       if (mode === 'source') {
-        return `${baseClasses} ring-3 ring-blue-500 shadow-md cursor-pointer`;
+        return `${baseClasses} ring-4 ring-blue-500 shadow-lg transform scale-105 cursor-pointer`;
       } else if (mode === 'destination') {
-        return `${baseClasses} ring-3 ring-green-500 shadow-md cursor-pointer`;
+        return `${baseClasses} ring-4 ring-green-500 shadow-lg transform scale-105 cursor-pointer`;
       }
     }
     
