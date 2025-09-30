@@ -1146,17 +1146,24 @@ export default function VagliaturaConMappa() {
                             const uniqueKey = basket.basketId < 0 ? `virtual-${basket.position || 'N'}` : basket.basketId;
                             const displayNumber = basketDetails?.physicalNumber || `Pos. ${basket.position}`;
                             
-                            // Trova la taglia: prima controlla il basket arricchito, poi lastOperation, infine calcola da animali/kg
-                            const basketSize = (basketDetails as any)?.size 
-                              ? (basketDetails as any).size
-                              : (basketDetails as any)?.lastOperation?.sizeId 
-                                ? sizes?.find(size => size.id === (basketDetails as any).lastOperation!.sizeId)
-                                : basket.animalsPerKg 
-                                  ? sizes?.find(size => 
-                                      basket.animalsPerKg! >= (size.minAnimalsPerKg ?? 0) && 
-                                      basket.animalsPerKg! <= (size.maxAnimalsPerKg ?? Infinity)
-                                    )
-                                  : null;
+                            // 🔢 CALCOLA la taglia RICALCOLATA del cestello destinazione
+                            // basandosi sui nuovi animali/kg dopo il trasferimento
+                            let finalAnimalsPerKg = basket.animalsPerKg || 0;
+                            
+                            // Se animalsPerKg è 0 o non presente, calcolalo da sampleWeight e sampleCount
+                            if ((!finalAnimalsPerKg || finalAnimalsPerKg === 0) && 
+                                basket.sampleWeight && basket.sampleCount && 
+                                basket.sampleWeight > 0 && basket.sampleCount > 0) {
+                              finalAnimalsPerKg = Math.round((basket.sampleCount / basket.sampleWeight) * 1000);
+                            }
+                            
+                            // Trova la taglia corrispondente agli animali/kg calcolati
+                            const basketSize = finalAnimalsPerKg > 0
+                              ? sizes?.find(size => 
+                                  finalAnimalsPerKg >= (size.minAnimalsPerKg ?? 0) && 
+                                  finalAnimalsPerKg <= (size.maxAnimalsPerKg ?? Infinity)
+                                )
+                              : null;
                             
                             return (
                               <div key={uniqueKey} className="text-xs p-2 border rounded bg-gray-50">
