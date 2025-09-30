@@ -7903,9 +7903,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Traduzione categoria in italiano
+        let categoryIT = b.destinationType;
+        if (b.destinationType === 'sold') {
+          categoryIT = 'Venduta';
+        } else if (b.destinationType === 'placed') {
+          categoryIT = 'Riposizionata';
+        }
+        
         return {
           ...b,
-          category: b.destinationType, // Mappa destinationType → category
+          category: categoryIT, // Mappa destinationType → category tradotta
           row,
           position,
           positionAssigned: b.position !== null && b.position !== ''

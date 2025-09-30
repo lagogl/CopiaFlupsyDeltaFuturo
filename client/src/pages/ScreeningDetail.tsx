@@ -29,6 +29,7 @@ interface ScreeningDetail {
   destinationBaskets: Array<{
     id: number;
     basketId: number;
+    cycleId: number;
     category: string | null;
     animalCount: number | null;
     totalWeight: number | null;
@@ -233,6 +234,7 @@ export default function ScreeningDetail() {
             <TableHeader>
               <TableRow>
                 <TableHead>Cestello ID</TableHead>
+                <TableHead>Ciclo ID</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead className="text-right">Animali</TableHead>
                 <TableHead className="text-right">Peso (kg)</TableHead>
@@ -244,6 +246,7 @@ export default function ScreeningDetail() {
               {(screening.destinationBaskets || []).map((basket) => (
                 <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
                   <TableCell>{basket.basketId}</TableCell>
+                  <TableCell>{basket.cycleId}</TableCell>
                   <TableCell>{basket.category || '-'}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
