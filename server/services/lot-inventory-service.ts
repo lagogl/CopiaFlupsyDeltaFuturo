@@ -179,7 +179,19 @@ export class LotInventoryService {
             ORDER BY calculation_date DESC`
       );
       
-      return results;
+      // Trasforma i dati per il frontend (snake_case -> camelCase)
+      return results.map((row: any) => ({
+        id: row.id,
+        lotId: row.lot_id,
+        calculationDate: row.calculation_date,
+        initialCount: parseInt(row.initial_count || 0),
+        currentCount: parseInt(row.current_count || 0),
+        soldCount: parseInt(row.sold_count || 0),
+        mortalityCount: parseInt(row.mortality_count || 0),
+        mortalityPercentage: parseFloat(row.mortality_percentage || 0),
+        notes: row.notes,
+        createdAt: row.created_at
+      }));
     } catch (error) {
       console.error("Errore durante il recupero della cronologia di mortalità:", error);
       throw new Error("Impossibile recuperare la cronologia di mortalità");
@@ -221,9 +233,6 @@ export class LotInventoryService {
             state: lot.state,
             supplierLotNumber: lot.supplierLotNumber,
             sizeId: lot.sizeId,
-            speciesId: lot.speciesId,
-            code: lot.code,
-            description: lot.description,
             notes: lot.notes,
             ...inventorySummary
           });
