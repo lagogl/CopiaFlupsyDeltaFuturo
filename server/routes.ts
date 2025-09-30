@@ -7885,12 +7885,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
       ]);
       
+      // Mappa i campi per compatibilità frontend
+      const mappedSourceBaskets = sourceBaskets.map(b => ({
+        ...b,
+        dismissed: false // Non esiste nel DB, default false
+      }));
+      
+      const mappedDestBaskets = destBaskets.map(b => {
+        // Parsa position (es. "DX1" → row="DX", position=1)
+        let row = null;
+        let position = null;
+        if (b.position) {
+          const match = b.position.match(/^([A-Z]+)(\d+)$/);
+          if (match) {
+            row = match[1];
+            position = parseInt(match[2], 10);
+          }
+        }
+        
+        return {
+          ...b,
+          category: b.destinationType, // Mappa destinationType → category
+          row,
+          position,
+          positionAssigned: b.position !== null && b.position !== ''
+        };
+      });
+      
       res.json({
         ...screening,
         screeningNumber: screening.selectionNumber, // Mappa per compatibilità frontend
         referenceSize,
-        sourceBaskets,
-        destinationBaskets: destBaskets
+        sourceBaskets: mappedSourceBaskets,
+        destinationBaskets: mappedDestBaskets
       });
     } catch (error) {
       console.error("Error fetching screening detail:", error);
