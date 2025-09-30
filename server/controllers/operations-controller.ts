@@ -38,7 +38,9 @@ const OPERATION_COLUMNS = {
     animalCount: lots.animalCount,
     weight: lots.weight,
     notes: lots.notes
-  }
+  },
+  // Aggiungi nome del FLUPSY
+  flupsyName: flupsys.name
 };
 
 interface OperationsOptions {
@@ -191,11 +193,13 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
     const countResult = await countQuery;
     const totalCount = parseInt(countResult[0].count as string);
     
-    // 2. Esegui query principale con paginazione - INCLUDE LOT JOIN
+    // 2. Esegui query principale con paginazione - INCLUDE LOT, BASKET E FLUPSY JOIN
     let query = db
       .select(OPERATION_COLUMNS)
       .from(operations)
       .leftJoin(lots, eq(operations.lotId, lots.id))
+      .leftJoin(baskets, eq(operations.basketId, baskets.id))
+      .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
       .orderBy(desc(operations.date))
       .limit(pageSize)
       .offset(offset);
