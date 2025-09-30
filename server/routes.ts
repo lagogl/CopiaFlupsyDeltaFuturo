@@ -7883,10 +7883,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         db.select().from(selectionSourceBaskets).where(eq(selectionSourceBaskets.selectionId, id)),
         db.select({
           basket: selectionDestinationBaskets,
-          size: sizes
+          size: sizes,
+          currentCycleId: baskets.currentCycleId
         })
         .from(selectionDestinationBaskets)
         .leftJoin(sizes, eq(selectionDestinationBaskets.sizeId, sizes.id))
+        .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
         .where(eq(selectionDestinationBaskets.selectionId, id)),
         screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
       ]);
@@ -7897,7 +7899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dismissed: false // Non esiste nel DB, default false
       }));
       
-      const mappedDestBaskets = destBasketsRaw.map(({ basket: b, size }) => {
+      const mappedDestBaskets = destBasketsRaw.map(({ basket: b, size, currentCycleId }) => {
         // Parsa position (es. "DX1" → row="DX", position=1)
         let row = null;
         let position = null;
@@ -7921,7 +7923,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: b.id,
           selectionId: b.selectionId,
           basketId: b.basketId,
-          cycleId: b.cycleId, // Assicurati che cycleId sia incluso
+          cycleId: b.cycleId || currentCycleId, // Usa currentCycleId del cestello se cycleId è null
           destinationType: b.destinationType,
           flupsyId: b.flupsyId,
           animalCount: b.animalCount,
