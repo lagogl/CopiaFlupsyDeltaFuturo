@@ -142,13 +142,23 @@ export class LotInventoryService {
     try {
       // Ottieni le transazioni dal ledger ordinate per data
       const results = await db.execute(
-        sql`SELECT id, date as created_at, lot_id, type as transaction_type, quantity as animal_count, notes
+        sql`SELECT id, date, lot_id, type, quantity, notes
             FROM lot_ledger 
             WHERE lot_id = ${lotId} 
             ORDER BY date DESC`
       );
       
-      return results;
+      // Trasforma i dati per il frontend
+      return results.map((row: any) => ({
+        id: row.id,
+        date: row.date,
+        lotId: row.lot_id,
+        transactionType: row.type,
+        animalCount: parseFloat(row.quantity || 0),
+        notes: row.notes,
+        createdAt: row.date,
+        referenceOperationId: null
+      }));
     } catch (error) {
       console.error("Errore durante il recupero delle transazioni del lotto:", error);
       throw new Error("Impossibile recuperare le transazioni del lotto");

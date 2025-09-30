@@ -149,10 +149,15 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
   const translateTransactionType = (type: string) => {
     const translations: Record<string, string> = {
       "arrivo-lotto": "Arrivo lotto",
+      "in": "Ingresso",
       "vendita": "Vendita",
+      "sale": "Vendita",
       "trasferimento": "Trasferimento",
+      "transfer": "Trasferimento",
       "mortalita": "Mortalità",
+      "mortality": "Mortalità",
       "aggiustamento": "Aggiustamento",
+      "adjustment": "Aggiustamento",
     };
     return translations[type] || type;
   };
@@ -310,11 +315,13 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                       </TableCell>
                       <TableCell>
                         <Badge variant={
-                          transaction.transactionType === "arrivo-lotto" 
+                          transaction.transactionType === "arrivo-lotto" || transaction.transactionType === "in"
                             ? "default" 
-                            : transaction.transactionType === "vendita" 
+                            : transaction.transactionType === "vendita" || transaction.transactionType === "sale"
                               ? "destructive" 
-                              : "secondary"
+                              : transaction.transactionType === "mortality" || transaction.transactionType === "mortalita"
+                                ? "outline"
+                                : "secondary"
                         }>
                           {translateTransactionType(transaction.transactionType)}
                         </Badge>
