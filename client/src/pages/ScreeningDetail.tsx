@@ -45,7 +45,7 @@ export default function ScreeningDetail() {
   const [, navigate] = useLocation();
 
   const { data: screening, isLoading } = useQuery<ScreeningDetail>({
-    queryKey: ['/api/screenings', id],
+    queryKey: [`/api/screenings/${id}`],
     enabled: !!id
   });
 
