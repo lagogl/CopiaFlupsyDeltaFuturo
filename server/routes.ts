@@ -7821,12 +7821,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/screenings", async (req, res) => {
     try {
       const status = (req.query.status as string) || 'completed';
-      const screenings = await storage.getScreeningOperationsByStatus(status);
+      
+      // Usa la tabella selections invece di screeningOperations
+      const screenings = await db.select().from(selections)
+        .where(eq(selections.status, status))
+        .orderBy(desc(selections.date));
       
       // Arricchisci con conteggi e informazioni aggregate
       const enrichedScreenings = await Promise.all(screenings.map(async (screening) => {
-        const sourceBaskets = await storage.getScreeningSourceBasketsByScreening(screening.id);
-        const destBaskets = await storage.getScreeningDestinationBasketsByScreening(screening.id);
+        const sourceBaskets = await db.select().from(selectionSourceBaskets)
+          .where(eq(selectionSourceBaskets.selectionId, screening.id));
+        
+        const destBaskets = await db.select().from(selectionDestinationBaskets)
+          .where(eq(selectionDestinationBaskets.selectionId, screening.id));
+        
         const referenceSize = screening.referenceSizeId 
           ? await storage.getSize(screening.referenceSizeId)
           : null;
@@ -7836,6 +7844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           ...screening,
+          screeningNumber: screening.selectionNumber, // Mappa selectionNumber a screeningNumber per compatibilità frontend
           referenceSize,
           sourceCount: sourceBaskets.length,
           destinationCount: destBaskets.length,
@@ -7860,19 +7869,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid ID" });
       }
       
-      const screening = await storage.getScreeningOperation(id);
-      if (!screening) {
+      const screeningResult = await db.select().from(selections)
+        .where(eq(selections.id, id))
+        .limit(1);
+      
+      if (!screeningResult || screeningResult.length === 0) {
         return res.status(404).json({ error: "Screening not found" });
       }
       
+      const screening = screeningResult[0];
+      
       const [sourceBaskets, destBaskets, referenceSize] = await Promise.all([
-        storage.getScreeningSourceBasketsByScreening(id),
-        storage.getScreeningDestinationBasketsByScreening(id),
+        db.select().from(selectionSourceBaskets).where(eq(selectionSourceBaskets.selectionId, id)),
+        db.select().from(selectionDestinationBaskets).where(eq(selectionDestinationBaskets.selectionId, id)),
         screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
       ]);
       
       res.json({
         ...screening,
+        screeningNumber: screening.selectionNumber, // Mappa per compatibilità frontend
         referenceSize,
         sourceBaskets,
         destinationBaskets: destBaskets
@@ -7891,14 +7906,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid ID" });
       }
       
-      const screening = await storage.getScreeningOperation(id);
-      if (!screening) {
+      const screeningResult = await db.select().from(selections)
+        .where(eq(selections.id, id))
+        .limit(1);
+      
+      if (!screeningResult || screeningResult.length === 0) {
         return res.status(404).json({ error: "Screening not found" });
       }
       
+      const screening = screeningResult[0];
+      
       const [sourceBaskets, destBaskets, referenceSize] = await Promise.all([
-        storage.getScreeningSourceBasketsByScreening(id),
-        storage.getScreeningDestinationBasketsByScreening(id),
+        db.select().from(selectionSourceBaskets).where(eq(selectionSourceBaskets.selectionId, id)),
+        db.select().from(selectionDestinationBaskets).where(eq(selectionDestinationBaskets.selectionId, id)),
         screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
       ]);
       
@@ -7931,7 +7951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         <body>
           <div class="header">
             <div>
-              <h1>Report Vagliatura #${screening.screeningNumber}</h1>
+              <h1>Report Vagliatura #${screening.selectionNumber}</h1>
               <div style="color: #64748b; margin-top: 5px;">Data: ${new Date(screening.date).toLocaleDateString('it-IT')}</div>
             </div>
           </div>
