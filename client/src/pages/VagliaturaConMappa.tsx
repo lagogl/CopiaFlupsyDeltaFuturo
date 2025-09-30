@@ -1146,15 +1146,17 @@ export default function VagliaturaConMappa() {
                             const uniqueKey = basket.basketId < 0 ? `virtual-${basket.position || 'N'}` : basket.basketId;
                             const displayNumber = basketDetails?.physicalNumber || `Pos. ${basket.position}`;
                             
-                            // Trova la taglia dal sizeId o dagli animali/kg
-                            const basketSize = basketDetails?.lastOperation?.sizeId 
-                              ? sizes?.find(size => size.id === basketDetails.lastOperation!.sizeId)
-                              : basket.animalsPerKg 
-                                ? sizes?.find(size => 
-                                    basket.animalsPerKg! >= (size.minAnimalsPerKg ?? 0) && 
-                                    basket.animalsPerKg! <= (size.maxAnimalsPerKg ?? Infinity)
-                                  )
-                                : null;
+                            // Trova la taglia: prima controlla il basket arricchito, poi lastOperation, infine calcola da animali/kg
+                            const basketSize = (basketDetails as any)?.size 
+                              ? (basketDetails as any).size
+                              : (basketDetails as any)?.lastOperation?.sizeId 
+                                ? sizes?.find(size => size.id === (basketDetails as any).lastOperation!.sizeId)
+                                : basket.animalsPerKg 
+                                  ? sizes?.find(size => 
+                                      basket.animalsPerKg! >= (size.minAnimalsPerKg ?? 0) && 
+                                      basket.animalsPerKg! <= (size.maxAnimalsPerKg ?? Infinity)
+                                    )
+                                  : null;
                             
                             return (
                               <div key={uniqueKey} className="text-xs p-2 border rounded bg-gray-50">

@@ -230,13 +230,22 @@ export default function FlupsyMapVisualizer({
     
     let tooltip = `Cestello #${basket.physicalNumber}`;
     
+    // 🏷️ Informazioni sulla taglia (subito dopo il numero)
+    if (basket.size?.code) {
+      tooltip += `\n📏 Taglia: ${basket.size.code}`;
+    }
+    
     // 🔥 Informazioni sui cicli attivi
     if (hasActiveCycle) {
       tooltip += `\n🔄 Ciclo Attivo: #${basket.currentCycleId}`;
       tooltip += `\n✅ Disponibile per selezione`;
     } else {
       tooltip += `\n⚪ Nessun ciclo attivo`;
-      tooltip += `\n⚠️ Disponibilità limitata`;
+      if (mode === 'source') {
+        tooltip += `\n❌ NON selezionabile come origine`;
+      } else {
+        tooltip += `\n⚠️ Disponibilità limitata`;
+      }
     }
     
     // Informazioni sulla selezione
@@ -253,10 +262,6 @@ export default function FlupsyMapVisualizer({
     // Dati operativi
     if (basket.lastOperation?.animalCount) {
       tooltip += `\nAnimali: ${basket.lastOperation.animalCount.toLocaleString()}`;
-    }
-    
-    if (basket.size?.code) {
-      tooltip += `\nTaglia: ${basket.size.code}`;
     }
     
     if (basket.lastOperation?.animalsPerKg) {
