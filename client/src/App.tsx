@@ -53,6 +53,9 @@ import FattureInCloudConfig from "@/pages/FattureInCloudConfig";
 import AIDashboard from "@/pages/AIDashboard";
 // Importazione Giacenze Range
 import GiacenzeRange from "@/pages/GiacenzeRange";
+// Importazione Storico Vagliature
+import ScreeningsList from "@/pages/ScreeningsList";
+import ScreeningDetail from "@/pages/ScreeningDetail";
 // Importazione Lots Analytics
 import LotsAnalytics from "@/pages/LotsAnalytics";
 import MixedLotsAnalytics from "@/pages/MixedLotsAnalytics";
@@ -138,6 +141,10 @@ function Router() {
       
       {/* Vagliatura con Mappa routes */}
       <ProtectedRoute path="/vagliatura-con-mappa" component={VagliaturaConMappa}/>
+      
+      {/* Storico Vagliature routes */}
+      <ProtectedRoute path="/screenings" component={ScreeningsList}/>
+      <ProtectedRoute path="/screenings/:id" component={ScreeningDetail}/>
       
       {/* Vendite Avanzate routes */}
       <ProtectedRoute path="/advanced-sales" component={AdvancedSales}/>

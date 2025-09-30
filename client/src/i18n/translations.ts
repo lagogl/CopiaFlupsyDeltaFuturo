@@ -29,6 +29,7 @@ export interface MenuTranslations {
     advancedOperations: string;
     spreadsheetOperations: string;
     screeningWithMap: string;
+    screeningHistory: string;
     nfcFirstActivation: string;
     flupsyScanMobile: string;
     flupsyUnits: string;
@@ -89,6 +90,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       advancedOperations: "Operazioni Avanzate",
       spreadsheetOperations: "Spreadsheet Operazioni",
       screeningWithMap: "Vagliatura con Mappa",
+      screeningHistory: "Storico Vagliature",
       nfcFirstActivation: "Prima Attivazione NFC",
       flupsyScanMobile: "FlupsyScan Mobile",
       flupsyUnits: "Unità FLUPSY",
@@ -145,6 +147,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       advancedOperations: "Advanced Operations",
       spreadsheetOperations: "Spreadsheet Operations",
       screeningWithMap: "Screening with Map",
+      screeningHistory: "Screening History",
       nfcFirstActivation: "NFC First Activation",
       flupsyScanMobile: "FlupsyScan Mobile",
       flupsyUnits: "FLUPSY Units",

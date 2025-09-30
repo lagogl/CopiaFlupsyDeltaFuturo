@@ -7816,6 +7816,261 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/screening/prepare", ScreeningController.prepareScreeningOperation);
   app.post("/api/screening/execute", ScreeningController.executeScreeningOperation);
   
+  // === Route per storico vagliature (lista e PDF) ===
+  // Lista vagliature completate con dettagli aggregati
+  app.get("/api/screenings", async (req, res) => {
+    try {
+      const status = (req.query.status as string) || 'completed';
+      const screenings = await storage.getScreeningOperationsByStatus(status);
+      
+      // Arricchisci con conteggi e informazioni aggregate
+      const enrichedScreenings = await Promise.all(screenings.map(async (screening) => {
+        const sourceBaskets = await storage.getScreeningSourceBasketsByScreening(screening.id);
+        const destBaskets = await storage.getScreeningDestinationBasketsByScreening(screening.id);
+        const referenceSize = screening.referenceSizeId 
+          ? await storage.getSize(screening.referenceSizeId)
+          : null;
+        
+        const totalSourceAnimals = sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+        const totalDestAnimals = destBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+        
+        return {
+          ...screening,
+          referenceSize,
+          sourceCount: sourceBaskets.length,
+          destinationCount: destBaskets.length,
+          totalSourceAnimals,
+          totalDestAnimals,
+          mortalityAnimals: totalSourceAnimals - totalDestAnimals
+        };
+      }));
+      
+      res.json(enrichedScreenings);
+    } catch (error) {
+      console.error("Error fetching screenings:", error);
+      res.status(500).json({ error: "Failed to fetch screenings" });
+    }
+  });
+  
+  // Dettaglio completo vagliatura con source e destination baskets
+  app.get("/api/screenings/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      const screening = await storage.getScreeningOperation(id);
+      if (!screening) {
+        return res.status(404).json({ error: "Screening not found" });
+      }
+      
+      const [sourceBaskets, destBaskets, referenceSize] = await Promise.all([
+        storage.getScreeningSourceBasketsByScreening(id),
+        storage.getScreeningDestinationBasketsByScreening(id),
+        screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
+      ]);
+      
+      res.json({
+        ...screening,
+        referenceSize,
+        sourceBaskets,
+        destinationBaskets: destBaskets
+      });
+    } catch (error) {
+      console.error("Error fetching screening detail:", error);
+      res.status(500).json({ error: "Failed to fetch screening detail" });
+    }
+  });
+  
+  // Genera PDF della vagliatura
+  app.get("/api/screenings/:id/report.pdf", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      const screening = await storage.getScreeningOperation(id);
+      if (!screening) {
+        return res.status(404).json({ error: "Screening not found" });
+      }
+      
+      const [sourceBaskets, destBaskets, referenceSize] = await Promise.all([
+        storage.getScreeningSourceBasketsByScreening(id),
+        storage.getScreeningDestinationBasketsByScreening(id),
+        screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
+      ]);
+      
+      const totalSourceAnimals = sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+      const totalDestAnimals = destBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+      
+      // Template HTML per il PDF
+      const htmlTemplate = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; }
+            h1 { color: #1e40af; font-size: 24px; margin-bottom: 10px; }
+            h2 { color: #475569; font-size: 18px; margin: 20px 0 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+            th { background-color: #f1f5f9; font-weight: 600; }
+            .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+            .info-item { padding: 10px; background: #f8fafc; border-radius: 4px; }
+            .info-label { font-weight: 600; color: #64748b; font-size: 11px; }
+            .info-value { color: #1e293b; margin-top: 4px; }
+            .summary { background: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0; }
+            .footer { margin-top: 30px; text-align: center; color: #64748b; font-size: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>Report Vagliatura #${screening.screeningNumber}</h1>
+              <div style="color: #64748b; margin-top: 5px;">Data: ${new Date(screening.date).toLocaleDateString('it-IT')}</div>
+            </div>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Scopo</div>
+              <div class="info-value">${screening.purpose || 'Non specificato'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Taglia di Riferimento</div>
+              <div class="info-value">${referenceSize?.code || 'N/D'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Stato</div>
+              <div class="info-value">${screening.status === 'completed' ? 'Completata' : screening.status}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Data Creazione</div>
+              <div class="info-value">${new Date(screening.createdAt).toLocaleDateString('it-IT')} ${new Date(screening.createdAt).toLocaleTimeString('it-IT')}</div>
+            </div>
+          </div>
+          
+          <div class="summary">
+            <h2 style="color: #1e40af; border: none; margin: 0 0 10px;">Riepilogo</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+              <div>
+                <div style="font-size: 11px; color: #64748b;">Cestelli Origine</div>
+                <div style="font-size: 20px; font-weight: 600; color: #1e40af;">${sourceBaskets.length}</div>
+                <div style="font-size: 11px; color: #64748b;">Animali: ${totalSourceAnimals.toLocaleString('it-IT')}</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; color: #64748b;">Cestelli Destinazione</div>
+                <div style="font-size: 20px; font-weight: 600; color: #059669;">${destBaskets.length}</div>
+                <div style="font-size: 11px; color: #64748b;">Animali: ${totalDestAnimals.toLocaleString('it-IT')}</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; color: #64748b;">Mortalità</div>
+                <div style="font-size: 20px; font-weight: 600; color: #dc2626;">${(totalSourceAnimals - totalDestAnimals).toLocaleString('it-IT')}</div>
+                <div style="font-size: 11px; color: #64748b;">${totalSourceAnimals > 0 ? ((totalSourceAnimals - totalDestAnimals) / totalSourceAnimals * 100).toFixed(2) : 0}%</div>
+              </div>
+            </div>
+          </div>
+          
+          <h2>Cestelli Origine</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Cestello ID</th>
+                <th>Ciclo ID</th>
+                <th>Animali</th>
+                <th>Peso (kg)</th>
+                <th>Animali/kg</th>
+                <th>Dismisso</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sourceBaskets.map(b => `
+                <tr>
+                  <td>${b.basketId}</td>
+                  <td>${b.cycleId}</td>
+                  <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
+                  <td>${(b.totalWeight || 0).toLocaleString('it-IT')}</td>
+                  <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                  <td>${b.dismissed ? 'Sì' : 'No'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <h2>Cestelli Destinazione</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Cestello ID</th>
+                <th>Categoria</th>
+                <th>Animali</th>
+                <th>Peso (kg)</th>
+                <th>Animali/kg</th>
+                <th>Posizione</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${destBaskets.map(b => `
+                <tr>
+                  <td>${b.basketId}</td>
+                  <td>${b.category || 'N/D'}</td>
+                  <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
+                  <td>${(b.totalWeight || 0).toLocaleString('it-IT')}</td>
+                  <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                  <td>${b.positionAssigned ? `FLUPSY ${b.flupsyId} - ${b.row}${b.position}` : 'Non assegnata'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          ${screening.notes ? `
+            <h2>Note</h2>
+            <div style="padding: 15px; background: #f8fafc; border-left: 4px solid #3b82f6; margin: 15px 0;">
+              ${screening.notes}
+            </div>
+          ` : ''}
+          
+          <div class="footer">
+            <p>Report generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}</p>
+            <p>FLUPSY Management System - MITO SRL</p>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      // Genera PDF con Puppeteer
+      const puppeteer = await import('puppeteer');
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      
+      const page = await browser.newPage();
+      await page.setContent(htmlTemplate, { waitUntil: 'networkidle0' });
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+      });
+      
+      await browser.close();
+      
+      res.contentType('application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Vagliatura_${screening.screeningNumber}_${new Date(screening.date).toISOString().split('T')[0]}.pdf"`);
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+  
   // Configure WebSocket server
   const { 
     broadcastMessage, 

@@ -7,7 +7,7 @@ import {
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, BarChart3, Filter,
   FileJson, Download, Database, Leaf, LogOut, LayoutGrid,
-  CloudIcon, Table, Brain, CalendarDays, Globe
+  CloudIcon, Table, Brain, CalendarDays, Globe, History
 } from "lucide-react";
 import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
@@ -108,6 +108,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.operations, path: "/operations" },
         { icon: <Table className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.spreadsheetOperations, path: "/spreadsheet-operations" },
         { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.screeningWithMap, path: "/vagliatura-con-mappa" },
+        { icon: <History className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.screeningHistory || "Storico Vagliature", path: "/screenings" },
         { icon: <Smartphone className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.nfcFirstActivation, path: "/nfc-prima-attivazione" },
         { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.flupsyScanMobile, path: "/nfc-scan" }
       ]
