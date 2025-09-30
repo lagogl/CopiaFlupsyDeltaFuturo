@@ -1,11 +1,23 @@
 import React, { useState, useMemo, useEffect } from 'react';
 
-// Versione aggiornata Operations.tsx - problema cache risolto
+// Versione aggiornata Operations.tsx v3 - fix cache completo
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { formatNumberWithCommas } from '@/lib/utils';
 import { useWebSocketMessage } from '@/lib/websocket';
+
+// Helper per formattare date in modo sicuro
+const safeFormatDate = (dateValue: string | Date | null | undefined, formatString: string = 'dd/MM/yyyy'): string => {
+  if (!dateValue) return 'N/D';
+  try {
+    const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+    if (isNaN(date.getTime())) return 'N/D';
+    return format(date, formatString);
+  } catch (error) {
+    return 'N/D';
+  }
+};
 
 // Definizioni dei tipi principali
 interface Size {
@@ -2435,9 +2447,11 @@ export default function Operations() {
                                   </div>
                                   {mainLot && (
                                     <>
-                                      <span className="text-xs block text-gray-500">
-                                        Arrivo: {format(new Date(mainLot.arrivalDate), 'dd/MM/yyyy')}
-                                      </span>
+                                      {mainLot.arrivalDate && (
+                                        <span className="text-xs block text-gray-500">
+                                          Arrivo: {format(new Date(mainLot.arrivalDate), 'dd/MM/yyyy')}
+                                        </span>
+                                      )}
                                       <span className="text-xs block text-gray-500">
                                         Fornitore: {mainLot.supplier || 'N/D'}
                                       </span>
@@ -2548,9 +2562,11 @@ export default function Operations() {
                                   return (
                                     <div>
                                       <span className="font-medium text-indigo-600">{firstActivationLot.name || `Lotto #${firstActivationLot.id}`}</span>
-                                      <span className="text-xs block text-gray-500">
-                                        Arrivo: {format(new Date(firstActivationLot.arrivalDate), 'dd/MM/yyyy')}
-                                      </span>
+                                      {firstActivationLot.arrivalDate && (
+                                        <span className="text-xs block text-gray-500">
+                                          Arrivo: {format(new Date(firstActivationLot.arrivalDate), 'dd/MM/yyyy')}
+                                        </span>
+                                      )}
                                       <span className="text-xs block text-gray-500">
                                         Fornitore: {firstActivationLot.supplier || 'N/D'}
                                       </span>
@@ -3811,9 +3827,11 @@ export default function Operations() {
                                     {op.lot ? (
                                       <p className="font-medium text-indigo-600">
                                         {op.lot.name}
-                                        <span className="text-xs text-gray-500 block">
-                                          Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
-                                        </span>
+                                        {op.lot.arrivalDate && (
+                                          <span className="text-xs text-gray-500 block">
+                                            Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                          </span>
+                                        )}
                                         <span className="text-xs text-gray-500 block">
                                           Fornitore: {op.lot.supplier || 'N/D'}
                                         </span>
