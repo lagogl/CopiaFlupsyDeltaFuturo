@@ -2451,9 +2451,11 @@ export default function Operations() {
                                       {op.additionalLots.map((lot: any, idx: number) => (
                                         <div key={idx} className="mb-1.5">
                                           <div className="font-medium">{lot.name}</div>
-                                          <div className="text-xs text-gray-500">
-                                            Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}
-                                          </div>
+                                          {lot.arrivalDate && (
+                                            <div className="text-xs text-gray-500">
+                                              Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}
+                                            </div>
+                                          )}
                                           <div className="text-xs text-gray-500">
                                             Fornitore: {lot.supplier || 'N/D'}
                                           </div>
@@ -2470,9 +2472,11 @@ export default function Operations() {
                               return (
                                 <div>
                                   <span className="font-medium text-indigo-600">{op.lot.name}</span>
-                                  <span className="text-xs block text-gray-500">
-                                    Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
-                                  </span>
+                                  {op.lot.arrivalDate && (
+                                    <span className="text-xs block text-gray-500">
+                                      Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                    </span>
+                                  )}
                                   <span className="text-xs block text-gray-500">
                                     Fornitore: {op.lot.supplier || 'N/D'}
                                   </span>
@@ -2492,9 +2496,11 @@ export default function Operations() {
                                 return (
                                   <div>
                                     <span className="font-medium text-indigo-600">{lotById.name || `Lotto #${lotById.id}`}</span>
-                                    <span className="text-xs block text-gray-500">
-                                      Arrivo: {format(new Date(lotById.arrivalDate), 'dd/MM/yyyy')}
-                                    </span>
+                                    {lotById.arrivalDate && (
+                                      <span className="text-xs block text-gray-500">
+                                        Arrivo: {format(new Date(lotById.arrivalDate), 'dd/MM/yyyy')}
+                                      </span>
+                                    )}
                                     <span className="text-xs block text-gray-500">
                                       Fornitore: {lotById.supplier || 'N/D'}
                                     </span>
@@ -2518,9 +2524,11 @@ export default function Operations() {
                                 return (
                                   <div>
                                     <span className="font-medium text-indigo-600">{firstActivationInCycle.lot.name}</span>
-                                    <span className="text-xs block text-gray-500">
-                                      Arrivo: {format(new Date(firstActivationInCycle.lot.arrivalDate), 'dd/MM/yyyy')}
-                                    </span>
+                                    {firstActivationInCycle.lot.arrivalDate && (
+                                      <span className="text-xs block text-gray-500">
+                                        Arrivo: {format(new Date(firstActivationInCycle.lot.arrivalDate), 'dd/MM/yyyy')}
+                                      </span>
+                                    )}
                                     <span className="text-xs block text-gray-500">
                                       Fornitore: {firstActivationInCycle.lot.supplier || 'N/D'}
                                     </span>
@@ -2995,9 +3003,11 @@ export default function Operations() {
                             <div className="col-span-2 mt-1">
                               <div className="text-xs font-medium text-gray-500">Lotto</div>
                               <div className="font-medium text-indigo-600">{lot.name}</div>
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')} • {lot.supplier || 'N/D'}
-                              </div>
+                              {lot.arrivalDate && (
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')} • {lot.supplier || 'N/D'}
+                                </div>
+                              )}
                             </div>
                           )}
                           
@@ -3187,7 +3197,9 @@ export default function Operations() {
                                                     
                                                     return (
                                                       <div key={lot.id} className="py-1">
-                                                        <div>Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}</div>
+                                                        {lot.arrivalDate && (
+                                                          <div>Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}</div>
+                                                        )}
                                                         <div>Fornitore: {lot.supplier || 'N/D'}</div>
                                                       </div>
                                                     );
