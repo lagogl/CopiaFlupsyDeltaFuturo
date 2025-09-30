@@ -7879,9 +7879,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const screening = screeningResult[0];
       
-      const [sourceBaskets, destBaskets, referenceSize] = await Promise.all([
+      const [sourceBaskets, destBasketsRaw, referenceSize] = await Promise.all([
         db.select().from(selectionSourceBaskets).where(eq(selectionSourceBaskets.selectionId, id)),
-        db.select().from(selectionDestinationBaskets).where(eq(selectionDestinationBaskets.selectionId, id)),
+        db.select({
+          basket: selectionDestinationBaskets,
+          size: sizes
+        })
+        .from(selectionDestinationBaskets)
+        .leftJoin(sizes, eq(selectionDestinationBaskets.sizeId, sizes.id))
+        .where(eq(selectionDestinationBaskets.selectionId, id)),
         screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
       ]);
       
@@ -7891,7 +7897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dismissed: false // Non esiste nel DB, default false
       }));
       
-      const mappedDestBaskets = destBaskets.map(b => {
+      const mappedDestBaskets = destBasketsRaw.map(({ basket: b, size }) => {
         // Parsa position (es. "DX1" → row="DX", position=1)
         let row = null;
         let position = null;
@@ -7912,11 +7918,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         return {
-          ...b,
+          id: b.id,
+          selectionId: b.selectionId,
+          basketId: b.basketId,
+          cycleId: b.cycleId, // Assicurati che cycleId sia incluso
+          destinationType: b.destinationType,
+          flupsyId: b.flupsyId,
+          animalCount: b.animalCount,
+          liveAnimals: b.liveAnimals,
+          totalWeight: b.totalWeight,
+          animalsPerKg: b.animalsPerKg,
+          sizeId: b.sizeId,
+          deadCount: b.deadCount,
+          mortalityRate: b.mortalityRate,
+          sampleWeight: b.sampleWeight,
+          sampleCount: b.sampleCount,
+          notes: b.notes,
+          createdAt: b.createdAt,
+          updatedAt: b.updatedAt,
           category: categoryIT, // Mappa destinationType → category tradotta
           row,
-          position,
-          positionAssigned: b.position !== null && b.position !== ''
+          position: position,
+          positionAssigned: b.position !== null && b.position !== '',
+          size: size ? { id: size.id, code: size.code, name: size.name } : null
         };
       });
       
