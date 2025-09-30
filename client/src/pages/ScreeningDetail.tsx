@@ -79,8 +79,8 @@ export default function ScreeningDetail() {
     );
   }
 
-  const totalSourceAnimals = screening.sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
-  const totalDestAnimals = screening.destinationBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+  const totalSourceAnimals = (screening.sourceBaskets || []).reduce((sum, b) => sum + (b.animalCount || 0), 0);
+  const totalDestAnimals = (screening.destinationBaskets || []).reduce((sum, b) => sum + (b.animalCount || 0), 0);
   const mortalityAnimals = totalSourceAnimals - totalDestAnimals;
   const mortalityPercent = totalSourceAnimals > 0
     ? ((mortalityAnimals / totalSourceAnimals) * 100).toFixed(2)
@@ -102,6 +102,8 @@ export default function ScreeningDetail() {
           <Button
             onClick={() => window.open(`/api/screenings/${screening.id}/report.pdf`, '_blank')}
             data-testid="button-print-pdf"
+            disabled
+            title="Funzionalità PDF temporaneamente non disponibile"
           >
             <Download className="h-4 w-4 mr-2" />
             Stampa PDF
@@ -159,14 +161,14 @@ export default function ScreeningDetail() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
               <div className="text-sm text-blue-600 dark:text-blue-400">Cestelli Origine</div>
-              <div className="text-2xl font-bold mt-1" data-testid="text-source-count">{screening.sourceBaskets.length}</div>
+              <div className="text-2xl font-bold mt-1" data-testid="text-source-count">{(screening.sourceBaskets || []).length}</div>
               <div className="text-sm text-blue-600 dark:text-blue-400 mt-1" data-testid="text-source-animals">
                 Animali: {formatNumber(totalSourceAnimals)}
               </div>
             </div>
             <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
               <div className="text-sm text-green-600 dark:text-green-400">Cestelli Destinazione</div>
-              <div className="text-2xl font-bold mt-1" data-testid="text-dest-count">{screening.destinationBaskets.length}</div>
+              <div className="text-2xl font-bold mt-1" data-testid="text-dest-count">{(screening.destinationBaskets || []).length}</div>
               <div className="text-sm text-green-600 dark:text-green-400 mt-1" data-testid="text-dest-animals">
                 Animali: {formatNumber(totalDestAnimals)}
               </div>
@@ -186,7 +188,7 @@ export default function ScreeningDetail() {
       <Card>
         <CardHeader>
           <CardTitle>Cestelli Origine</CardTitle>
-          <CardDescription>{screening.sourceBaskets.length} cestelli</CardDescription>
+          <CardDescription>{(screening.sourceBaskets || []).length} cestelli</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -201,7 +203,7 @@ export default function ScreeningDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {screening.sourceBaskets.map((basket) => (
+              {(screening.sourceBaskets || []).map((basket) => (
                 <TableRow key={basket.id} data-testid={`row-source-${basket.id}`}>
                   <TableCell>{basket.basketId}</TableCell>
                   <TableCell>{basket.cycleId}</TableCell>
@@ -224,7 +226,7 @@ export default function ScreeningDetail() {
       <Card>
         <CardHeader>
           <CardTitle>Cestelli Destinazione</CardTitle>
-          <CardDescription>{screening.destinationBaskets.length} cestelli</CardDescription>
+          <CardDescription>{(screening.destinationBaskets || []).length} cestelli</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -239,7 +241,7 @@ export default function ScreeningDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {screening.destinationBaskets.map((basket) => (
+              {(screening.destinationBaskets || []).map((basket) => (
                 <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
                   <TableCell>{basket.basketId}</TableCell>
                   <TableCell>{basket.category || '-'}</TableCell>
