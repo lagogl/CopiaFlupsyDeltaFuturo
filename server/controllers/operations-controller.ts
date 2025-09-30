@@ -28,17 +28,15 @@ const OPERATION_COLUMNS = {
   mortalityRate: operations.mortalityRate,
   notes: operations.notes,
   metadata: operations.metadata,
-  // 🔧 FIX: Aggiungi dati del lotto per visualizzazione
-  lot: {
-    id: lots.id,
-    arrivalDate: lots.arrivalDate,
-    supplier: lots.supplier,
-    supplierLotNumber: lots.supplierLotNumber,
-    quality: lots.quality,
-    animalCount: lots.animalCount,
-    weight: lots.weight,
-    notes: lots.notes
-  },
+  // 🔧 FIX: Aggiungi dati del lotto per visualizzazione - campi separati
+  lot_id: lots.id,
+  lot_arrivalDate: lots.arrivalDate,
+  lot_supplier: lots.supplier,
+  lot_supplierLotNumber: lots.supplierLotNumber,
+  lot_quality: lots.quality,
+  lot_animalCount: lots.animalCount,
+  lot_weight: lots.weight,
+  lot_notes: lots.notes,
   // Aggiungi nome del FLUPSY
   flupsyName: flupsys.name
 };
@@ -210,9 +208,33 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
     
     const results = await query;
     
+    // Trasforma i risultati per ricostruire l'oggetto lot
+    const transformedResults = results.map(row => {
+      // Ricostruisci l'oggetto lot solo se esiste lot_id
+      const lot = row.lot_id ? {
+        id: row.lot_id,
+        arrivalDate: row.lot_arrivalDate,
+        supplier: row.lot_supplier,
+        supplierLotNumber: row.lot_supplierLotNumber,
+        quality: row.lot_quality,
+        animalCount: row.lot_animalCount,
+        weight: row.lot_weight,
+        notes: row.lot_notes
+      } : null;
+      
+      // Rimuovi i campi lot_* e aggiungi l'oggetto lot
+      const { lot_id, lot_arrivalDate, lot_supplier, lot_supplierLotNumber, 
+              lot_quality, lot_animalCount, lot_weight, lot_notes, ...operation } = row;
+      
+      return {
+        ...operation,
+        lot
+      };
+    });
+    
     // Prepara risultato
     const response = {
-      operations: results,
+      operations: transformedResults,
       totalCount
     };
     
