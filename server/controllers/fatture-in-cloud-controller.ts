@@ -338,7 +338,7 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
       
       if (clienteEsistente) {
         await db.update(clienti)
-          .set({ ...datiCliente, updated_at: new Date() })
+          .set({ ...datiCliente, updatedAt: new Date() })
           .where(eq(clienti.id, clienteEsistente.id));
         clientiAggiornati++;
       } else {

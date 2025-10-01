@@ -235,9 +235,9 @@ const FattureInCloudConfig: React.FC = () => {
       if (!response.ok) throw new Error('Errore nell\'aggiornamento azienda');
       return response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/config'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/companies'] });
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/config'] });
+      await companiesQuery.refetch();
       toast({
         title: "✅ Azienda aggiornata",
         description: `L'azienda selezionata è stata impostata correttamente`
