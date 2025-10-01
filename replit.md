@@ -69,3 +69,8 @@ Preferred communication style: Simple, everyday language.
 ### Third-party Integrations
 - DeepSeek API (for AI capabilities)
 - Fatture in Cloud (for client and DDT management, via OAuth2 authentication and API)
+  - **Implementation**: Uses `configurazione` table for storing OAuth2 tokens and credentials (chiave/valore pattern)
+  - **Backend**: `server/controllers/fatture-in-cloud-controller.ts` with endpoints for OAuth2, client sync, DDT creation
+  - **Frontend**: `/fatture-in-cloud` page (FattureInCloudConfig.tsx) for configuration and management
+  - **Secrets**: FATTURE_IN_CLOUD_CLIENT_ID, FATTURE_IN_CLOUD_CLIENT_SECRET, FATTURE_IN_CLOUD_COMPANY_ID stored in Replit secrets
+  - **Database Schema**: New `fatture_in_cloud_config` table added for dedicated OAuth2 configuration storage (October 2025)
