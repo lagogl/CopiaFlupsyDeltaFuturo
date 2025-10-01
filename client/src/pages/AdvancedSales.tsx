@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Package, FileText, Users, Calculator, Download, Eye, CheckCircle } from "lucide-react";
+import { Plus, Package, FileText, Users, Calculator, Download, Eye, CheckCircle, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -72,6 +73,7 @@ export default function AdvancedSales() {
   const [showBagConfig, setShowBagConfig] = useState(false);
   const [currentSaleId, setCurrentSaleId] = useState<number | null>(null);
   const [bagConfigs, setBagConfigs] = useState<BagConfiguration[]>([]);
+  const [openCustomerCombobox, setOpenCustomerCombobox] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -430,7 +432,7 @@ export default function AdvancedSales() {
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     checked={useManualCustomer}
-                    onCheckedChange={setUseManualCustomer}
+                    onCheckedChange={(checked) => setUseManualCustomer(checked === true)}
                   />
                   <span className="text-sm">Inserimento manuale cliente</span>
                 </div>
@@ -449,21 +451,55 @@ export default function AdvancedSales() {
                     />
                   </div>
                 ) : (
-                  <Select onValueChange={(value) => {
-                    const customer = customers?.customers?.find((c: Customer) => c.id === parseInt(value));
-                    setSelectedCustomer(customer || null);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona cliente dall'anagrafica" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers?.customers?.map((customer: Customer) => (
-                        <SelectItem key={customer.id} value={customer.id.toString()}>
-                          {customer.name} - {customer.businessName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={openCustomerCombobox} onOpenChange={setOpenCustomerCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openCustomerCombobox}
+                        className="w-full justify-between"
+                        data-testid="button-select-customer"
+                      >
+                        {selectedCustomer
+                          ? `${selectedCustomer.name} - ${selectedCustomer.businessName}`
+                          : "Seleziona cliente dall'anagrafica"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Cerca cliente..." data-testid="input-search-customer" />
+                        <CommandList>
+                          <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
+                          <CommandGroup>
+                            {customers?.customers?.map((customer: Customer) => (
+                              <CommandItem
+                                key={customer.id}
+                                value={`${customer.name} ${customer.businessName} ${customer.vatNumber}`.toLowerCase()}
+                                onSelect={() => {
+                                  setSelectedCustomer(customer);
+                                  setOpenCustomerCombobox(false);
+                                }}
+                                data-testid={`item-customer-${customer.id}`}
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${
+                                    selectedCustomer?.id === customer.id ? "opacity-100" : "opacity-0"
+                                  }`}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{customer.name}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {customer.businessName} {customer.vatNumber ? `- P.IVA ${customer.vatNumber}` : ''}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </div>
 
