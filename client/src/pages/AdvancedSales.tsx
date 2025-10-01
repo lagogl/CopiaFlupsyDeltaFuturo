@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Package, FileText, Users, Calculator, Download, Eye, CheckCircle, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Package, FileText, Download, Eye, CheckCircle, Check, ChevronsUpDown, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
+import AdvancedSalesConfigTab from "./AdvancedSalesConfigTab";
 
 interface SaleOperation {
   operationId: number;
@@ -62,6 +62,17 @@ interface BagConfiguration {
   }[];
 }
 
+interface BasketSupply {
+  basketId: number;
+  basketPhysicalNumber: number;
+  operationId: number;
+  sizeCode: string;
+  sizeName: string;
+  totalAnimals: number;
+  totalWeightKg: number;
+  animalsPerKg: number;
+}
+
 export default function AdvancedSales() {
   const [activeTab, setActiveTab] = useState("operations");
   const [selectedOperations, setSelectedOperations] = useState<number[]>([]);
@@ -73,10 +84,32 @@ export default function AdvancedSales() {
   const [showBagConfig, setShowBagConfig] = useState(false);
   const [currentSaleId, setCurrentSaleId] = useState<number | null>(null);
   const [bagConfigs, setBagConfigs] = useState<BagConfiguration[]>([]);
+  const [baseSupplyByBasket, setBaseSupplyByBasket] = useState<Record<number, BasketSupply>>({});
   const [openCustomerCombobox, setOpenCustomerCombobox] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Calcola animali allocati per cestello in tempo reale
+  const allocatedByBasket = useMemo(() => {
+    const allocated: Record<number, number> = {};
+    bagConfigs.forEach(bag => {
+      bag.allocations.forEach(alloc => {
+        allocated[alloc.sourceBasketId] = (allocated[alloc.sourceBasketId] || 0) + alloc.allocatedAnimals;
+      });
+    });
+    return allocated;
+  }, [bagConfigs]);
+
+  // Calcola animali rimanenti per cestello
+  const remainingByBasket = useMemo(() => {
+    const remaining: Record<number, number> = {};
+    Object.entries(baseSupplyByBasket).forEach(([basketId, supply]) => {
+      const allocated = allocatedByBasket[parseInt(basketId)] || 0;
+      remaining[parseInt(basketId)] = supply.totalAnimals - allocated;
+    });
+    return remaining;
+  }, [baseSupplyByBasket, allocatedByBasket]);
 
   // Query per operazioni di vendita disponibili
   const { data: availableOperations, isLoading: loadingOperations } = useQuery({
@@ -105,8 +138,24 @@ export default function AdvancedSales() {
       setActiveTab("config");
       queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
       
-      // Prepara configurazione sacchi automatica
-      autoConfigureBags(response.operations);
+      // Cattura disponibilità cestelli
+      const supply: Record<number, BasketSupply> = {};
+      response.operations.forEach((op: SaleOperation) => {
+        supply[op.basketId] = {
+          basketId: op.basketId,
+          basketPhysicalNumber: op.basketPhysicalNumber,
+          operationId: op.operationId,
+          sizeCode: op.sizeCode,
+          sizeName: op.sizeName,
+          totalAnimals: op.animalCount,
+          totalWeightKg: op.totalWeight,
+          animalsPerKg: op.animalsPerKg
+        };
+      });
+      setBaseSupplyByBasket(supply);
+      
+      // Inizializza con un sacco vuoto
+      setBagConfigs([]);
     },
     onError: (error: any) => {
       toast({ 
@@ -181,104 +230,98 @@ export default function AdvancedSales() {
     });
   };
 
-  const autoConfigureBags = (operations: SaleOperation[]) => {
-    // Raggruppa per taglia
-    const sizeGroups = operations.reduce((groups, op) => {
-      if (!groups[op.sizeCode]) {
-        groups[op.sizeCode] = [];
-      }
-      groups[op.sizeCode].push(op);
-      return groups;
-    }, {} as Record<string, SaleOperation[]>);
+  // Aggiunge un nuovo sacco
+  const addBag = (basketId: number, animalCount: number, netWeightKg: number, identifier?: string, section?: string) => {
+    const supply = baseSupplyByBasket[basketId];
+    if (!supply) return;
 
-    const configs: BagConfiguration[] = [];
-
-    Object.entries(sizeGroups).forEach(([sizeCode, ops]) => {
-      const totalAnimals = ops.reduce((sum, op) => sum + op.animalCount, 0);
-      const totalWeight = ops.reduce((sum, op) => sum + op.totalWeight, 0);
-      const avgAnimalsPerKg = ops.reduce((sum, op) => sum + op.animalsPerKg, 0) / ops.length;
-
-      // Configurazione automatica: 1 sacco per taglia
-      configs.push({
-        sizeCode,
-        animalCount: totalAnimals,
-        originalWeight: totalWeight,
-        weightLoss: 0,
-        wastePercentage: 2, // 2% default
-        originalAnimalsPerKg: avgAnimalsPerKg,
-        allocations: ops.map(op => ({
-          sourceOperationId: op.operationId,
-          sourceBasketId: op.basketId,
-          allocatedAnimals: op.animalCount,
-          allocatedWeight: op.totalWeight,
-          sourceAnimalsPerKg: op.animalsPerKg,
-          sourceSizeCode: op.sizeCode
-        }))
+    // Validazione: verifica che ci siano abbastanza animali disponibili
+    const remaining = remainingByBasket[basketId] || 0;
+    if (animalCount > remaining) {
+      toast({
+        title: "Errore",
+        description: `Solo ${remaining.toLocaleString()} animali disponibili nel cestello #${supply.basketPhysicalNumber}`,
+        variant: "destructive"
       });
-    });
-
-    setBagConfigs(configs);
-  };
-
-  const reallocateAnimals = (sizeIndex: number, animalsPerBag: number) => {
-    const config = bagConfigs[sizeIndex];
-    const totalAnimals = config.animalCount;
-    const numBags = Math.ceil(totalAnimals / animalsPerBag);
-    const remainder = totalAnimals % animalsPerBag;
-
-    const newConfigs = [...bagConfigs];
-    
-    // Rimuovi configurazione esistente per questa taglia
-    newConfigs.splice(sizeIndex, 1);
-
-    // Crea nuovi sacchi
-    for (let i = 0; i < numBags; i++) {
-      let bagAnimals = animalsPerBag;
-      
-      // Gestione rimanenza secondo le regole del documento
-      if (i === numBags - 1 && remainder > 0) {
-        if (remainder < animalsPerBag / 2) {
-          // Ridistribuisci la rimanenza
-          const extraPerBag = Math.floor(remainder / numBags);
-          bagAnimals = animalsPerBag + extraPerBag;
-        } else {
-          bagAnimals = remainder;
-        }
-      }
-
-      const bagWeight = (bagAnimals / config.originalAnimalsPerKg) * 1000;
-
-      newConfigs.push({
-        sizeCode: config.sizeCode,
-        animalCount: bagAnimals,
-        originalWeight: bagWeight,
-        weightLoss: 0,
-        wastePercentage: config.wastePercentage,
-        originalAnimalsPerKg: config.originalAnimalsPerKg,
-        allocations: [{
-          sourceOperationId: config.allocations[0].sourceOperationId,
-          sourceBasketId: config.allocations[0].sourceBasketId,
-          allocatedAnimals: bagAnimals,
-          allocatedWeight: bagWeight,
-          sourceAnimalsPerKg: config.originalAnimalsPerKg,
-          sourceSizeCode: config.sizeCode
-        }]
-      });
+      return;
     }
 
+    const originalWeightGrams = netWeightKg * 1000;
+    
+    const newBag: BagConfiguration = {
+      sizeCode: supply.sizeCode,
+      animalCount,
+      originalWeight: originalWeightGrams,
+      weightLoss: 0,
+      wastePercentage: 2,
+      originalAnimalsPerKg: supply.animalsPerKg,
+      notes: [identifier, section].filter(Boolean).join(' - ') || undefined,
+      allocations: [{
+        sourceOperationId: supply.operationId,
+        sourceBasketId: basketId,
+        allocatedAnimals: animalCount,
+        allocatedWeight: originalWeightGrams,
+        sourceAnimalsPerKg: supply.animalsPerKg,
+        sourceSizeCode: supply.sizeCode
+      }]
+    };
+
+    setBagConfigs([...bagConfigs, newBag]);
+    toast({ title: "Successo", description: "Sacco aggiunto" });
+  };
+
+  // Rimuove un sacco
+  const removeBag = (bagIndex: number) => {
+    const newConfigs = [...bagConfigs];
+    newConfigs.splice(bagIndex, 1);
     setBagConfigs(newConfigs);
   };
 
-  const handleWeightLoss = (bagIndex: number, weightLoss: number) => {
-    const maxLoss = 1.5; // kg
-    const actualLoss = Math.min(weightLoss, maxLoss);
+  // Clona un sacco
+  const cloneBag = (bagIndex: number) => {
+    const bag = bagConfigs[bagIndex];
+    const basketId = bag.allocations[0].sourceBasketId;
+    const remaining = remainingByBasket[basketId] || 0;
+    
+    if (bag.animalCount > remaining) {
+      toast({
+        title: "Errore",
+        description: `Solo ${remaining.toLocaleString()} animali disponibili per clonare questo sacco`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setBagConfigs([...bagConfigs, { ...bag }]);
+    toast({ title: "Successo", description: "Sacco clonato" });
+  };
+
+  // Aggiorna un campo del sacco
+  const updateBag = (bagIndex: number, updates: Partial<BagConfiguration>) => {
+    const newConfigs = [...bagConfigs];
+    newConfigs[bagIndex] = { ...newConfigs[bagIndex], ...updates };
+    
+    // Se cambiano gli animali, aggiorna anche l'allocazione
+    if (updates.animalCount !== undefined) {
+      newConfigs[bagIndex].allocations[0].allocatedAnimals = updates.animalCount;
+    }
+    
+    setBagConfigs(newConfigs);
+  };
+
+  const handleWeightLoss = (bagIndex: number, weightLossKg: number) => {
+    const maxLossKg = 1.5; // kg
+    const actualLossKg = Math.min(weightLossKg, maxLossKg);
+    // FIX: Converti la perdita in grammi
+    const actualLossGrams = actualLossKg * 1000;
     
     const newConfigs = [...bagConfigs];
-    newConfigs[bagIndex].weightLoss = actualLoss;
+    newConfigs[bagIndex].weightLoss = actualLossGrams; // salva in grammi
     
     // Ricalcola animals per kg con limite 5%
-    const newWeight = newConfigs[bagIndex].originalWeight - actualLoss;
-    const newAnimalsPerKg = newConfigs[bagIndex].animalCount / (newWeight / 1000);
+    // originalWeight è già in grammi, sottrai la perdita in grammi
+    const newWeightGrams = newConfigs[bagIndex].originalWeight - actualLossGrams;
+    const newAnimalsPerKg = newConfigs[bagIndex].animalCount / (newWeightGrams / 1000);
     const maxVariation = newConfigs[bagIndex].originalAnimalsPerKg * 0.05;
     
     if (Math.abs(newAnimalsPerKg - newConfigs[bagIndex].originalAnimalsPerKg) <= maxVariation) {
@@ -535,105 +578,20 @@ export default function AdvancedSales() {
         </TabsContent>
 
         <TabsContent value="config" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurazione Sacchi</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {bagConfigs.map((config, index) => (
-                <div key={index} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Sacco #{index + 1} - {config.sizeCode}</h4>
-                    <Badge>{config.animalCount.toLocaleString()} animali</Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label>Peso Originale (kg)</Label>
-                      <Input 
-                        type="number" 
-                        value={config.originalWeight.toFixed(2)} 
-                        readOnly 
-                      />
-                    </div>
-                    <div>
-                      <Label>Perdita Peso (max 1.5kg)</Label>
-                      <Input
-                        type="number"
-                        max="1.5"
-                        step="0.1"
-                        value={config.weightLoss}
-                        onChange={(e) => handleWeightLoss(index, parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Peso Finale (kg)</Label>
-                      <Input 
-                        value={(config.originalWeight - config.weightLoss).toFixed(2)} 
-                        readOnly 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>% Scarto</Label>
-                      <Input
-                        type="number"
-                        value={config.wastePercentage}
-                        onChange={(e) => {
-                          const newConfigs = [...bagConfigs];
-                          newConfigs[index].wastePercentage = parseFloat(e.target.value) || 0;
-                          setBagConfigs(newConfigs);
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label>Animali/kg Finale</Label>
-                      <Input 
-                        value={(config.animalCount / ((config.originalWeight - config.weightLoss) / 1000)).toLocaleString()} 
-                        readOnly 
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Note Sacco</Label>
-                    <Input
-                      placeholder="Note specifiche per questo sacco"
-                      value={config.notes || ""}
-                      onChange={(e) => {
-                        const newConfigs = [...bagConfigs];
-                        newConfigs[index].notes = e.target.value;
-                        setBagConfigs(newConfigs);
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-
-              <div className="flex gap-4">
-                <Button 
-                  onClick={saveBagConfiguration}
-                  disabled={configureBagsMutation.isPending}
-                  className="flex-1"
-                >
-                  {configureBagsMutation.isPending ? "Salvataggio..." : "Salva Configurazione"}
-                </Button>
-                
-                {currentSaleId && bagConfigs.length > 0 && (
-                  <Button 
-                    onClick={() => handleGeneratePDF(currentSaleId)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Genera PDF
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <AdvancedSalesConfigTab
+            baseSupplyByBasket={baseSupplyByBasket}
+            bagConfigs={bagConfigs}
+            remainingByBasket={remainingByBasket}
+            allocatedByBasket={allocatedByBasket}
+            onAddBag={addBag}
+            onRemoveBag={removeBag}
+            onCloneBag={cloneBag}
+            onUpdateBag={updateBag}
+            onSave={saveBagConfiguration}
+            onGeneratePDF={() => currentSaleId && handleGeneratePDF(currentSaleId)}
+            isSaving={configureBagsMutation.isPending}
+            currentSaleId={currentSaleId}
+          />
         </TabsContent>
 
         <TabsContent value="sales" className="space-y-4">

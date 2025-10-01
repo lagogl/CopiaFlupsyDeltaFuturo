@@ -253,9 +253,9 @@ export async function configureBags(req: Request, res: Response) {
       for (let i = 0; i < bags.length; i++) {
         const bag = bags[i];
         
-        // Validazione peso loss (max 1.5kg)
-        const weightLoss = Math.min(bag.weightLoss || 0, 1.5);
-        const finalWeight = bag.originalWeight - weightLoss;
+        // Validazione peso loss (max 1.5kg = 1500g)
+        const weightLossGrams = Math.min(bag.weightLoss || 0, 1500);
+        const finalWeight = bag.originalWeight - weightLossGrams;
         
         // Ricalcola animals per kg con limite 5%
         let newAnimalsPerKg = bag.animalCount / (finalWeight / 1000);
@@ -272,7 +272,7 @@ export async function configureBags(req: Request, res: Response) {
           sizeCode: bag.sizeCode,
           totalWeight: finalWeight,
           originalWeight: bag.originalWeight,
-          weightLoss: weightLoss,
+          weightLoss: weightLossGrams,
           animalCount: bag.animalCount,
           animalsPerKg: newAnimalsPerKg,
           originalAnimalsPerKg: bag.originalAnimalsPerKg,
@@ -374,7 +374,7 @@ export async function getAdvancedSale(req: Request, res: Response) {
     );
 
     // Recupera operazioni di riferimento
-    const operations = await db.select({
+    const saleOperations = await db.select({
       operationId: saleOperationsRef.operationId,
       basketId: saleOperationsRef.basketId,
       originalAnimals: saleOperationsRef.originalAnimals,
@@ -393,7 +393,7 @@ export async function getAdvancedSale(req: Request, res: Response) {
       success: true,
       sale: sale[0],
       bags: bagsWithAllocations,
-      operations: operations
+      operations: saleOperations
     });
   } catch (error) {
     console.error("Errore nel recupero vendita avanzata:", error);
@@ -560,8 +560,27 @@ export async function generateSalePDF(req: Request, res: Response) {
 
     // Prepara dati per PDF
     const saleData = {
-      sale: sale[0],
-      bags: bagsWithAllocations,
+      sale: {
+        ...sale[0],
+        customerName: sale[0].customerName || '', // Coerce null to empty string
+        totalWeight: sale[0].totalWeight || 0, // Coerce null to 0
+        totalAnimals: sale[0].totalAnimals || 0, // Coerce null to 0
+        totalBags: sale[0].totalBags || 0, // Coerce null to 0
+        notes: sale[0].notes || undefined, // Coerce null to undefined
+        pdfPath: sale[0].pdfPath || undefined // Coerce null to undefined
+      },
+      bags: bagsWithAllocations.map(bag => ({
+        ...bag,
+        weightLoss: bag.weightLoss || 0, // Coerce null to 0
+        wastePercentage: bag.wastePercentage || 0, // Coerce null to 0
+        notes: bag.notes || undefined, // Coerce null to undefined
+        allocations: bag.allocations.map(alloc => ({
+          ...alloc,
+          sourceAnimalsPerKg: alloc.sourceAnimalsPerKg || 0, // Coerce null to 0
+          sourceSizeCode: alloc.sourceSizeCode || '', // Coerce null to empty string
+          basketPhysicalNumber: alloc.basketPhysicalNumber || undefined // Coerce null to undefined
+        }))
+      })),
       operations: operationsRefs
     };
 
