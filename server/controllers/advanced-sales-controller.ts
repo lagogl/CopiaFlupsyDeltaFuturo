@@ -142,7 +142,7 @@ export async function createAdvancedSale(req: Request, res: Response) {
 
       // Recupera dettagli operazioni
       const operationsData = await tx.select({
-        id: operations.id,
+        operationId: operations.id,
         basketId: operations.basketId,
         animalCount: operations.animalCount,
         totalWeight: operations.totalWeight,
@@ -159,7 +159,7 @@ export async function createAdvancedSale(req: Request, res: Response) {
       for (const op of operationsData) {
         await tx.insert(saleOperationsRef).values({
           advancedSaleId: newSale.id,
-          operationId: op.id,
+          operationId: op.operationId,
           basketId: op.basketId,
           originalAnimals: op.animalCount,
           originalWeight: op.totalWeight,
