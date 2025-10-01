@@ -475,7 +475,7 @@ export default function AdvancedSales() {
                             {customers?.customers?.map((customer: Customer) => (
                               <CommandItem
                                 key={customer.id}
-                                value={`${customer.name} ${customer.businessName} ${customer.vatNumber}`.toLowerCase()}
+                                value={`${customer.name} ${customer.vatNumber || ''}`.toLowerCase()}
                                 onSelect={() => {
                                   setSelectedCustomer(customer);
                                   setOpenCustomerCombobox(false);
@@ -490,7 +490,7 @@ export default function AdvancedSales() {
                                 <div className="flex flex-col">
                                   <span className="font-medium">{customer.name}</span>
                                   <span className="text-sm text-muted-foreground">
-                                    {customer.businessName} {customer.vatNumber ? `- P.IVA ${customer.vatNumber}` : ''}
+                                    {customer.vatNumber ? `P.IVA ${customer.vatNumber}` : 'Nessuna P.IVA'}
                                   </span>
                                 </div>
                               </CommandItem>

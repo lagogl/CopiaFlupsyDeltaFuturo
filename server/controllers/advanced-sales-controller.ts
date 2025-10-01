@@ -463,8 +463,7 @@ export async function getCustomers(req: Request, res: Response) {
     const customers = await db.select()
       .from(clienti)
       .where(eq(clienti.attivo, true))
-      .orderBy(clienti.denominazione)
-      .limit(100);
+      .orderBy(clienti.denominazione);
 
     // Mappiamo i campi per compatibilità con il frontend
     const mappedCustomers = customers.map(customer => ({
