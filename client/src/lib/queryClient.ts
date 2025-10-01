@@ -10,17 +10,38 @@ async function throwIfResNotOk(res: Response) {
 // Funzione apiRequest overload per supportare entrambi i pattern di chiamata
 export async function apiRequest<T = any>(
   urlOrOptions: string | { url: string; method?: string; body?: any },
-  optionsOrNothing?: RequestInit,
+  methodOrOptions?: string | RequestInit,
+  bodyData?: any
 ): Promise<T> {
   let url: string;
-  let options: RequestInit = optionsOrNothing || {};
+  let options: RequestInit = {};
   let method = '';
   
-  // Determina se il primo parametro è una stringa URL o un oggetto options
+  // Determina quale pattern di chiamata è stato usato
   if (typeof urlOrOptions === 'string') {
     url = urlOrOptions;
-    method = options.method || 'GET';
+    
+    // Pattern 1: apiRequest(url, method, body) - 3 parametri
+    if (typeof methodOrOptions === 'string') {
+      method = methodOrOptions;
+      if (bodyData) {
+        options.body = JSON.stringify(bodyData);
+        options.headers = {
+          'Content-Type': 'application/json'
+        };
+      }
+    } 
+    // Pattern 2: apiRequest(url, options) - 2 parametri
+    else if (methodOrOptions && typeof methodOrOptions === 'object') {
+      options = methodOrOptions;
+      method = options.method || 'GET';
+    }
+    // Pattern 3: apiRequest(url) - 1 parametro
+    else {
+      method = 'GET';
+    }
   } else {
+    // Pattern 4: apiRequest({ url, method, body }) - oggetto
     url = urlOrOptions.url;
     method = urlOrOptions.method || 'GET';
     options.method = method;
