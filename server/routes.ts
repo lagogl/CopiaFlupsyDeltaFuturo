@@ -7821,11 +7821,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/screenings", async (req, res) => {
     try {
       const status = (req.query.status as string) || 'completed';
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 20;
+      const screeningNumber = req.query.screeningNumber as string;
+      const dateFrom = req.query.dateFrom as string;
+      const dateTo = req.query.dateTo as string;
       
-      // Usa la tabella selections invece di screeningOperations
+      // Costruisci le condizioni di filtro
+      const conditions = [eq(selections.status, status)];
+      
+      if (screeningNumber) {
+        conditions.push(eq(selections.selectionNumber, parseInt(screeningNumber)));
+      }
+      
+      if (dateFrom) {
+        conditions.push(sql`${selections.date} >= ${dateFrom}`);
+      }
+      
+      if (dateTo) {
+        conditions.push(sql`${selections.date} <= ${dateTo}`);
+      }
+      
+      // Conta il totale per la paginazione
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(selections)
+        .where(and(...conditions));
+      
+      const totalCount = Number(countResult[0]?.count || 0);
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const offset = (page - 1) * pageSize;
+      
+      // Usa la tabella selections con filtri e paginazione
       const screenings = await db.select().from(selections)
-        .where(eq(selections.status, status))
-        .orderBy(desc(selections.date));
+        .where(and(...conditions))
+        .orderBy(desc(selections.date))
+        .limit(pageSize)
+        .offset(offset);
       
       // Arricchisci con conteggi e informazioni aggregate
       const enrichedScreenings = await Promise.all(screenings.map(async (screening) => {
@@ -7843,8 +7875,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const totalDestAnimals = destBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
         
         return {
-          ...screening,
-          screeningNumber: screening.selectionNumber, // Mappa selectionNumber a screeningNumber per compatibilità frontend
+          id: screening.id,
+          screeningNumber: screening.selectionNumber,
+          date: screening.date,
+          purpose: screening.purpose,
+          status: screening.status,
           referenceSize,
           sourceCount: sourceBaskets.length,
           destinationCount: destBaskets.length,
@@ -7854,7 +7889,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }));
       
-      res.json(enrichedScreenings);
+      res.json({
+        screenings: enrichedScreenings,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      });
     } catch (error) {
       console.error("Error fetching screenings:", error);
       res.status(500).json({ error: "Failed to fetch screenings" });
