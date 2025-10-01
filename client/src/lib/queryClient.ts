@@ -24,6 +24,7 @@ export async function apiRequest<T = any>(
     // Pattern 1: apiRequest(url, method, body) - 3 parametri
     if (typeof methodOrOptions === 'string') {
       method = methodOrOptions;
+      options.method = method;
       if (bodyData) {
         options.body = JSON.stringify(bodyData);
         options.headers = {
