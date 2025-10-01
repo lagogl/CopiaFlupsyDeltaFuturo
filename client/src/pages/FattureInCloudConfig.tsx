@@ -213,6 +213,45 @@ const FattureInCloudConfig: React.FC = () => {
     }
   });
 
+  // Query per recuperare lista aziende
+  const companiesQuery = useQuery({
+    queryKey: ['/api/fatture-in-cloud/companies'],
+    queryFn: async () => {
+      const response = await fetch('/api/fatture-in-cloud/companies');
+      if (!response.ok) throw new Error('Errore nel caricamento aziende');
+      return response.json();
+    },
+    enabled: false // Carica solo quando richiesto esplicitamente
+  });
+
+  // Mutation per aggiornare company_id
+  const updateCompanyIdMutation = useMutation({
+    mutationFn: async (newCompanyId: number) => {
+      const response = await fetch('/api/fatture-in-cloud/company-id', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: newCompanyId })
+      });
+      if (!response.ok) throw new Error('Errore nell\'aggiornamento azienda');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/companies'] });
+      toast({
+        title: "✅ Azienda aggiornata",
+        description: `L'azienda selezionata è stata impostata correttamente`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore aggiornamento azienda",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSaveCredentials = () => {
     if (!clientId.trim() || !clientSecret.trim()) {
       toast({
@@ -487,39 +526,103 @@ const FattureInCloudConfig: React.FC = () => {
         <TabsContent value="company" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Configurazione Azienda</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Selezione Azienda</span>
+                <Button
+                  onClick={() => companiesQuery.refetch()}
+                  disabled={companiesQuery.isFetching || !isAuthenticated()}
+                  variant="outline"
+                  size="sm"
+                >
+                  {companiesQuery.isFetching ? (
+                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Building className="w-4 h-4 mr-2" />
+                  )}
+                  Carica Aziende
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Alert>
                 <AlertCircle className="w-4 h-4" />
                 <AlertDescription>
-                  Inserisci l'ID dell'azienda in Fatture in Cloud per cui creare i DDT.
-                  Puoi trovarlo nell'URL quando accedi al tuo account.
+                  Seleziona quale azienda utilizzare per la creazione di DDT e la sincronizzazione clienti.
+                  {!isAuthenticated() && <><br/><strong>Nota:</strong> Completa prima l'autorizzazione OAuth2 nella tab Configurazione.</>}
                 </AlertDescription>
               </Alert>
-              
-              <div>
-                <Label htmlFor="companyId">ID Azienda</Label>
-                <Input
-                  id="companyId"
-                  type="text"
-                  value={companyId}
-                  onChange={(e) => setCompanyId(e.target.value)}
-                  placeholder="Inserisci ID Azienda"
-                />
-              </div>
-              
-              <Button 
-                onClick={handleSaveCompanyId}
-                disabled={saveConfigMutation.isPending}
-              >
-                {saveConfigMutation.isPending ? (
-                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Building className="w-4 h-4 mr-2" />
-                )}
-                Salva ID Azienda
-              </Button>
+
+              {companiesQuery.data?.companies && companiesQuery.data.companies.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600">
+                    Aziende disponibili: {companiesQuery.data.companies.length}
+                  </div>
+                  {companiesQuery.data.companies.map((company: any) => {
+                    const isCurrentCompany = company.id === companiesQuery.data.current_company_id;
+                    return (
+                      <div 
+                        key={company.id}
+                        className={`border rounded-lg p-4 transition-all ${
+                          isCurrentCompany 
+                            ? 'border-green-500 bg-green-50 dark:bg-green-950' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        data-testid={`company-card-${company.id}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-lg">{company.name}</h3>
+                              {isCurrentCompany && (
+                                <Badge variant="default" className="bg-green-600">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Selezionata
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <p>ID: {company.id}</p>
+                              {company.type && <p>Tipo: {company.type}</p>}
+                              {company.plan_name && <p>Piano: {company.plan_name}</p>}
+                              {company.access_info && (
+                                <p>Ruolo: {company.access_info.role}</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {!isCurrentCompany && (
+                            <Button
+                              onClick={() => updateCompanyIdMutation.mutate(company.id)}
+                              disabled={updateCompanyIdMutation.isPending}
+                              variant="outline"
+                              size="sm"
+                              data-testid={`button-select-company-${company.id}`}
+                            >
+                              {updateCompanyIdMutation.isPending ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                'Seleziona'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : companiesQuery.data?.error ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="w-4 h-4" />
+                  <AlertDescription>
+                    {companiesQuery.data.error}
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Building className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Clicca su "Carica Aziende" per visualizzare le aziende disponibili</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
