@@ -954,6 +954,31 @@ export const configurazione = pgTable("configurazione", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
+// Tabella configurazione OAuth2 Fatture in Cloud
+export const fattureInCloudConfig = pgTable("fatture_in_cloud_config", {
+  id: serial("id").primaryKey(),
+  apiKey: text("api_key"),
+  apiUid: text("api_uid"),
+  companyId: integer("company_id"),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  tokenType: text("token_type").default("Bearer"),
+  defaultPaymentMethod: text("default_payment_method"),
+  defaultCausaleTrasporto: text("default_causale_trasporto").default("Vendita"),
+  defaultAspettoBeni: text("default_aspetto_beni").default("Colli"),
+  defaultPorto: text("default_porto").default("Franco"),
+  numerazioneAutomatica: boolean("numerazione_automatica").default(true),
+  prefissoNumero: text("prefisso_numero"),
+  invioEmailAutomatico: boolean("invio_email_automatico").default(false),
+  emailMittente: text("email_mittente"),
+  emailOggettoTemplate: text("email_oggetto_template"),
+  emailCorpoTemplate: text("email_corpo_template"),
+  attivo: boolean("attivo").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
 // Clienti estesi per integrazione Fatture in Cloud
 export const clienti = pgTable("clienti", {
   id: serial("id").primaryKey(),
@@ -1004,6 +1029,10 @@ export const ddtRighe = pgTable("ddt_righe", {
 export const insertConfigurazioneSchema = createInsertSchema(configurazione)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
+// Schema di inserimento per Fatture in Cloud Config
+export const insertFattureInCloudConfigSchema = createInsertSchema(fattureInCloudConfig)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
 // Schema di inserimento per i clienti
 export const insertClientiSchema = createInsertSchema(clienti)
   .omit({ id: true, createdAt: true, updatedAt: true });
@@ -1019,6 +1048,9 @@ export const insertDdtRigheSchema = createInsertSchema(ddtRighe)
 // Tipi per Fatture in Cloud
 export type Configurazione = typeof configurazione.$inferSelect;
 export type InsertConfigurazione = z.infer<typeof insertConfigurazioneSchema>;
+
+export type FattureInCloudConfig = typeof fattureInCloudConfig.$inferSelect;
+export type InsertFattureInCloudConfig = z.infer<typeof insertFattureInCloudConfigSchema>;
 
 export type Cliente = typeof clienti.$inferSelect;
 export type InsertCliente = z.infer<typeof insertClientiSchema>;
