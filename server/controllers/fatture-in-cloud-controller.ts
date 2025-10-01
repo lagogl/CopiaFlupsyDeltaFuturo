@@ -628,6 +628,123 @@ router.get('/company/:companyId', async (req: Request, res: Response) => {
   }
 });
 
+// ===== GESTIONE MULTI-AZIENDA =====
+
+// Recupera lista aziende disponibili
+router.get('/companies', async (req: Request, res: Response) => {
+  try {
+    console.log('📋 Richiesta lista aziende disponibili...');
+    
+    // Verifica token di accesso
+    const accessToken = await getConfigValue('fatture_in_cloud_access_token');
+    if (!accessToken) {
+      return res.status(401).json({
+        success: false,
+        error: "Token di accesso non configurato",
+        auth_url: "/api/fatture-in-cloud/oauth/url"
+      });
+    }
+    
+    // Refresh token se necessario
+    await refreshTokenIfNeeded();
+    
+    // Chiama API Fatture in Cloud per ottenere lista aziende
+    const companiesResponse = await withRetry(() => 
+      apiRequest('GET', '/user/companies')
+    );
+    
+    console.log('📊 Risposta API companies:', JSON.stringify(companiesResponse.data, null, 2));
+    
+    // Estrai array aziende dalla risposta (gestisci struttura annidata)
+    const companies = companiesResponse.data?.data?.companies || 
+                     companiesResponse.data?.companies?.companies || 
+                     companiesResponse.data?.companies || [];
+    
+    // Recupera company_id corrente
+    const currentCompanyId = await getConfigValue('fatture_in_cloud_company_id');
+    
+    res.json({
+      success: true,
+      companies: companies,
+      current_company_id: currentCompanyId ? parseInt(currentCompanyId) : null,
+      message: "Lista aziende recuperata con successo"
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Errore nel recupero aziende:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || "Errore nel recupero lista aziende"
+    });
+  }
+});
+
+// Aggiorna azienda selezionata
+router.patch('/company-id', async (req: Request, res: Response) => {
+  try {
+    const { company_id } = req.body;
+    
+    console.log('🔄 Richiesta aggiornamento company_id:', company_id);
+    
+    // Validazione input
+    if (!company_id) {
+      return res.status(400).json({ 
+        success: false,
+        error: "ID azienda richiesto" 
+      });
+    }
+    
+    // Verifica token di accesso
+    const accessToken = await getConfigValue('fatture_in_cloud_access_token');
+    if (!accessToken) {
+      return res.status(401).json({
+        success: false,
+        error: "Token di accesso non configurato"
+      });
+    }
+    
+    // Opzionale: verifica che l'azienda esista nell'account
+    try {
+      const companiesResponse = await withRetry(() => 
+        apiRequest('GET', '/user/companies')
+      );
+      
+      const companies = companiesResponse.data?.data?.companies || 
+                       companiesResponse.data?.companies?.companies || 
+                       companiesResponse.data?.companies || [];
+      
+      const companyExists = companies.some((c: any) => c.id === parseInt(company_id));
+      
+      if (!companyExists) {
+        return res.status(400).json({ 
+          success: false,
+          error: "ID azienda non valido per questo account" 
+        });
+      }
+    } catch (verifyError) {
+      console.warn('⚠️ Impossibile verificare azienda, procedo comunque:', verifyError);
+    }
+    
+    // Aggiorna company_id nella configurazione
+    await setConfigValue('fatture_in_cloud_company_id', company_id.toString(), 'ID azienda Fatture in Cloud selezionata');
+    
+    console.log('✅ Company ID aggiornato con successo:', company_id);
+    
+    res.json({ 
+      success: true, 
+      message: "ID azienda aggiornato con successo",
+      company_id: parseInt(company_id)
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Errore nell\'aggiornamento ID azienda:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || "Errore interno del server" 
+    });
+  }
+});
+
 // ===== ENDPOINTS TEST =====
 
 // Test connessione
