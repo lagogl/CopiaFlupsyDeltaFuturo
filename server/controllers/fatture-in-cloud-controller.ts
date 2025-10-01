@@ -298,13 +298,46 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
   try {
     await refreshTokenIfNeeded();
     
-    const response = await withRetry(() => apiRequest('GET', '/entities/clients'));
-    const clientiFIC = response.data.data || [];
+    // Recupera tutti i clienti gestendo la paginazione
+    let allClienti: any[] = [];
+    let currentPage = 1;
+    let hasMorePages = true;
+    const perPage = 100;
+    
+    console.log('🔄 Inizio sincronizzazione clienti con paginazione...');
+    
+    while (hasMorePages) {
+      const response = await withRetry(() => 
+        apiRequest('GET', `/entities/clients?page=${currentPage}&per_page=${perPage}`)
+      );
+      
+      const pageData = response.data.data || [];
+      allClienti = allClienti.concat(pageData);
+      
+      // Estrai metadati paginazione dalla risposta con fallback robusti
+      const meta = response.data;
+      const lastPage = meta.last_page ?? ((meta.current_page && meta.total) ? Math.ceil(meta.total / perPage) : 1);
+      const total = meta.total ?? 0;
+      
+      console.log(`📄 Pagina ${currentPage}/${lastPage} - Recuperati ${pageData.length} clienti (Totale finora: ${allClienti.length}${total ? `/${total}` : ''})`);
+      
+      // Condizioni di stop: ultima pagina raggiunta o meno risultati di per_page
+      hasMorePages = currentPage < lastPage && pageData.length === perPage;
+      currentPage++;
+      
+      // Protezione contro loop infiniti
+      if (currentPage > 1000) {
+        console.warn('⚠️ Raggiunto limite di sicurezza (1000 pagine) - interruzione sincronizzazione');
+        break;
+      }
+    }
+    
+    console.log(`✅ Recuperati ${allClienti.length} clienti totali da Fatture in Cloud`);
     
     let clientiAggiornati = 0;
     let clientiCreati = 0;
     
-    for (const clienteFIC of clientiFIC) {
+    for (const clienteFIC of allClienti) {
       // Cerca cliente esistente per P.IVA o denominazione
       let clienteEsistente = null;
       
@@ -350,7 +383,7 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: `Sincronizzazione completata: ${clientiCreati} nuovi, ${clientiAggiornati} aggiornati`,
-      stats: { creati: clientiCreati, aggiornati: clientiAggiornati, totale: clientiFIC.length }
+      stats: { creati: clientiCreati, aggiornati: clientiAggiornati, totale: allClienti.length }
     });
   } catch (error: any) {
     console.error('Errore nella sincronizzazione clienti:', error);
