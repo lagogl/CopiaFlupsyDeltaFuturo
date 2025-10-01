@@ -117,6 +117,7 @@ export default function VagliaturaConMappa() {
 
   // Stato per l'indicatore di avanzamento del completamento
   const [isCompletionInProgress, setIsCompletionInProgress] = useState(false);
+  const [isScreeningCompleted, setIsScreeningCompleted] = useState(false);
   const [completionSteps, setCompletionSteps] = useState<Array<{
     id: string;
     label: string;
@@ -843,6 +844,9 @@ export default function VagliaturaConMappa() {
       updateStep('complete', 'in-progress', 4);
       completeScreeningMutation.mutate({ selectionId });
       updateStep('complete', 'completed', 4);
+      
+      // Imposta la vagliatura come completata con successo
+      setIsScreeningCompleted(true);
       
       // Chiudi il dialogo di progresso dopo un breve ritardo
       setTimeout(() => {
@@ -1679,13 +1683,15 @@ export default function VagliaturaConMappa() {
               <Button 
                 variant="default" 
                 onClick={handleCompleteScreening}
-                disabled={isCompletionInProgress}
+                disabled={isCompletionInProgress || isScreeningCompleted}
               >
                 {isCompletionInProgress ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Completamento in corso...
                   </>
+                ) : isScreeningCompleted ? (
+                  'Vagliatura Completata ✓'
                 ) : (
                   'Completa Vagliatura'
                 )}
