@@ -177,28 +177,15 @@ export default function VagliaturaConMappa() {
       console.log("Esempio di operazione:", operations[0]);
     }
     
-    // Popola la mappa con le operazioni più recenti per ogni cestello
-    operations.forEach((operation: any) => {
-      const basketId = operation.basketId;
-      
-      // Se non c'è già un'operazione per questo cestello o questa è più recente, la memorizziamo
-      // Confronta prima per data, poi per ID se le date sono uguali
-      if (!lastOperationsMap[basketId]) {
-        lastOperationsMap[basketId] = {
-          animalCount: operation.animalCount,
-          totalWeight: operation.totalWeight,
-          animalsPerKg: operation.animalsPerKg,
-          date: operation.date,
-          sizeId: operation.sizeId,
-          operationId: operation.id
-        };
-      } else {
-        const existingDate = new Date(lastOperationsMap[basketId].date);
-        const newDate = new Date(operation.date);
+    // Popola la mappa SOLO se siamo in modalità 'source'
+    // In modalità 'destination', i cestelli disponibili NON devono mostrare dati operativi
+    if (mode === 'source') {
+      operations.forEach((operation: any) => {
+        const basketId = operation.basketId;
         
-        // Se la nuova data è più recente, o se le date sono uguali ma l'ID è maggiore
-        if (newDate > existingDate || 
-            (newDate.getTime() === existingDate.getTime() && operation.id > lastOperationsMap[basketId].operationId)) {
+        // Se non c'è già un'operazione per questo cestello o questa è più recente, la memorizziamo
+        // Confronta prima per data, poi per ID se le date sono uguali
+        if (!lastOperationsMap[basketId]) {
           lastOperationsMap[basketId] = {
             animalCount: operation.animalCount,
             totalWeight: operation.totalWeight,
@@ -207,12 +194,28 @@ export default function VagliaturaConMappa() {
             sizeId: operation.sizeId,
             operationId: operation.id
           };
+        } else {
+          const existingDate = new Date(lastOperationsMap[basketId].date);
+          const newDate = new Date(operation.date);
+          
+          // Se la nuova data è più recente, o se le date sono uguali ma l'ID è maggiore
+          if (newDate > existingDate || 
+              (newDate.getTime() === existingDate.getTime() && operation.id > lastOperationsMap[basketId].operationId)) {
+            lastOperationsMap[basketId] = {
+              animalCount: operation.animalCount,
+              totalWeight: operation.totalWeight,
+              animalsPerKg: operation.animalsPerKg,
+              date: operation.date,
+              sizeId: operation.sizeId,
+              operationId: operation.id
+            };
+          }
         }
-      }
-    });
+      });
+    }
     
     // Log del numero di operazioni trovate
-    console.log(`Operazioni uniche trovate: ${Object.keys(lastOperationsMap).length}`);
+    console.log(`Operazioni uniche trovate (mode ${mode}): ${Object.keys(lastOperationsMap).length}`);
     
     // Determina la taglia in base agli animali per kg
     function findSizeByAnimalsPerKg(animalsPerKg: number) {
