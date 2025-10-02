@@ -8842,6 +8842,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generazione e download PDF
   app.get("/api/advanced-sales/:id/generate-pdf", AdvancedSalesController.generateSalePDF);
   app.get("/api/advanced-sales/:id/download-pdf", AdvancedSalesController.downloadSalePDF);
+  
+  // Generazione DDT e report PDF
+  app.post("/api/advanced-sales/:id/generate-ddt", AdvancedSalesController.generateDDT);
+  app.get("/api/advanced-sales/:id/report.pdf", AdvancedSalesController.generatePDFReport);
 
   // Route per eliminare tutti i dati relativi ai lotti
   app.post("/api/reset-lots", async (req, res) => {
