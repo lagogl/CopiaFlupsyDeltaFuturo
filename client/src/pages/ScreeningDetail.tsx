@@ -38,6 +38,7 @@ interface ScreeningDetail {
     row: string | null;
     position: number | null;
     positionAssigned: boolean;
+    sizeCode?: string | null;
   }>;
 }
 
