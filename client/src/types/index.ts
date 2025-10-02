@@ -89,6 +89,7 @@ export interface DestinationBasket {
   physicalNumber: number | any;
   flupsyId: number | null;
   position: string | null;
+  row?: string | null;  // Fila selezionata dall'utente sulla mappa (DX/SX)
   destinationType: 'placed' | 'sold';
   animalCount: number | null;
   deadCount: number | null;
