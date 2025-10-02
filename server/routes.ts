@@ -8172,11 +8172,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </html>
       `;
       
-      // Genera PDF con Puppeteer
-      const puppeteer = await import('puppeteer');
+      // Genera PDF con Puppeteer + Chromium per Replit
+      const puppeteer = await import('puppeteer-core');
+      const chromium = await import('@sparticuz/chromium');
+      
       const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: chromium.default.args,
+        defaultViewport: chromium.default.defaultViewport,
+        executablePath: await chromium.default.executablePath(),
+        headless: chromium.default.headless
       });
       
       const page = await browser.newPage();
