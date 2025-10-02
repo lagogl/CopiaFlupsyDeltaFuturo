@@ -3324,7 +3324,7 @@ export default function Operations() {
                                 <div>
                                   <span className="text-gray-500 block text-xs">Inizio:</span>
                                   <span className="font-medium text-gray-700">
-                                    {cycle && format(new Date(cycle.startDate), 'dd/MM/yyyy')}
+                                    {cycle && cycle.startDate ? format(new Date(cycle.startDate), 'dd/MM/yyyy') : 'N/D'}
                                   </span>
                                 </div>
                                 <div>
@@ -3349,7 +3349,7 @@ export default function Operations() {
                                 <div className="col-span-4">
                                   <span className="text-gray-500 block text-xs">Durata:</span>
                                   <div className="font-medium text-gray-700 flex items-center mt-1">
-                                    {cycle && (() => {
+                                    {cycle && cycle.startDate && (() => {
                                       const startDate = new Date(cycle.startDate);
                                       const endDate = cycle.endDate ? new Date(cycle.endDate) : new Date();
                                       const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
