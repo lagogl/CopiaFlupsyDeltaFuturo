@@ -7951,9 +7951,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
       
       // Mappa i campi per compatibilità frontend
-      const mappedSourceBaskets = sourceBasketsRaw.map(({ basket: b, flupsyName }) => ({
-        ...b,
-        flupsyName,
+      const mappedSourceBaskets = sourceBasketsRaw.map((row) => ({
+        ...row.basket,
+        flupsyName: row.flupsyName,
         dismissed: false // Non esiste nel DB, default false
       }));
       

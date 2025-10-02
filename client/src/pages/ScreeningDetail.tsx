@@ -293,6 +293,7 @@ export default function ScreeningDetail() {
                 <TableHead>Cestello ID</TableHead>
                 <TableHead>Ciclo ID</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>FLUPSY</TableHead>
                 <TableHead className="text-right">Animali</TableHead>
                 <TableHead className="text-right">Peso (kg)</TableHead>
                 <TableHead className="text-right">Animali/kg</TableHead>
@@ -305,13 +306,14 @@ export default function ScreeningDetail() {
                   <TableCell>{basket.basketId}</TableCell>
                   <TableCell>{basket.cycleId}</TableCell>
                   <TableCell>{basket.category || '-'}</TableCell>
+                  <TableCell>{basket.flupsyName || '-'}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
                   <TableCell>
                     {basket.positionAssigned ? (
                       <Badge variant="outline">
-                        FLUPSY {basket.flupsyId} - {basket.row}{basket.position}
+                        {basket.row}{basket.position}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground text-sm">Non assegnata</span>
