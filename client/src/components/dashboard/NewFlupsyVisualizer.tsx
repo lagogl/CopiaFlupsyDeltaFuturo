@@ -87,13 +87,25 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
   const getLatestOperation = (basketId: number) => {
     if (!operations || !Array.isArray(operations)) return null;
     
+    // Prima verifica se il cestello ha un ciclo attivo
+    const basket = filteredBaskets.find((b: any) => b.id === basketId);
+    if (!basket || !basket.currentCycleId) {
+      // Se il cestello non ha un ciclo attivo, non mostrare dati operazioni
+      return null;
+    }
+    
     const basketOperations = operations.filter((op: any) => op.basketId === basketId);
     if (basketOperations.length === 0) return null;
 
-    // Sort by date descending and take the first one
-    return basketOperations.sort((a: any, b: any) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0];
+    // Sort by date descending and then by ID descending for same-date operations
+    return basketOperations.sort((a: any, b: any) => {
+      const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateCompare === 0) {
+        // Se le date sono uguali, ordina per ID
+        return (b.id || 0) - (a.id || 0);
+      }
+      return dateCompare;
+    })[0];
   };
 
   // Helper function to get operations for a basket
@@ -140,8 +152,8 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
   const getBasketColorClass = (basket: any) => {
     if (!basket) return 'bg-gray-100 border-dashed border-gray-300';
     
-    // If basket is not active, return a neutral color
-    if (basket.state !== 'active') {
+    // If basket is not active or has no current cycle, return a neutral color
+    if (basket.state !== 'active' || !basket.currentCycleId) {
       return 'bg-gray-100 border-gray-300';
     }
     
