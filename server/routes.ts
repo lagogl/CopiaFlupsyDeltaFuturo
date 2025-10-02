@@ -8070,69 +8070,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.moveDown(1.5);
       
       // Tabella cestelli origine
-      doc.fontSize(12).text('Cestelli Origine', { underline: true });
+      doc.fontSize(12).fillColor('#000').text('Cestelli Origine', { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(9);
       
-      const tableTop = doc.y;
-      const colWidths = [60, 60, 100, 80, 100, 80];
-      const headers = ['Cestello', 'Ciclo', 'Animali', 'Peso (kg)', 'Animali/kg', 'Dismisso'];
+      // Headers
+      const margin = 50;
+      const tableWidth = doc.page.width - (2 * margin);
+      const colCount = 6;
+      const colWidth = tableWidth / colCount;
       
-      let x = doc.x;
-      headers.forEach((header, i) => {
-        doc.text(header, x, tableTop, { width: colWidths[i], align: 'left' });
-        x += colWidths[i];
-      });
+      let currentY = doc.y;
+      doc.text('Cestello', margin, currentY, { width: colWidth, continued: false });
+      doc.text('Ciclo', margin + colWidth, currentY, { width: colWidth, continued: false });
+      doc.text('Animali', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Peso (kg)', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Animali/kg', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Dismisso', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
       
-      doc.moveDown(0.3);
-      let y = doc.y;
-      doc.moveTo(doc.x, y).lineTo(doc.page.width - 50, y).stroke();
-      doc.moveDown(0.3);
+      doc.moveDown(0.5);
       
+      // Data rows
       sourceBaskets.forEach((basket) => {
-        x = doc.x;
-        y = doc.y;
-        doc.text(String(basket.basketId), x, y, { width: colWidths[0] });
-        doc.text(String(basket.cycleId), x + colWidths[0], y, { width: colWidths[1] });
-        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1], y, { width: colWidths[2] });
-        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2], y, { width: colWidths[3] });
-        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], y, { width: colWidths[4] });
-        doc.text(basket.dismissed ? 'Sì' : 'No', x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], y, { width: colWidths[5] });
-        doc.moveDown(0.8);
+        currentY = doc.y;
+        doc.text(String(basket.basketId), margin, currentY, { width: colWidth, continued: false });
+        doc.text(String(basket.cycleId), margin + colWidth, currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text(basket.dismissed ? 'Sì' : 'No', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.moveDown(0.5);
       });
       
       doc.moveDown(1);
       
       // Tabella cestelli destinazione  
-      doc.fontSize(12).text('Cestelli Destinazione', { underline: true });
+      doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(9);
       
-      const destTableTop = doc.y;
-      const destHeaders = ['Cestello', 'Categoria', 'Animali', 'Peso (kg)', 'Animali/kg', 'Posizione'];
+      // Headers
+      currentY = doc.y;
+      doc.text('Cestello', margin, currentY, { width: colWidth, continued: false });
+      doc.text('Categoria', margin + colWidth, currentY, { width: colWidth, continued: false });
+      doc.text('Animali', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Peso (kg)', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Animali/kg', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Posizione', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
       
-      x = doc.x;
-      destHeaders.forEach((header, i) => {
-        doc.text(header, x, destTableTop, { width: colWidths[i], align: 'left' });
-        x += colWidths[i];
-      });
+      doc.moveDown(0.5);
       
-      doc.moveDown(0.3);
-      y = doc.y;
-      doc.moveTo(doc.x, y).lineTo(doc.page.width - 50, y).stroke();
-      doc.moveDown(0.3);
-      
+      // Data rows
       destBaskets.forEach((basket) => {
-        x = doc.x;
-        y = doc.y;
-        doc.text(String(basket.basketId), x, y, { width: colWidths[0] });
-        doc.text(basket.category || 'N/D', x + colWidths[0], y, { width: colWidths[1] });
-        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1], y, { width: colWidths[2] });
-        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2], y, { width: colWidths[3] });
-        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], y, { width: colWidths[4] });
-        const position = basket.positionAssigned ? `FLUPSY ${basket.flupsyId} - ${basket.row}${basket.position}` : 'N/A';
-        doc.text(position, x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], y, { width: colWidths[5] });
-        doc.moveDown(0.8);
+        currentY = doc.y;
+        doc.text(String(basket.basketId), margin, currentY, { width: colWidth, continued: false });
+        doc.text(basket.category || 'N/D', margin + colWidth, currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+        const position = basket.positionAssigned ? `F${basket.flupsyId}-${basket.row}${basket.position}` : 'N/A';
+        doc.text(position, margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.moveDown(0.5);
       });
       
       // Note (se presenti)
