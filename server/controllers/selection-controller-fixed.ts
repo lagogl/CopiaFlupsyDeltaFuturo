@@ -255,13 +255,13 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             .where(eq(cycles.id, newCycle.id));
 
           // Rendi cestello disponibile per nuovo ciclo
-          // Il cestello rimane nel FLUPSY ma è disponibile per essere riutilizzato
+          // Il cestello venduto viene rimosso dalla posizione fisica (diventa disponibile senza posizione)
           await tx.update(baskets)
             .set({ 
               state: 'available',
               currentCycleId: null,
-              position: destBasket.position || null,  // Mantiene la posizione fisica
-              row: destBasket.position ? String(destBasket.position).match(/^([A-Z]+)/)?.[1] || null : null,
+              position: null,  // Rimuovi dalla posizione fisica
+              row: null,       // Rimuovi dalla fila
               flupsyId: destBasket.flupsyId || 1  // Rimane nel FLUPSY
             })
             .where(eq(baskets.id, destBasket.basketId));
