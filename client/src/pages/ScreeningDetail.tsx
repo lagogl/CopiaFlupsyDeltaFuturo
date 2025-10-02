@@ -38,7 +38,7 @@ interface ScreeningDetail {
     row: string | null;
     position: number | null;
     positionAssigned: boolean;
-    sizeCode?: string | null;
+    size?: { id: number; code: string; name: string } | null;
   }>;
 }
 
@@ -87,6 +87,26 @@ export default function ScreeningDetail() {
   const mortalityPercent = totalSourceAnimals > 0
     ? ((mortalityAnimals / totalSourceAnimals) * 100).toFixed(2)
     : 0;
+
+  // Calcola totalizzatori per taglia
+  const sizeStats = (screening.destinationBaskets || []).reduce((acc, basket) => {
+    const sizeCode = basket.size?.code;
+    if (sizeCode && basket.animalCount) {
+      if (!acc[sizeCode]) {
+        acc[sizeCode] = { total: 0, sold: 0, repositioned: 0 };
+      }
+      acc[sizeCode].total += basket.animalCount;
+      
+      if (basket.category === 'Venduta') {
+        acc[sizeCode].sold += basket.animalCount;
+      } else if (basket.category === 'Riposizionata') {
+        acc[sizeCode].repositioned += basket.animalCount;
+      }
+    }
+    return acc;
+  }, {} as Record<string, { total: number; sold: number; repositioned: number }>);
+
+  const sortedSizes = Object.entries(sizeStats).sort((a, b) => a[0].localeCompare(b[0]));
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -149,6 +169,38 @@ export default function ScreeningDetail() {
             <div className="mt-4 p-3 bg-muted rounded-md">
               <div className="text-sm font-medium mb-1">Note</div>
               <div className="text-sm" data-testid="text-notes">{screening.notes}</div>
+            </div>
+          )}
+
+          {/* Totalizzatori per Taglia */}
+          {sortedSizes.length > 0 && (
+            <div className="mt-6">
+              <div className="text-sm font-semibold mb-3 text-muted-foreground">Totalizzatori per Taglia</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {sortedSizes.map(([sizeCode, stats]) => (
+                  <div key={sizeCode} className="p-3 border rounded-lg bg-card">
+                    <div className="font-semibold text-sm mb-2">{sizeCode}</div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Totale:</span>
+                        <span className="font-medium">{formatNumber(stats.total)}</span>
+                      </div>
+                      {stats.sold > 0 && (
+                        <div className="flex justify-between text-orange-600 dark:text-orange-400">
+                          <span>Venduti:</span>
+                          <span className="font-medium">{formatNumber(stats.sold)}</span>
+                        </div>
+                      )}
+                      {stats.repositioned > 0 && (
+                        <div className="flex justify-between text-blue-600 dark:text-blue-400">
+                          <span>Ripos.:</span>
+                          <span className="font-medium">{formatNumber(stats.repositioned)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
