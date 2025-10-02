@@ -8109,35 +8109,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Tabella cestelli origine
       doc.fontSize(12).fillColor('#000').text('Cestelli Origine', { underline: true });
       doc.moveDown(0.5);
-      doc.fontSize(8);
+      doc.fontSize(7);
       
-      // Headers
+      // Headers - Larghezze ottimizzate per evitare sovrapposizioni
       const margin = 50;
       const tableWidth = doc.page.width - (2 * margin);
-      const colCount = 7;
-      const colWidth = tableWidth / colCount;
+      
+      // Larghezze personalizzate per ogni colonna (in percentuale)
+      const col1Width = tableWidth * 0.08;  // Cestello
+      const col2Width = tableWidth * 0.08;  // Ciclo
+      const col3Width = tableWidth * 0.32;  // FLUPSY (più largo)
+      const col4Width = tableWidth * 0.15;  // Animali
+      const col5Width = tableWidth * 0.13;  // Peso
+      const col6Width = tableWidth * 0.12;  // Anim/kg
+      const col7Width = tableWidth * 0.12;  // Dismiss
       
       let currentY = doc.y;
-      doc.text('Cestello', margin, currentY, { width: colWidth, continued: false });
-      doc.text('Ciclo', margin + colWidth, currentY, { width: colWidth, continued: false });
-      doc.text('FLUPSY', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Animali', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Peso (kg)', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Anim/kg', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Dismiss', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
+      let xPos = margin;
+      doc.text('Cest.', xPos, currentY, { width: col1Width, continued: false });
+      xPos += col1Width;
+      doc.text('Ciclo', xPos, currentY, { width: col2Width, continued: false });
+      xPos += col2Width;
+      doc.text('FLUPSY', xPos, currentY, { width: col3Width, continued: false });
+      xPos += col3Width;
+      doc.text('Animali', xPos, currentY, { width: col4Width, continued: false });
+      xPos += col4Width;
+      doc.text('Peso (kg)', xPos, currentY, { width: col5Width, continued: false });
+      xPos += col5Width;
+      doc.text('Anim/kg', xPos, currentY, { width: col6Width, continued: false });
+      xPos += col6Width;
+      doc.text('Dism.', xPos, currentY, { width: col7Width, continued: false });
       
       doc.moveDown(0.5);
       
       // Data rows
       sourceBaskets.forEach((basket) => {
         currentY = doc.y;
-        doc.text(String(basket.basketId), margin, currentY, { width: colWidth, continued: false });
-        doc.text(String(basket.cycleId), margin + colWidth, currentY, { width: colWidth, continued: false });
-        doc.text(basket.flupsyName || 'N/D', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text('N/D', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
+        xPos = margin;
+        doc.text(String(basket.basketId), xPos, currentY, { width: col1Width, continued: false });
+        xPos += col1Width;
+        doc.text(String(basket.cycleId), xPos, currentY, { width: col2Width, continued: false });
+        xPos += col2Width;
+        doc.text(basket.flupsyName || 'N/D', xPos, currentY, { width: col3Width, continued: false });
+        xPos += col3Width;
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), xPos, currentY, { width: col4Width, continued: false });
+        xPos += col4Width;
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), xPos, currentY, { width: col5Width, continued: false });
+        xPos += col5Width;
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), xPos, currentY, { width: col6Width, continued: false });
+        xPos += col6Width;
+        doc.text('N/D', xPos, currentY, { width: col7Width, continued: false });
         doc.moveDown(0.5);
       });
       
@@ -8146,30 +8167,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Tabella cestelli destinazione  
       doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', { underline: true });
       doc.moveDown(0.5);
-      doc.fontSize(8);
+      doc.fontSize(7);
       
-      // Headers
+      // Headers - Stesso layout ottimizzato
       currentY = doc.y;
-      doc.text('Cestello', margin, currentY, { width: colWidth, continued: false });
-      doc.text('Categoria', margin + colWidth, currentY, { width: colWidth, continued: false });
-      doc.text('FLUPSY', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Animali', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Peso (kg)', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Anim/kg', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Posizione', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
+      xPos = margin;
+      doc.text('Cest.', xPos, currentY, { width: col1Width, continued: false });
+      xPos += col1Width;
+      doc.text('Categ.', xPos, currentY, { width: col2Width, continued: false });
+      xPos += col2Width;
+      doc.text('FLUPSY', xPos, currentY, { width: col3Width, continued: false });
+      xPos += col3Width;
+      doc.text('Animali', xPos, currentY, { width: col4Width, continued: false });
+      xPos += col4Width;
+      doc.text('Peso (kg)', xPos, currentY, { width: col5Width, continued: false });
+      xPos += col5Width;
+      doc.text('Anim/kg', xPos, currentY, { width: col6Width, continued: false });
+      xPos += col6Width;
+      doc.text('Posizione', xPos, currentY, { width: col7Width, continued: false });
       
       doc.moveDown(0.5);
       
       // Data rows
       destBaskets.forEach((basket) => {
         currentY = doc.y;
-        doc.text(String(basket.basketId), margin, currentY, { width: colWidth, continued: false });
-        doc.text(basket.destinationType === 'sold' ? 'Venduto' : 'Posizionato', margin + colWidth, currentY, { width: colWidth, continued: false });
-        doc.text(basket.flupsyName || 'N/D', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text(basket.position || 'N/A', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
+        xPos = margin;
+        doc.text(String(basket.basketId), xPos, currentY, { width: col1Width, continued: false });
+        xPos += col1Width;
+        const catText = basket.destinationType === 'sold' ? 'Vend.' : 'Posiz.';
+        doc.text(catText, xPos, currentY, { width: col2Width, continued: false });
+        xPos += col2Width;
+        doc.text(basket.flupsyName || 'N/D', xPos, currentY, { width: col3Width, continued: false });
+        xPos += col3Width;
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), xPos, currentY, { width: col4Width, continued: false });
+        xPos += col4Width;
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), xPos, currentY, { width: col5Width, continued: false });
+        xPos += col5Width;
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), xPos, currentY, { width: col6Width, continued: false });
+        xPos += col6Width;
+        doc.text(basket.position || 'N/A', xPos, currentY, { width: col7Width, continued: false });
         doc.moveDown(0.5);
       });
       
