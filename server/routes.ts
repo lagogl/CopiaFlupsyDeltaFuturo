@@ -139,6 +139,9 @@ import {
   migrateBasketLotData
 } from "./controllers/selection-controller";
 
+// Import la funzione di completamento corretta dal controller fisso
+import { completeSelectionFixed } from "./controllers/selection-controller-fixed";
+
 // Preparazione per la gestione dei file di backup
 const getBackupUploadDir = () => {
   const uploadDir = path.join(process.cwd(), 'uploads/backups');
@@ -7803,8 +7806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route per eliminare una cesta di destinazione da una selezione
   app.delete("/api/selections/:id/destination-baskets/:destinationBasketId", removeDestinationBasket);
   
-  // Route per completare definitivamente una selezione
-  app.post("/api/selections/:id/complete", completeSelection);
+  // Route per completare definitivamente una selezione (usa il controller fisso)
+  app.post("/api/selections/:id/complete", completeSelectionFixed);
   
   // Route per migrazione dati basket-lotto (chiamata una tantum)
   app.post("/api/selections/migrate-basket-lot-data", migrateBasketLotData);
