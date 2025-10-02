@@ -119,11 +119,26 @@ export async function completeSelectionFixed(req: Request, res: Response) {
     // TRANSAZIONE CORRETTA
     await db.transaction(async (tx) => {
       
+      // ====== IDENTIFICAZIONE CESTELLI DUPLICATI ======
+      // Identifica cestelli che sono sia origine che destinazione
+      const overlappingBasketIds = new Set(
+        sourceBaskets
+          .filter(sb => destinationBaskets.some(db => db.basketId === sb.basketId))
+          .map(sb => sb.basketId)
+      );
+      
+      if (overlappingBasketIds.size > 0) {
+        console.log(`⚠️ Cestelli sia origine che destinazione: ${Array.from(overlappingBasketIds).join(', ')}`);
+      }
+      
       // ====== FASE 1: CHIUSURA CESTELLI ORIGINE (TUTTI) ======
       console.log(`🔒 FASE 1: Chiusura ${sourceBaskets.length} cestelli origine`);
       
       for (const sourceBasket of sourceBaskets) {
         console.log(`   Processando cestello origine ${sourceBasket.basketId}...`);
+        
+        // Controlla se questo cestello è anche destinazione
+        const isAlsoDestination = overlappingBasketIds.has(sourceBasket.basketId);
         
         // Ottieni info cestello
         const basketInfo = await tx.select()
@@ -152,15 +167,19 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             })
             .where(eq(cycles.id, basketInfo[0].currentCycleId));
 
-          // 3. LIBERA IL CESTELLO (disponibile per riutilizzo)
-          await tx.update(baskets)
-            .set({ 
-              state: 'available',
-              currentCycleId: null
-            })
-            .where(eq(baskets.id, sourceBasket.basketId));
-
-          console.log(`   ✅ Cestello ${sourceBasket.basketId} cessato correttamente`);
+          // 3. LIBERA IL CESTELLO SOLO SE NON È ANCHE DESTINAZIONE
+          // Se è anche destinazione, la fase 2 gestirà lo stato finale
+          if (!isAlsoDestination) {
+            await tx.update(baskets)
+              .set({ 
+                state: 'available',
+                currentCycleId: null
+              })
+              .where(eq(baskets.id, sourceBasket.basketId));
+            console.log(`   ✅ Cestello ${sourceBasket.basketId} cessato e reso disponibile`);
+          } else {
+            console.log(`   ⚠️ Cestello ${sourceBasket.basketId} cessato ma è anche destinazione (stato gestito dopo)`);
+          }
         }
       }
 
@@ -172,7 +191,8 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       const primaryLotId = sourceLots.length > 0 ? sourceLots[0] : null;
       
       for (const destBasket of destinationBaskets) {
-        console.log(`   Processando cestello destinazione ${destBasket.basketId}...`);
+        const wasAlsoSource = overlappingBasketIds.has(destBasket.basketId);
+        console.log(`   Processando cestello destinazione ${destBasket.basketId}${wasAlsoSource ? ' (era anche origine)' : ''}...`);
         
         // 1. CREA NUOVO CICLO
         const [newCycle] = await tx.insert(cycles).values({
@@ -205,7 +225,7 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           mortalityRate: destBasket.mortalityRate || 0,
           sizeId: actualSizeId,
           lotId: primaryLotId, // Eredita lotto dalle origini
-          notes: `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
+          notes: `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}${wasAlsoSource ? ' (cestello riutilizzato)' : ''}`
         });
 
         // 4. GESTISCI POSIZIONAMENTO O VENDITA
@@ -234,16 +254,19 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             .set({ state: 'closed', endDate: selection[0].date })
             .where(eq(cycles.id, newCycle.id));
 
-          // Rendi cestello disponibile
+          // Rendi cestello disponibile per nuovo ciclo
+          // Il cestello rimane nel FLUPSY ma è disponibile per essere riutilizzato
           await tx.update(baskets)
             .set({ 
               state: 'available',
               currentCycleId: null,
-              position: null,
-              row: null,
-              flupsyId: destBasket.flupsyId || 1
+              position: destBasket.position || null,  // Mantiene la posizione fisica
+              row: destBasket.position ? String(destBasket.position).match(/^([A-Z]+)/)?.[1] || null : null,
+              flupsyId: destBasket.flupsyId || 1  // Rimane nel FLUPSY
             })
             .where(eq(baskets.id, destBasket.basketId));
+          
+          console.log(`   ✅ Cestello ${destBasket.basketId} venduto - ciclo chiuso, cestello disponibile nel FLUPSY`);
 
         } else {
           // POSIZIONAMENTO NORMALE
@@ -264,9 +287,9 @@ export async function completeSelectionFixed(req: Request, res: Response) {
               })
               .where(eq(baskets.id, destBasket.basketId));
           }
+          
+          console.log(`   ✅ Cestello ${destBasket.basketId} riposizionato con ciclo attivo`);
         }
-
-        console.log(`   ✅ Cestello ${destBasket.basketId} attivato correttamente`);
       }
 
       // ====== FASE 3: REGISTRAZIONE MORTALITÀ SUL LOTTO ======
