@@ -390,15 +390,24 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
     const sxPositionsArray = Array(sxPositions).fill(null);
     
     // Popola le posizioni con i cestelli esistenti
+    // Priorità ai cestelli con ciclo attivo in caso di conflitti di posizione
     dxBaskets.forEach((basket: any) => {
       if (basket.position > 0 && basket.position <= dxPositions) {
-        dxPositionsArray[basket.position - 1] = basket;
+        const existingBasket = dxPositionsArray[basket.position - 1];
+        // Sovrascrivi solo se il nuovo cestello ha un ciclo attivo o se non c'è già un cestello
+        if (!existingBasket || (basket.currentCycleId && !existingBasket.currentCycleId)) {
+          dxPositionsArray[basket.position - 1] = basket;
+        }
       }
     });
     
     sxBaskets.forEach((basket: any) => {
       if (basket.position > 0 && basket.position <= sxPositions) {
-        sxPositionsArray[basket.position - 1] = basket;
+        const existingBasket = sxPositionsArray[basket.position - 1];
+        // Sovrascrivi solo se il nuovo cestello ha un ciclo attivo o se non c'è già un cestello
+        if (!existingBasket || (basket.currentCycleId && !existingBasket.currentCycleId)) {
+          sxPositionsArray[basket.position - 1] = basket;
+        }
       }
     });
 
