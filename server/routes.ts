@@ -7927,27 +7927,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const screening = screeningResult[0];
       
-      const [sourceBaskets, destBasketsRaw, referenceSize] = await Promise.all([
-        db.select().from(selectionSourceBaskets).where(eq(selectionSourceBaskets.selectionId, id)),
+      const [sourceBasketsRaw, destBasketsRaw, referenceSize] = await Promise.all([
+        db.select({
+          basket: selectionSourceBaskets,
+          flupsyName: flupsys.name
+        })
+        .from(selectionSourceBaskets)
+        .leftJoin(baskets, eq(selectionSourceBaskets.basketId, baskets.id))
+        .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+        .where(eq(selectionSourceBaskets.selectionId, id)),
         db.select({
           basket: selectionDestinationBaskets,
           size: sizes,
-          currentCycleId: baskets.currentCycleId
+          currentCycleId: baskets.currentCycleId,
+          flupsyName: flupsys.name
         })
         .from(selectionDestinationBaskets)
         .leftJoin(sizes, eq(selectionDestinationBaskets.sizeId, sizes.id))
         .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
+        .leftJoin(flupsys, eq(selectionDestinationBaskets.flupsyId, flupsys.id))
         .where(eq(selectionDestinationBaskets.selectionId, id)),
         screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
       ]);
       
       // Mappa i campi per compatibilità frontend
-      const mappedSourceBaskets = sourceBaskets.map(b => ({
+      const mappedSourceBaskets = sourceBasketsRaw.map(({ basket: b, flupsyName }) => ({
         ...b,
+        flupsyName,
         dismissed: false // Non esiste nel DB, default false
       }));
       
-      const mappedDestBaskets = destBasketsRaw.map(({ basket: b, size, currentCycleId }) => {
+      const mappedDestBaskets = destBasketsRaw.map(({ basket: b, size, currentCycleId, flupsyName }) => {
         // Parsa position (es. "DX1" → row="DX", position=1)
         let row = null;
         let position = null;
@@ -7974,6 +7984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cycleId: b.cycleId || currentCycleId, // Usa currentCycleId del cestello se cycleId è null
           destinationType: b.destinationType,
           flupsyId: b.flupsyId,
+          flupsyName,
           animalCount: b.animalCount,
           liveAnimals: b.liveAnimals,
           totalWeight: b.totalWeight,
@@ -8026,8 +8037,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const screening = screeningResult[0];
       
       const [sourceBaskets, destBaskets, referenceSize] = await Promise.all([
-        db.select().from(selectionSourceBaskets).where(eq(selectionSourceBaskets.selectionId, id)),
-        db.select().from(selectionDestinationBaskets).where(eq(selectionDestinationBaskets.selectionId, id)),
+        db.select({
+          id: selectionSourceBaskets.id,
+          selectionId: selectionSourceBaskets.selectionId,
+          basketId: selectionSourceBaskets.basketId,
+          cycleId: selectionSourceBaskets.cycleId,
+          animalCount: selectionSourceBaskets.animalCount,
+          totalWeight: selectionSourceBaskets.totalWeight,
+          animalsPerKg: selectionSourceBaskets.animalsPerKg,
+          dismissed: selectionSourceBaskets.dismissed,
+          flupsyId: baskets.flupsyId,
+          flupsyName: flupsys.name
+        })
+        .from(selectionSourceBaskets)
+        .leftJoin(baskets, eq(selectionSourceBaskets.basketId, baskets.id))
+        .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+        .where(eq(selectionSourceBaskets.selectionId, id)),
+        db.select({
+          id: selectionDestinationBaskets.id,
+          selectionId: selectionDestinationBaskets.selectionId,
+          basketId: selectionDestinationBaskets.basketId,
+          category: selectionDestinationBaskets.category,
+          animalCount: selectionDestinationBaskets.animalCount,
+          totalWeight: selectionDestinationBaskets.totalWeight,
+          animalsPerKg: selectionDestinationBaskets.animalsPerKg,
+          positionAssigned: selectionDestinationBaskets.positionAssigned,
+          flupsyId: selectionDestinationBaskets.flupsyId,
+          row: selectionDestinationBaskets.row,
+          position: selectionDestinationBaskets.position,
+          flupsyName: flupsys.name
+        })
+        .from(selectionDestinationBaskets)
+        .leftJoin(flupsys, eq(selectionDestinationBaskets.flupsyId, flupsys.id))
+        .where(eq(selectionDestinationBaskets.selectionId, id)),
         screening.referenceSizeId ? storage.getSize(screening.referenceSizeId) : null
       ]);
       
@@ -8072,21 +8114,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Tabella cestelli origine
       doc.fontSize(12).fillColor('#000').text('Cestelli Origine', { underline: true });
       doc.moveDown(0.5);
-      doc.fontSize(9);
+      doc.fontSize(8);
       
       // Headers
       const margin = 50;
       const tableWidth = doc.page.width - (2 * margin);
-      const colCount = 6;
+      const colCount = 7;
       const colWidth = tableWidth / colCount;
       
       let currentY = doc.y;
       doc.text('Cestello', margin, currentY, { width: colWidth, continued: false });
       doc.text('Ciclo', margin + colWidth, currentY, { width: colWidth, continued: false });
-      doc.text('Animali', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Peso (kg)', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Animali/kg', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Dismisso', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('FLUPSY', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Animali', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Peso (kg)', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Anim/kg', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Dismiss', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
       
       doc.moveDown(0.5);
       
@@ -8095,10 +8138,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentY = doc.y;
         doc.text(String(basket.basketId), margin, currentY, { width: colWidth, continued: false });
         doc.text(String(basket.cycleId), margin + colWidth, currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text(basket.dismissed ? 'Sì' : 'No', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text(basket.flupsyName || 'N/D', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text(basket.dismissed ? 'Sì' : 'No', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
         doc.moveDown(0.5);
       });
       
@@ -8107,16 +8151,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Tabella cestelli destinazione  
       doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', { underline: true });
       doc.moveDown(0.5);
-      doc.fontSize(9);
+      doc.fontSize(8);
       
       // Headers
       currentY = doc.y;
       doc.text('Cestello', margin, currentY, { width: colWidth, continued: false });
       doc.text('Categoria', margin + colWidth, currentY, { width: colWidth, continued: false });
-      doc.text('Animali', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Peso (kg)', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Animali/kg', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-      doc.text('Posizione', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('FLUPSY', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Animali', margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Peso (kg)', margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Anim/kg', margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+      doc.text('Posizione', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
       
       doc.moveDown(0.5);
       
@@ -8125,11 +8170,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentY = doc.y;
         doc.text(String(basket.basketId), margin, currentY, { width: colWidth, continued: false });
         doc.text(basket.category || 'N/D', margin + colWidth, currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
-        const position = basket.positionAssigned ? `F${basket.flupsyId}-${basket.row}${basket.position}` : 'N/A';
-        doc.text(position, margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text(basket.flupsyName || 'N/D', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
+        const position = basket.positionAssigned ? `${basket.row}${basket.position}` : 'N/A';
+        doc.text(position, margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
         doc.moveDown(0.5);
       });
       

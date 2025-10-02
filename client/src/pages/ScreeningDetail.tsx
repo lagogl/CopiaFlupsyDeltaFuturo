@@ -25,6 +25,7 @@ interface ScreeningDetail {
     totalWeight: number | null;
     animalsPerKg: number | null;
     dismissed: boolean;
+    flupsyName?: string | null;
   }>;
   destinationBaskets: Array<{
     id: number;
@@ -35,6 +36,7 @@ interface ScreeningDetail {
     totalWeight: number | null;
     animalsPerKg: number | null;
     flupsyId: number | null;
+    flupsyName?: string | null;
     row: string | null;
     position: number | null;
     positionAssigned: boolean;
@@ -250,6 +252,7 @@ export default function ScreeningDetail() {
               <TableRow>
                 <TableHead>Cestello ID</TableHead>
                 <TableHead>Ciclo ID</TableHead>
+                <TableHead>FLUPSY</TableHead>
                 <TableHead className="text-right">Animali</TableHead>
                 <TableHead className="text-right">Peso (kg)</TableHead>
                 <TableHead className="text-right">Animali/kg</TableHead>
@@ -261,6 +264,7 @@ export default function ScreeningDetail() {
                 <TableRow key={basket.id} data-testid={`row-source-${basket.id}`}>
                   <TableCell>{basket.basketId}</TableCell>
                   <TableCell>{basket.cycleId}</TableCell>
+                  <TableCell>{basket.flupsyName || '-'}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
