@@ -8033,174 +8033,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const totalSourceAnimals = sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
       const totalDestAnimals = destBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+      const mortality = totalSourceAnimals - totalDestAnimals;
+      const mortalityPct = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0.00';
       
-      // Template HTML per il PDF
-      const htmlTemplate = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; }
-            h1 { color: #1e40af; font-size: 24px; margin-bottom: 10px; }
-            h2 { color: #475569; font-size: 18px; margin: 20px 0 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
-            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-            th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
-            th { background-color: #f1f5f9; font-weight: 600; }
-            .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-            .info-item { padding: 10px; background: #f8fafc; border-radius: 4px; }
-            .info-label { font-weight: 600; color: #64748b; font-size: 11px; }
-            .info-value { color: #1e293b; margin-top: 4px; }
-            .summary { background: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0; }
-            .footer { margin-top: 30px; text-align: center; color: #64748b; font-size: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1>Report Vagliatura #${screening.selectionNumber}</h1>
-              <div style="color: #64748b; margin-top: 5px;">Data: ${new Date(screening.date).toLocaleDateString('it-IT')}</div>
-            </div>
-          </div>
-          
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Scopo</div>
-              <div class="info-value">${screening.purpose || 'Non specificato'}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Taglia di Riferimento</div>
-              <div class="info-value">${referenceSize?.code || 'N/D'}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Stato</div>
-              <div class="info-value">${screening.status === 'completed' ? 'Completata' : screening.status}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Data Creazione</div>
-              <div class="info-value">${new Date(screening.createdAt).toLocaleDateString('it-IT')} ${new Date(screening.createdAt).toLocaleTimeString('it-IT')}</div>
-            </div>
-          </div>
-          
-          <div class="summary">
-            <h2 style="color: #1e40af; border: none; margin: 0 0 10px;">Riepilogo</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-              <div>
-                <div style="font-size: 11px; color: #64748b;">Cestelli Origine</div>
-                <div style="font-size: 20px; font-weight: 600; color: #1e40af;">${sourceBaskets.length}</div>
-                <div style="font-size: 11px; color: #64748b;">Animali: ${totalSourceAnimals.toLocaleString('it-IT')}</div>
-              </div>
-              <div>
-                <div style="font-size: 11px; color: #64748b;">Cestelli Destinazione</div>
-                <div style="font-size: 20px; font-weight: 600; color: #059669;">${destBaskets.length}</div>
-                <div style="font-size: 11px; color: #64748b;">Animali: ${totalDestAnimals.toLocaleString('it-IT')}</div>
-              </div>
-              <div>
-                <div style="font-size: 11px; color: #64748b;">Mortalità</div>
-                <div style="font-size: 20px; font-weight: 600; color: #dc2626;">${(totalSourceAnimals - totalDestAnimals).toLocaleString('it-IT')}</div>
-                <div style="font-size: 11px; color: #64748b;">${totalSourceAnimals > 0 ? ((totalSourceAnimals - totalDestAnimals) / totalSourceAnimals * 100).toFixed(2) : 0}%</div>
-              </div>
-            </div>
-          </div>
-          
-          <h2>Cestelli Origine</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Cestello ID</th>
-                <th>Ciclo ID</th>
-                <th>Animali</th>
-                <th>Peso (kg)</th>
-                <th>Animali/kg</th>
-                <th>Dismisso</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sourceBaskets.map(b => `
-                <tr>
-                  <td>${b.basketId}</td>
-                  <td>${b.cycleId}</td>
-                  <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
-                  <td>${(b.totalWeight || 0).toLocaleString('it-IT')}</td>
-                  <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
-                  <td>${b.dismissed ? 'Sì' : 'No'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <h2>Cestelli Destinazione</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Cestello ID</th>
-                <th>Categoria</th>
-                <th>Animali</th>
-                <th>Peso (kg)</th>
-                <th>Animali/kg</th>
-                <th>Posizione</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${destBaskets.map(b => `
-                <tr>
-                  <td>${b.basketId}</td>
-                  <td>${b.category || 'N/D'}</td>
-                  <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
-                  <td>${(b.totalWeight || 0).toLocaleString('it-IT')}</td>
-                  <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
-                  <td>${b.positionAssigned ? `FLUPSY ${b.flupsyId} - ${b.row}${b.position}` : 'Non assegnata'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          ${screening.notes ? `
-            <h2>Note</h2>
-            <div style="padding: 15px; background: #f8fafc; border-left: 4px solid #3b82f6; margin: 15px 0;">
-              ${screening.notes}
-            </div>
-          ` : ''}
-          
-          <div class="footer">
-            <p>Report generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}</p>
-            <p>FLUPSY Management System - MITO SRL</p>
-          </div>
-        </body>
-        </html>
-      `;
+      // Genera PDF con PDFKit
+      const PDFDocument = (await import('pdfkit')).default;
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
       
-      // Genera PDF con Puppeteer + Chromium per Replit
-      const puppeteer = await import('puppeteer-core');
-      const chromium = await import('@sparticuz/chromium');
-      
-      // Usa il percorso dell'eseguibile di Chromium precompilato per Lambda/Serverless
-      const executablePath = await chromium.default.executablePath('/tmp/chromium');
-      
-      const browser = await puppeteer.launch({
-        args: [...chromium.default.args, '--single-process', '--no-zygote'],
-        defaultViewport: chromium.default.defaultViewport,
-        executablePath,
-        headless: true,
-        ignoreHTTPSErrors: true
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks);
+        res.contentType('application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="Vagliatura_${screening.selectionNumber}_${new Date(screening.date).toISOString().split('T')[0]}.pdf"`);
+        res.send(pdfBuffer);
       });
       
-      const page = await browser.newPage();
-      await page.setContent(htmlTemplate, { waitUntil: 'networkidle0' });
+      // Titolo
+      doc.fontSize(24).fillColor('#1e40af').text(`Report Vagliatura #${screening.selectionNumber}`, { align: 'left' });
+      doc.fontSize(10).fillColor('#64748b').text(`Data: ${new Date(screening.date).toLocaleDateString('it-IT')}`, { align: 'left' });
+      doc.moveDown(1.5);
       
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+      // Informazioni generali
+      doc.fontSize(12).fillColor('#000').text('Scopo: ', { continued: true }).fillColor('#666').text(screening.purpose || 'Non specificato');
+      doc.fillColor('#000').text('Taglia di Riferimento: ', { continued: true }).fillColor('#666').text(referenceSize?.code || 'N/D');
+      doc.fillColor('#000').text('Stato: ', { continued: true }).fillColor('#666').text(screening.status === 'completed' ? 'Completata' : screening.status);
+      doc.moveDown(1);
+      
+      // Riepilogo
+      doc.fontSize(14).fillColor('#000').text('Riepilogo', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10);
+      doc.text(`Cestelli Origine: ${sourceBaskets.length} | Animali: ${totalSourceAnimals.toLocaleString('it-IT')}`);
+      doc.text(`Cestelli Destinazione: ${destBaskets.length} | Animali: ${totalDestAnimals.toLocaleString('it-IT')}`);
+      doc.fillColor('#dc2626').text(`Mortalità: ${mortality.toLocaleString('it-IT')} (${mortalityPct}%)`).fillColor('#000');
+      doc.moveDown(1.5);
+      
+      // Tabella cestelli origine
+      doc.fontSize(12).text('Cestelli Origine', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(9);
+      
+      const tableTop = doc.y;
+      const colWidths = [60, 60, 100, 80, 100, 80];
+      const headers = ['Cestello', 'Ciclo', 'Animali', 'Peso (kg)', 'Animali/kg', 'Dismisso'];
+      
+      let x = doc.x;
+      headers.forEach((header, i) => {
+        doc.text(header, x, tableTop, { width: colWidths[i], align: 'left' });
+        x += colWidths[i];
       });
       
-      await browser.close();
+      doc.moveDown(0.3);
+      let y = doc.y;
+      doc.moveTo(doc.x, y).lineTo(doc.page.width - 50, y).stroke();
+      doc.moveDown(0.3);
       
-      res.contentType('application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="Vagliatura_${screening.screeningNumber}_${new Date(screening.date).toISOString().split('T')[0]}.pdf"`);
-      res.send(pdfBuffer);
+      sourceBaskets.forEach((basket) => {
+        x = doc.x;
+        y = doc.y;
+        doc.text(String(basket.basketId), x, y, { width: colWidths[0] });
+        doc.text(String(basket.cycleId), x + colWidths[0], y, { width: colWidths[1] });
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1], y, { width: colWidths[2] });
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2], y, { width: colWidths[3] });
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], y, { width: colWidths[4] });
+        doc.text(basket.dismissed ? 'Sì' : 'No', x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], y, { width: colWidths[5] });
+        doc.moveDown(0.8);
+      });
+      
+      doc.moveDown(1);
+      
+      // Tabella cestelli destinazione  
+      doc.fontSize(12).text('Cestelli Destinazione', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(9);
+      
+      const destTableTop = doc.y;
+      const destHeaders = ['Cestello', 'Categoria', 'Animali', 'Peso (kg)', 'Animali/kg', 'Posizione'];
+      
+      x = doc.x;
+      destHeaders.forEach((header, i) => {
+        doc.text(header, x, destTableTop, { width: colWidths[i], align: 'left' });
+        x += colWidths[i];
+      });
+      
+      doc.moveDown(0.3);
+      y = doc.y;
+      doc.moveTo(doc.x, y).lineTo(doc.page.width - 50, y).stroke();
+      doc.moveDown(0.3);
+      
+      destBaskets.forEach((basket) => {
+        x = doc.x;
+        y = doc.y;
+        doc.text(String(basket.basketId), x, y, { width: colWidths[0] });
+        doc.text(basket.category || 'N/D', x + colWidths[0], y, { width: colWidths[1] });
+        doc.text((basket.animalCount || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1], y, { width: colWidths[2] });
+        doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2], y, { width: colWidths[3] });
+        doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], y, { width: colWidths[4] });
+        const position = basket.positionAssigned ? `FLUPSY ${basket.flupsyId} - ${basket.row}${basket.position}` : 'N/A';
+        doc.text(position, x + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], y, { width: colWidths[5] });
+        doc.moveDown(0.8);
+      });
+      
+      // Note (se presenti)
+      if (screening.notes) {
+        doc.moveDown(1);
+        doc.fontSize(12).text('Note', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10).text(screening.notes);
+      }
+      
+      // Footer
+      doc.moveDown(2);
+      doc.fontSize(9).fillColor('#64748b').text(`Report generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}`, { align: 'center' });
+      doc.text('FLUPSY Management System - MITO SRL', { align: 'center' });
+      
+      doc.end();
       
     } catch (error) {
       console.error("Error generating PDF:", error);
