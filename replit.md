@@ -29,9 +29,16 @@ Preferred communication style: Simple, everyday language.
 - **External Integration**: Supports separate external database connections for data synchronization.
 
 ### Key Components
-- **Core Entities**: FLUPSY Systems, Baskets, Cycles, Operations (cleaning, screening, weighing), Lots, Selections/Screenings.
-- **Business Logic**: Inventory Management, Growth Forecasting (SGR calculations), Mortality Tracking, External Data Synchronization, Quality Control.
+- **Core Entities**: FLUPSY Systems, Baskets, Cycles, Operations (cleaning, screening, weighing), Lots, Selections/Screenings, Advanced Sales, DDT (Documento di Trasporto).
+- **Business Logic**: Inventory Management, Growth Forecasting (SGR calculations), Mortality Tracking, External Data Synchronization, Quality Control, Advanced Sales with DDT Generation.
 - **AI Integration**: Hybrid system integrating DeepSeek-V3 for predictive growth analysis, anomaly detection, sustainability analysis, and business analytics. Includes an autonomous fallback system and provides FLUPSY-level insights with basket breakdown, featuring AI-enhanced performance scoring with predictive trend analysis.
+- **DDT System** (October 2025): Complete transport document (DDT) generation for advanced sales with:
+  - Three-state tracking: nessuno/locale/inviato
+  - Immutable customer data snapshot for regulatory compliance
+  - Complete traceability: sale → bags → allocations → baskets
+  - Subtotals grouped by size (taglia) following DOCUMENTAZIONE_SISTEMA_DDT.md pattern
+  - Integration with Fatture in Cloud API for DDT synchronization
+  - PDF report generation with landscape orientation, customer details, and bag/basket allocation tables
 
 ### System Design Choices
 - **Data Flow**: User input flows from React components to PostgreSQL via TanStack Query, Express API, and Drizzle ORM. Real-time updates occur via WebSocket. External data is synchronized via API.
