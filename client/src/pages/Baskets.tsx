@@ -337,14 +337,23 @@ export default function Baskets() {
         calculatedAnimalCount: null,
         activationDate: null,
         lotId: null,
+        lastOperationDate: null,
+        lastOperationType: null,
         cycleCode: basket.currentCycleId ? `CICLO-${basket.currentCycleId}` : null
       };
     }
 
-    // Trova tutte le operazioni per questo cestello, ordinate per data (più recente prima)
+    // Trova tutte le operazioni per questo cestello, ordinate per data e ID (più recente prima)
     const basketOperations = operations
       .filter(op => op.basketId === basket.id)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => {
+        const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateCompare === 0) {
+          // Se le date sono uguali, ordina per ID
+          return (b.id || 0) - (a.id || 0);
+        }
+        return dateCompare;
+      });
 
     if (basketOperations.length === 0) {
       return {
@@ -353,7 +362,23 @@ export default function Baskets() {
         calculatedAnimalCount: null,
         activationDate: null,
         lotId: null,
+        lastOperationDate: null,
+        lastOperationType: null,
         cycleCode: basket.currentCycleId ? `CICLO-${basket.currentCycleId}` : null
+      };
+    }
+
+    // Se il cestello non ha un ciclo attivo, non mostrare dati operazioni
+    if (!basket.currentCycleId) {
+      return {
+        ...basket,
+        calculatedSize: null,
+        calculatedAnimalCount: null,
+        activationDate: null,
+        lotId: null,
+        lastOperationDate: null,
+        lastOperationType: null,
+        cycleCode: null
       };
     }
 
