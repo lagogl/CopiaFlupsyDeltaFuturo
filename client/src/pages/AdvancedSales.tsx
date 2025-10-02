@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Package, FileText, Download, Eye, CheckCircle, Check, ChevronsUpDown, Calculator } from "lucide-react";
+import { Plus, Package, FileText, Download, Eye, CheckCircle, Check, ChevronsUpDown, Calculator, Truck, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import AdvancedSalesConfigTab from "./AdvancedSalesConfigTab";
@@ -363,6 +363,36 @@ export default function AdvancedSales() {
     updateStatusMutation.mutate({ saleId, status });
   };
 
+  const generateDDTMutation = useMutation({
+    mutationFn: async (saleId: number) => {
+      return await apiRequest(`/api/advanced-sales/${saleId}/generate-ddt`, {
+        method: 'POST'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
+      toast({
+        title: "Successo",
+        description: "DDT generato con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore nella generazione del DDT",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleGenerateDDT = (saleId: number) => {
+    generateDDTMutation.mutate(saleId);
+  };
+
+  const handleOpenReport = (saleId: number) => {
+    window.open(`/api/advanced-sales/${saleId}/report.pdf`, '_blank');
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -649,15 +679,31 @@ export default function AdvancedSales() {
                             </Button>
                             
                             {sale.totalBags > 0 && (
-                              <Button 
-                                variant="default" 
-                                size="sm"
-                                onClick={() => handleGeneratePDF(sale.id)}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                <FileText className="h-4 w-4 mr-1" />
-                                PDF
-                              </Button>
+                              <>
+                                <Button 
+                                  variant="default" 
+                                  size="sm"
+                                  onClick={() => handleGeneratePDF(sale.id)}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                  title="Genera PDF configurazione sacchi"
+                                  data-testid={`button-generate-pdf-${sale.id}`}
+                                >
+                                  <FileText className="h-4 w-4 mr-1" />
+                                  PDF
+                                </Button>
+
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleOpenReport(sale.id)}
+                                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                                  title="Visualizza report vendita completo"
+                                  data-testid={`button-report-pdf-${sale.id}`}
+                                >
+                                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                                  Report
+                                </Button>
+                              </>
                             )}
 
                             {sale.pdfPath && (
@@ -665,9 +711,26 @@ export default function AdvancedSales() {
                                 variant="secondary" 
                                 size="sm"
                                 onClick={() => handleDownloadPDF(sale.id)}
+                                data-testid={`button-download-pdf-${sale.id}`}
                               >
                                 <Download className="h-4 w-4 mr-1" />
                                 Download
+                              </Button>
+                            )}
+
+                            {sale.status === 'confirmed' && sale.totalBags > 0 && (
+                              <Button 
+                                variant={sale.ddtStatus === 'inviato' ? 'secondary' : 'default'}
+                                size="sm"
+                                onClick={() => handleGenerateDDT(sale.id)}
+                                disabled={sale.ddtStatus === 'inviato' || generateDDTMutation.isPending}
+                                className={sale.ddtStatus !== 'inviato' ? 'bg-green-600 hover:bg-green-700' : ''}
+                                title={sale.ddtStatus === 'inviato' ? 'DDT già generato' : 'Genera Documento di Trasporto'}
+                                data-testid={`button-generate-ddt-${sale.id}`}
+                              >
+                                <Truck className="h-4 w-4 mr-1" />
+                                {sale.ddtStatus === 'inviato' ? 'DDT Inviato' : 
+                                 sale.ddtStatus === 'locale' ? 'DDT Locale' : 'Genera DDT'}
                               </Button>
                             )}
 
