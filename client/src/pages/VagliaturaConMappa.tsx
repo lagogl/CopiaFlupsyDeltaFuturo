@@ -146,20 +146,28 @@ export default function VagliaturaConMappa() {
   });
   
   // Funzione per arricchire i cestelli con i dati delle operazioni e taglie
-  function getEnhancedBaskets() {
+  function getEnhancedBaskets(mode: 'source' | 'destination' = 'source') {
     if (!baskets || !Array.isArray(operations) || !Array.isArray(sizes)) return baskets;
     
     // Stampa informazioni di debug
-    console.log(`Arricchimento di ${baskets.length} cestelli con ${operations.length} operazioni`);
+    console.log(`Arricchimento di ${baskets.length} cestelli con ${operations.length} operazioni (mode: ${mode})`);
     console.log(`FLUPSY selezionato: ${selectedFlupsyId}`);
     
-    // Filtra i cestelli del FLUPSY selezionato con ciclo attivo
-    const filteredBaskets = baskets.filter(b => 
-      b.flupsyId === (selectedFlupsyId ? parseInt(selectedFlupsyId) : null) &&
-      b.currentCycleId !== null
-    );
+    // Filtra i cestelli in base alla modalità:
+    // - source: cestelli con ciclo attivo (origine per vagliatura)
+    // - destination: cestelli disponibili senza ciclo attivo (destinazione per vagliatura)
+    const filteredBaskets = baskets.filter(b => {
+      const matchesFlupsy = b.flupsyId === (selectedFlupsyId ? parseInt(selectedFlupsyId) : null);
+      if (!matchesFlupsy) return false;
+      
+      if (mode === 'source') {
+        return b.currentCycleId !== null; // Solo cestelli con ciclo attivo
+      } else {
+        return b.currentCycleId === null; // Solo cestelli disponibili
+      }
+    });
     
-    console.log(`Cestelli filtrati per FLUPSY ${selectedFlupsyId}: ${filteredBaskets.length}`);
+    console.log(`Cestelli filtrati per FLUPSY ${selectedFlupsyId} (mode: ${mode}): ${filteredBaskets.length}`);
     
     // Crea una mappa delle ultime operazioni per ogni cestello
     const lastOperationsMap: Record<number, any> = {};
@@ -1004,7 +1012,7 @@ export default function VagliaturaConMappa() {
                       <FlupsyMapVisualizer 
                         flupsyId={String(selectedFlupsyId)}
                         flupsyName={getSelectedFlupsyName()}
-                        baskets={getEnhancedBaskets()}
+                        baskets={getEnhancedBaskets('source')}
                         selectedBaskets={sourceBaskets.map(b => b.basketId)}
                         onBasketClick={toggleSourceBasket}
                         mode="source"
@@ -1102,7 +1110,7 @@ export default function VagliaturaConMappa() {
                       
                       {(() => {
                         // Calcola i totali usando i cestelli marcati come origine nella mappa
-                        const enhancedBaskets = getEnhancedBaskets();
+                        const enhancedBaskets = getEnhancedBaskets('source');
                         const originBaskets = enhancedBaskets.filter(basket => 
                           sourceBaskets.some(sb => sb.basketId === basket.id)
                         );
@@ -1234,7 +1242,7 @@ export default function VagliaturaConMappa() {
                       <FlupsyMapVisualizer 
                         flupsyId={String(selectedFlupsyId)}
                         flupsyName={getSelectedFlupsyName()}
-                        baskets={getEnhancedBaskets().map(b => ({
+                        baskets={getEnhancedBaskets('destination').map(b => ({
                           ...b,
                           // Aggiungiamo un flag per indicare se è un cestello origine
                           isSourceBasket: sourceBaskets.some(sb => sb.basketId === b.id)
