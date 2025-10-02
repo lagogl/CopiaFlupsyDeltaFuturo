@@ -572,7 +572,7 @@ export default function VagliaturaConMappa() {
   };
 
   // Funzione per selezionare/deselezionare un cestello destinazione
-  const toggleDestinationBasket = (basket: any) => {
+  const toggleDestinationBasket = (basket: any, clickedPosition?: { row: string; position: number }) => {
     // Se siamo in modalità selezione vendita, gestiamo in modo diverso il click
     if (isSaleSelectionMode) {
       // Trova il cestello nella lista dei cestelli destinazione
@@ -617,13 +617,17 @@ export default function VagliaturaConMappa() {
       // Verifica se questo cestello è anche un cestello origine
       const isAlsoSource = sourceBaskets.some(sb => sb.basketId === basket.id);
       
+      // USA LA POSIZIONE CLICCATA DALL'UTENTE, non quella del cestello nel DB
+      const targetRow = clickedPosition?.row || basket.row || '';
+      const targetPosition = clickedPosition?.position?.toString() || basket.position?.toString() || '';
+      
       // Prepara i dati iniziali per il dialogo di misurazione
       const initialMeasurementData = {
         basketId: basket.id,
         physicalNumber: basket.physicalNumber,
         flupsyId: basket.flupsyId || 0,
-        position: basket.position?.toString() || '',
-        row: basket.row || '',
+        position: targetPosition,  // ← Usa posizione cliccata
+        row: targetRow,             // ← Usa fila cliccata
         destinationType: 'placed' as 'placed' | 'sold',
         sampleWeight: 100, // grammi
         sampleCount: 0,
@@ -823,8 +827,9 @@ export default function VagliaturaConMappa() {
       // Passo 4: Aggiungere i cestelli destinazione
       updateStep('add-destinations', 'in-progress', 3);
       const destinationBasketData = destinationBaskets.map(basket => {
-        const originalBasket = baskets?.find(b => b.id === basket.basketId);
-        const row = originalBasket?.row || 'DX';
+        // USA LE POSIZIONI SELEZIONATE DALL'UTENTE (già salvate in basket.row e basket.position)
+        // NON cercare nel database, perché quelle sono le posizioni originali!
+        const row = basket.row || 'DX';
         const formattedPosition = `${row}${basket.position}`;
         
         let finalAnimalsPerKg = basket.animalsPerKg || 0;

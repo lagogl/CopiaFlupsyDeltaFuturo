@@ -53,7 +53,7 @@ interface FlupsyMapVisualizerProps {
   flupsyName?: string; // Nome del FLUPSY da visualizzare
   baskets: Basket[];
   selectedBaskets: number[]; // Array di ID dei cestelli selezionati
-  onBasketClick: (basket: Basket) => void;
+  onBasketClick: (basket: Basket, clickedPosition?: { row: string; position: number }) => void;
   mode: 'source' | 'destination'; // Modalità di selezione
   showTooltips?: boolean;
   soldBasketIds?: number[]; // Array di ID dei cestelli destinati alla vendita
@@ -131,7 +131,8 @@ export default function FlupsyMapVisualizer({
       }
       
       // Se c'è un cestello in questa posizione ed è valido, invia l'evento di click
-      onBasketClick(basket);
+      // Passa sia il cestello che la posizione effettivamente cliccata dall'utente
+      onBasketClick(basket, { row, position });
     } else {
       console.log(`Nessun cestello nella posizione ${row}${position}`);
     }
