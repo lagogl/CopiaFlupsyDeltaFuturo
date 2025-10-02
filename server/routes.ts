@@ -8073,9 +8073,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mortality = totalSourceAnimals - totalDestAnimals;
       const mortalityPct = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0.00';
       
-      // Genera PDF con PDFKit
+      // Genera PDF con PDFKit in formato orizzontale
       const PDFDocument = (await import('pdfkit')).default;
-      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const doc = new PDFDocument({ margin: 50, size: 'A4', layout: 'landscape' });
       
       const chunks: Buffer[] = [];
       doc.on('data', (chunk) => chunks.push(chunk));
@@ -8109,24 +8109,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Tabella cestelli origine
       doc.fontSize(12).fillColor('#000').text('Cestelli Origine', { underline: true });
       doc.moveDown(0.5);
-      doc.fontSize(7);
+      doc.fontSize(9);
       
-      // Headers - Larghezze ottimizzate per evitare sovrapposizioni
+      // Headers - Larghezze ottimizzate per layout orizzontale (più spazio disponibile)
       const margin = 50;
       const tableWidth = doc.page.width - (2 * margin);
       
-      // Larghezze personalizzate per ogni colonna (in percentuale)
+      // Larghezze personalizzate per ogni colonna (in percentuale) - Orizzontale ha ~840px di larghezza
       const col1Width = tableWidth * 0.08;  // Cestello
       const col2Width = tableWidth * 0.08;  // Ciclo
-      const col3Width = tableWidth * 0.32;  // FLUPSY (più largo)
-      const col4Width = tableWidth * 0.15;  // Animali
-      const col5Width = tableWidth * 0.13;  // Peso
-      const col6Width = tableWidth * 0.12;  // Anim/kg
-      const col7Width = tableWidth * 0.12;  // Dismiss
+      const col3Width = tableWidth * 0.30;  // FLUPSY (ampio spazio)
+      const col4Width = tableWidth * 0.16;  // Animali
+      const col5Width = tableWidth * 0.14;  // Peso
+      const col6Width = tableWidth * 0.14;  // Anim/kg
+      const col7Width = tableWidth * 0.10;  // Dismiss
       
       let currentY = doc.y;
       let xPos = margin;
-      doc.text('Cest.', xPos, currentY, { width: col1Width, continued: false });
+      doc.text('Cestello', xPos, currentY, { width: col1Width, continued: false });
       xPos += col1Width;
       doc.text('Ciclo', xPos, currentY, { width: col2Width, continued: false });
       xPos += col2Width;
@@ -8138,7 +8138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       xPos += col5Width;
       doc.text('Anim/kg', xPos, currentY, { width: col6Width, continued: false });
       xPos += col6Width;
-      doc.text('Dism.', xPos, currentY, { width: col7Width, continued: false });
+      doc.text('Dismiss', xPos, currentY, { width: col7Width, continued: false });
       
       doc.moveDown(0.5);
       
@@ -8167,14 +8167,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Tabella cestelli destinazione  
       doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', { underline: true });
       doc.moveDown(0.5);
-      doc.fontSize(7);
+      doc.fontSize(9);
       
-      // Headers - Stesso layout ottimizzato
+      // Headers - Stesso layout ottimizzato per orizzontale
       currentY = doc.y;
       xPos = margin;
-      doc.text('Cest.', xPos, currentY, { width: col1Width, continued: false });
+      doc.text('Cestello', xPos, currentY, { width: col1Width, continued: false });
       xPos += col1Width;
-      doc.text('Categ.', xPos, currentY, { width: col2Width, continued: false });
+      doc.text('Categoria', xPos, currentY, { width: col2Width, continued: false });
       xPos += col2Width;
       doc.text('FLUPSY', xPos, currentY, { width: col3Width, continued: false });
       xPos += col3Width;
@@ -8194,7 +8194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         xPos = margin;
         doc.text(String(basket.basketId), xPos, currentY, { width: col1Width, continued: false });
         xPos += col1Width;
-        const catText = basket.destinationType === 'sold' ? 'Vend.' : 'Posiz.';
+        const catText = basket.destinationType === 'sold' ? 'Venduto' : 'Posizionato';
         doc.text(catText, xPos, currentY, { width: col2Width, continued: false });
         xPos += col2Width;
         doc.text(basket.flupsyName || 'N/D', xPos, currentY, { width: col3Width, continued: false });
