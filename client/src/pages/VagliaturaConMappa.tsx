@@ -153,9 +153,10 @@ export default function VagliaturaConMappa() {
     console.log(`Arricchimento di ${baskets.length} cestelli con ${operations.length} operazioni`);
     console.log(`FLUPSY selezionato: ${selectedFlupsyId}`);
     
-    // Filtra i cestelli del FLUPSY selezionato (inclusi quelli vuoti disponibili)
+    // Filtra i cestelli del FLUPSY selezionato con ciclo attivo
     const filteredBaskets = baskets.filter(b => 
-      b.flupsyId === (selectedFlupsyId ? parseInt(selectedFlupsyId) : null)
+      b.flupsyId === (selectedFlupsyId ? parseInt(selectedFlupsyId) : null) &&
+      b.currentCycleId !== null
     );
     
     console.log(`Cestelli filtrati per FLUPSY ${selectedFlupsyId}: ${filteredBaskets.length}`);
