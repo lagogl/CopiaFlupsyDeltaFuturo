@@ -8107,7 +8107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.moveDown(1.5);
       
       // Tabella cestelli origine
-      doc.fontSize(12).fillColor('#000').text('Cestelli Origine', { underline: true });
+      doc.fontSize(12).fillColor('#000').text('Cestelli Origine', { underline: true, align: 'left' });
       doc.moveDown(0.5);
       doc.fontSize(9);
       
@@ -8165,7 +8165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.moveDown(1);
       
       // Tabella cestelli destinazione  
-      doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', { underline: true });
+      doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', { underline: true, align: 'left' });
       doc.moveDown(0.5);
       doc.fontSize(9);
       
