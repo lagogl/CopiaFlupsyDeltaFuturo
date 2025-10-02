@@ -472,7 +472,7 @@ export async function addSourceBaskets(req: Request, res: Response) {
       .where(
         and(
           eq(operations.basketId, sourceBasket.basketId),
-          sql`${operations.date} > ${selectionDate}`
+          sql`${operations.date} > ${selectionDate.toISOString().split('T')[0]}`
         )
       )
       .limit(1);
