@@ -19,6 +19,9 @@ import {
   externalCustomersSync,
   externalSalesSync,
   clienti,
+  ddt,
+  ddtRighe,
+  flupsys,
   insertAdvancedSaleSchema,
   insertSaleBagSchema,
   insertBagAllocationSchema,
@@ -757,6 +760,396 @@ export async function getAvailableOrders(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       error: "Errore nel recupero degli ordini"
+    });
+  }
+}
+
+/**
+ * Genera DDT per una vendita avanzata e lo invia a Fatture in Cloud
+ */
+export async function generateDDT(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "ID vendita richiesto"
+      });
+    }
+
+    // Recupera vendita completa
+    const sale = await db.select().from(advancedSales).where(eq(advancedSales.id, parseInt(id))).limit(1);
+    
+    if (sale.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Vendita non trovata"
+      });
+    }
+
+    const saleData = sale[0];
+
+    // Validazioni
+    if (saleData.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        error: "Solo vendite confermate possono generare DDT"
+      });
+    }
+
+    if (saleData.ddtStatus === 'inviato') {
+      return res.status(400).json({
+        success: false,
+        error: "DDT già inviato per questa vendita"
+      });
+    }
+
+    if (!saleData.customerId) {
+      return res.status(400).json({
+        success: false,
+        error: "Cliente non specificato per la vendita"
+      });
+    }
+
+    // Recupera cliente
+    const clienteResult = await db.select().from(clienti).where(eq(clienti.id, saleData.customerId)).limit(1);
+    
+    if (clienteResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Cliente non trovato"
+      });
+    }
+
+    const cliente = clienteResult[0];
+
+    // Recupera sacchi e allocazioni
+    const bags = await db.select({
+      bag: saleBags,
+      allocation: bagAllocations,
+      basket: baskets,
+      size: sizes
+    })
+    .from(saleBags)
+    .leftJoin(bagAllocations, eq(saleBags.id, bagAllocations.saleBagId))
+    .leftJoin(baskets, eq(bagAllocations.sourceBasketId, baskets.id))
+    .leftJoin(sizes, eq(saleBags.sizeCode, sizes.code))
+    .where(eq(saleBags.advancedSaleId, parseInt(id)))
+    .orderBy(saleBags.bagNumber);
+
+    if (bags.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Nessun sacco configurato per questa vendita"
+      });
+    }
+
+    // Genera numero DDT progressivo
+    const ultimoDDT = await db.select().from(ddt).orderBy(desc(ddt.numero)).limit(1);
+    const numeroDDT = ultimoDDT.length > 0 ? ultimoDDT[0].numero + 1 : 1;
+
+    // Crea DDT locale con snapshot cliente
+    const [ddtCreato] = await db.insert(ddt).values({
+      numero: numeroDDT,
+      data: saleData.saleDate,
+      clienteId: cliente.id,
+      // Snapshot immutabile cliente
+      clienteNome: cliente.denominazione,
+      clienteIndirizzo: cliente.indirizzo !== 'N/A' ? cliente.indirizzo : '',
+      clienteCitta: cliente.comune !== 'N/A' ? cliente.comune : '',
+      clienteCap: cliente.cap !== 'N/A' ? cliente.cap : '',
+      clienteProvincia: cliente.provincia !== 'N/A' ? cliente.provincia : '',
+      clientePiva: cliente.piva !== 'N/A' ? cliente.piva : '',
+      clienteCodiceFiscale: cliente.codiceFiscale !== 'N/A' ? cliente.codiceFiscale : '',
+      clientePaese: cliente.paese || 'Italia',
+      // Totali
+      totaleColli: saleData.totalBags || 0,
+      pesoTotale: saleData.totalWeight?.toString() || '0',
+      note: saleData.notes,
+      ddtStato: 'locale'
+    }).returning();
+
+    // Raggruppa sacchi per taglia per creare righe con subtotali
+    const bagsPerSize: Record<string, typeof bags> = {};
+    
+    for (const item of bags) {
+      const sizeCode = item.bag.sizeCode;
+      if (!bagsPerSize[sizeCode]) {
+        bagsPerSize[sizeCode] = [];
+      }
+      bagsPerSize[sizeCode].push(item);
+    }
+
+    // Crea righe DDT con pattern subtotali
+    const righeCreate = [];
+    
+    for (const [sizeCode, sizeBags] of Object.entries(bagsPerSize)) {
+      // Raggruppa per sacco (un sacco può avere più allocazioni)
+      const bagsMap = new Map<number, typeof sizeBags>();
+      
+      for (const item of sizeBags) {
+        const bagId = item.bag.id;
+        if (!bagsMap.has(bagId)) {
+          bagsMap.set(bagId, []);
+        }
+        bagsMap.get(bagId)!.push(item);
+      }
+
+      let totalAnimalsSize = 0;
+      let totalWeightSize = 0;
+
+      // Crea una riga per ogni sacco
+      for (const [bagId, bagItems] of Array.from(bagsMap.entries())) {
+        const bagData = bagItems[0].bag;
+        const basketNames = bagItems
+          .filter((item: any) => item.basket)
+          .map((item: any) => `${item.basket!.physicalNumber}`)
+          .join(', ');
+
+        const descrizione = `Sacco #${bagData.bagNumber} - Cestelli: ${basketNames || 'N/A'} | ${bagData.animalCount.toLocaleString('it-IT')} animali | ${bagData.totalWeight} kg | ${Math.round(bagData.animalsPerKg).toLocaleString('it-IT')} anim/kg`;
+
+        const [riga] = await db.insert(ddtRighe).values({
+          ddtId: ddtCreato.id,
+          descrizione,
+          quantita: bagData.animalCount.toString(),
+          unitaMisura: 'NR',
+          prezzoUnitario: '0',
+          advancedSaleId: parseInt(id),
+          saleBagId: bagData.id,
+          basketId: bagItems[0].basket?.id || null,
+          sizeCode: sizeCode,
+          flupsyName: null // Potresti aggiungere query per recuperare nome FLUPSY
+        }).returning();
+
+        righeCreate.push(riga);
+        totalAnimalsSize += bagData.animalCount;
+        totalWeightSize += bagData.totalWeight;
+      }
+
+      // Aggiungi riga SUBTOTALE per taglia
+      const [rigaSubtotale] = await db.insert(ddtRighe).values({
+        ddtId: ddtCreato.id,
+        descrizione: `SUBTOTALE ${sizeCode}`,
+        quantita: totalAnimalsSize.toString(),
+        unitaMisura: 'NR',
+        prezzoUnitario: '0',
+        advancedSaleId: parseInt(id),
+        sizeCode: sizeCode
+      }).returning();
+
+      righeCreate.push(rigaSubtotale);
+    }
+
+    // Aggiorna vendita con riferimento DDT
+    await db.update(advancedSales)
+      .set({
+        ddtId: ddtCreato.id,
+        ddtStatus: 'locale',
+        updatedAt: new Date()
+      })
+      .where(eq(advancedSales.id, parseInt(id)));
+
+    // TODO: Inviare a Fatture in Cloud
+    // Questo richiede l'integrazione con il controller fatture-in-cloud-controller.ts
+    // Per ora restituiamo il DDT locale creato
+
+    res.json({
+      success: true,
+      ddt: ddtCreato,
+      righe: righeCreate.length,
+      message: `DDT #${numeroDDT} creato localmente. Implementare invio a Fatture in Cloud.`
+    });
+
+  } catch (error) {
+    console.error("Errore nella generazione DDT:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore nella generazione del DDT"
+    });
+  }
+}
+
+/**
+ * Genera report PDF per una vendita avanzata
+ */
+export async function generatePDFReport(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "ID vendita richiesto"
+      });
+    }
+
+    // Recupera vendita completa con dati correlati
+    const sale = await db.select().from(advancedSales).where(eq(advancedSales.id, parseInt(id))).limit(1);
+    
+    if (sale.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Vendita non trovata"
+      });
+    }
+
+    const saleData = sale[0];
+
+    // Recupera cliente se presente
+    let cliente = null;
+    if (saleData.customerId) {
+      const clienteResult = await db.select().from(clienti).where(eq(clienti.id, saleData.customerId)).limit(1);
+      if (clienteResult.length > 0) {
+        cliente = clienteResult[0];
+      }
+    }
+
+    // Recupera sacchi con dettagli
+    const bags = await db.select({
+      bag: saleBags,
+      allocation: bagAllocations,
+      basket: baskets,
+      flupsy: flupsys
+    })
+    .from(saleBags)
+    .leftJoin(bagAllocations, eq(saleBags.id, bagAllocations.saleBagId))
+    .leftJoin(baskets, eq(bagAllocations.sourceBasketId, baskets.id))
+    .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+    .where(eq(saleBags.advancedSaleId, parseInt(id)))
+    .orderBy(saleBags.bagNumber);
+
+    // Genera PDF usando pdfGenerator (stesso pattern del report vagliatura)
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margin: 50
+    });
+
+    res.contentType('application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Vendita_${saleData.saleNumber}_${saleData.saleDate}.pdf"`);
+    doc.pipe(res);
+
+    const margin = 50;
+    const tableWidth = doc.page.width - (2 * margin);
+
+    // Intestazione
+    doc.fontSize(24).fillColor('#1e40af').text(`Report Vendita ${saleData.saleNumber}`, margin, margin);
+    doc.fontSize(10).fillColor('#64748b').text(`Data: ${new Date(saleData.saleDate).toLocaleDateString('it-IT')}`, margin, doc.y);
+    doc.text(`Stato: ${saleData.status === 'confirmed' ? 'Confermata' : saleData.status}`, margin, doc.y);
+    doc.moveDown(1.5);
+
+    // Dati cliente
+    if (cliente) {
+      doc.fontSize(14).fillColor('#000').text('Dati Cliente', margin, doc.y, { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10);
+      doc.text(`${cliente.denominazione}`, margin, doc.y);
+      if (cliente.indirizzo !== 'N/A') doc.text(`${cliente.indirizzo}, ${cliente.cap} ${cliente.comune} (${cliente.provincia})`, margin, doc.y);
+      if (cliente.piva !== 'N/A') doc.text(`P.IVA: ${cliente.piva}`, margin, doc.y);
+      if (cliente.codiceFiscale !== 'N/A' && cliente.codiceFiscale !== cliente.piva) doc.text(`C.F.: ${cliente.codiceFiscale}`, margin, doc.y);
+      doc.moveDown(1.5);
+    }
+
+    // Tabella sacchi
+    doc.fontSize(12).fillColor('#000').text('Dettaglio Sacchi', margin, doc.y, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(9);
+
+    // Headers
+    const col1Width = tableWidth * 0.08;  // Sacco
+    const col2Width = tableWidth * 0.12;  // Taglia
+    const col3Width = tableWidth * 0.25;  // Cestelli/FLUPSY
+    const col4Width = tableWidth * 0.15;  // Animali
+    const col5Width = tableWidth * 0.12;  // Peso (kg)
+    const col6Width = tableWidth * 0.14;  // Anim/kg
+    const col7Width = tableWidth * 0.14;  // Scarto %
+
+    let currentY = doc.y;
+    let xPos = margin;
+    doc.text('Sacco', xPos, currentY, { width: col1Width, continued: false });
+    xPos += col1Width;
+    doc.text('Taglia', xPos, currentY, { width: col2Width, continued: false });
+    xPos += col2Width;
+    doc.text('Cestelli / FLUPSY', xPos, currentY, { width: col3Width, continued: false });
+    xPos += col3Width;
+    doc.text('Animali', xPos, currentY, { width: col4Width, continued: false });
+    xPos += col4Width;
+    doc.text('Peso (kg)', xPos, currentY, { width: col5Width, continued: false });
+    xPos += col5Width;
+    doc.text('Anim/kg', xPos, currentY, { width: col6Width, continued: false });
+    xPos += col6Width;
+    doc.text('Scarto %', xPos, currentY, { width: col7Width, continued: false });
+
+    doc.moveDown(0.5);
+
+    // Raggruppa per sacco
+    const bagsMap = new Map<number, typeof bags>();
+    for (const item of bags) {
+      const bagId = item.bag.id;
+      if (!bagsMap.has(bagId)) {
+        bagsMap.set(bagId, []);
+      }
+      bagsMap.get(bagId)!.push(item);
+    }
+
+    // Stampa righe
+    for (const [bagId, bagItems] of Array.from(bagsMap.entries())) {
+      const bagData = bagItems[0].bag;
+      const basketInfo = bagItems
+        .filter((item: any) => item.basket && item.flupsy)
+        .map((item: any) => `${item.basket!.physicalNumber} (${item.flupsy!.name})`)
+        .join(', ');
+
+      currentY = doc.y;
+      xPos = margin;
+      doc.text(`#${bagData.bagNumber}`, xPos, currentY, { width: col1Width, continued: false });
+      xPos += col1Width;
+      doc.text(bagData.sizeCode, xPos, currentY, { width: col2Width, continued: false });
+      xPos += col2Width;
+      doc.text(basketInfo || 'N/A', xPos, currentY, { width: col3Width, continued: false });
+      xPos += col3Width;
+      doc.text(bagData.animalCount.toLocaleString('it-IT'), xPos, currentY, { width: col4Width, continued: false });
+      xPos += col4Width;
+      doc.text(bagData.totalWeight.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), xPos, currentY, { width: col5Width, continued: false });
+      xPos += col5Width;
+      doc.text(Math.round(bagData.animalsPerKg).toLocaleString('it-IT'), xPos, currentY, { width: col6Width, continued: false });
+      xPos += col6Width;
+      doc.text(bagData.wastePercentage?.toFixed(1) || '0.0', xPos, currentY, { width: col7Width, continued: false });
+      doc.moveDown(0.5);
+    }
+
+    doc.moveDown(1);
+
+    // Totali
+    doc.fontSize(12).fillColor('#000').text('Riepilogo Totale', margin, doc.y, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10);
+    doc.text(`Sacchi totali: ${saleData.totalBags || 0}`);
+    doc.text(`Animali totali: ${(saleData.totalAnimals || 0).toLocaleString('it-IT')}`);
+    doc.text(`Peso totale: ${(saleData.totalWeight || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`);
+
+    if (saleData.notes) {
+      doc.moveDown(1);
+      doc.fontSize(10).fillColor('#666').text(`Note: ${saleData.notes}`);
+    }
+
+    // Footer
+    doc.fontSize(8).fillColor('#999').text(
+      `Report generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')} - FLUPSY Management System - MITO SRL`,
+      margin,
+      doc.page.height - 70,
+      { align: 'center', width: tableWidth }
+    );
+
+    doc.end();
+
+  } catch (error) {
+    console.error("Errore nella generazione report PDF:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore nella generazione del report PDF"
     });
   }
 }
