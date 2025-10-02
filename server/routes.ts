@@ -8165,7 +8165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.moveDown(1);
       
       // Tabella cestelli destinazione  
-      doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', { underline: true, align: 'left' });
+      currentY = doc.y;
+      doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', margin, currentY, { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(9);
       
