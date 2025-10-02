@@ -428,11 +428,30 @@ export async function addSourceBaskets(req: Request, res: Response) {
       });
     }
     
+    // Ottieni la data della selezione
+    const [selection] = await db.select({
+      date: selections.date
+    })
+    .from(selections)
+    .where(eq(selections.id, Number(id)))
+    .limit(1);
+    
+    if (!selection?.date) {
+      return res.status(400).json({
+        success: false,
+        error: "Data di selezione non trovata"
+      });
+    }
+    
+    const selectionDate = new Date(selection.date);
+    selectionDate.setHours(23, 59, 59, 999); // Fine della giornata per includere tutto il giorno
+    
     // Inserisci tutti i cestelli origine
     for (const sourceBasket of sourceBaskets) {
       // Prima ottieni il ciclo corrente del cestello
       const [basketData] = await db.select({
-        currentCycleId: baskets.currentCycleId
+        currentCycleId: baskets.currentCycleId,
+        physicalNumber: baskets.physicalNumber
       })
       .from(baskets)
       .where(eq(baskets.id, sourceBasket.basketId))
@@ -441,6 +460,29 @@ export async function addSourceBaskets(req: Request, res: Response) {
       if (!basketData?.currentCycleId) {
         console.log(`⚠️ Cestello ${sourceBasket.basketId} senza ciclo attivo`);
         continue;
+      }
+      
+      // VALIDAZIONE: Verifica che il cestello non abbia operazioni future rispetto alla data di vagliatura
+      const futureOperations = await db.select({
+        id: operations.id,
+        date: operations.date,
+        type: operations.type
+      })
+      .from(operations)
+      .where(
+        and(
+          eq(operations.basketId, sourceBasket.basketId),
+          sql`${operations.date} > ${selectionDate}`
+        )
+      )
+      .limit(1);
+      
+      if (futureOperations.length > 0) {
+        console.log(`❌ Cestello #${basketData.physicalNumber} (ID: ${sourceBasket.basketId}) ha operazioni future:`, futureOperations[0]);
+        return res.status(400).json({
+          success: false,
+          error: `Il cestello #${basketData.physicalNumber} ha operazioni successive alla data di vagliatura ${selection.date}. Non può essere selezionato come origine.`
+        });
       }
       
       await db.insert(selectionSourceBaskets).values({

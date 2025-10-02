@@ -68,6 +68,9 @@ export default function VagliaturaConMappa() {
     referenceSizeId: null
   });
   
+  // Flag per indicare se la data è stata confermata
+  const [isDateConfirmed, setIsDateConfirmed] = useState(false);
+  
   // Cestelli selezionati
   const [sourceBaskets, setSourceBaskets] = useState<SourceBasket[]>([]);
   const [destinationBaskets, setDestinationBaskets] = useState<DestinationBasket[]>([]);
@@ -426,8 +429,49 @@ export default function VagliaturaConMappa() {
     setCurrentTab('selezione-origine');
   };
   
+  // Funzione per verificare se un cestello ha operazioni future rispetto alla data di vagliatura
+  const hasOperationsAfterDate = (basketId: number, date: string): boolean => {
+    if (!operations || !Array.isArray(operations)) return false;
+    
+    const vagliaturaDate = new Date(date);
+    vagliaturaDate.setHours(23, 59, 59, 999); // Imposta a fine giornata per includere tutto il giorno
+    
+    // Trova operazioni del cestello con data successiva
+    const futureOperations = operations.filter((op: any) => 
+      op.basketId === basketId && new Date(op.date) > vagliaturaDate
+    );
+    
+    if (futureOperations.length > 0) {
+      console.log(`Cestello #${basketId} ha ${futureOperations.length} operazioni future rispetto a ${date}:`, 
+        futureOperations.map((op: any) => ({ id: op.id, date: op.date, type: op.type }))
+      );
+    }
+    
+    return futureOperations.length > 0;
+  };
+  
   // Funzione per selezionare/deselezionare un cestello origine
   const toggleSourceBasket = (basket: any) => {
+    // Prima verifica che la data sia stata confermata
+    if (!isDateConfirmed) {
+      toast({
+        title: "Data non confermata",
+        description: "Devi confermare la data di vagliatura prima di selezionare i cestelli",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Verifica che il cestello non abbia operazioni future
+    if (hasOperationsAfterDate(basket.id, selection.date || '')) {
+      toast({
+        title: "Operazione non consentita",
+        description: `Il cestello #${basket.physicalNumber} ha operazioni successive alla data di vagliatura ${selection.date}. Non può essere selezionato come origine.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     console.log('🎯 DEBUG - toggleSourceBasket chiamato:', {
       basket_id: basket.id,
       basket_physicalNumber: basket.physicalNumber,
@@ -935,7 +979,94 @@ export default function VagliaturaConMappa() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Selettore FLUPSY */}
+              {/* Sezione Data Vagliatura - OBBLIGATORIA PRIMA DI PROCEDERE */}
+              {!isDateConfirmed && (
+                <Alert className="border-blue-500 bg-blue-50">
+                  <Calendar className="h-4 w-4" />
+                  <AlertTitle>Impostare Data Vagliatura</AlertTitle>
+                  <AlertDescription>
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <Label htmlFor="data-vagliatura">Data di Vagliatura *</Label>
+                        <div className="flex gap-2 mt-2">
+                          <Input
+                            id="data-vagliatura"
+                            type="date"
+                            value={selection.date}
+                            onChange={(e) => setSelection(prev => ({ ...prev, date: e.target.value }))}
+                            className="max-w-xs"
+                          />
+                          <Button 
+                            onClick={() => {
+                              if (!selection.date) {
+                                toast({
+                                  title: "Data mancante",
+                                  description: "Inserisci una data di vagliatura valida",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              // Verifica che la data non sia nel futuro
+                              if (new Date(selection.date) > new Date()) {
+                                toast({
+                                  title: "Data non valida",
+                                  description: "La data di vagliatura non può essere nel futuro",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              setIsDateConfirmed(true);
+                              toast({
+                                title: "Data confermata",
+                                description: `Data di vagliatura impostata: ${selection.date}`,
+                              });
+                            }}
+                          >
+                            Conferma Data
+                          </Button>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">
+                          La data verrà applicata a tutte le operazioni della vagliatura.
+                          Non sarà possibile selezionare cestelli con operazioni successive a questa data.
+                        </p>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {/* Mostra data confermata */}
+              {isDateConfirmed && (
+                <div className="bg-green-50 border border-green-300 p-3 rounded-md">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-sm font-semibold text-green-800">Data Vagliatura Confermata: </span>
+                      <span className="text-sm text-green-700">{selection.date}</span>
+                    </div>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (sourceBaskets.length > 0 || destinationBaskets.length > 0) {
+                          if (!confirm("Modificare la data cancellerà tutte le selezioni correnti. Continuare?")) {
+                            return;
+                          }
+                          setSourceBaskets([]);
+                          setDestinationBaskets([]);
+                        }
+                        setIsDateConfirmed(false);
+                      }}
+                    >
+                      Modifica Data
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Selettore FLUPSY - Visibile solo dopo conferma data */}
+              {isDateConfirmed && (
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <div className="lg:col-span-1">
                   <div className="space-y-4 sticky top-4">
@@ -1031,6 +1162,7 @@ export default function VagliaturaConMappa() {
                   </div>
                 </div>
               </div>
+              )}
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" onClick={() => navigate('/')}>
