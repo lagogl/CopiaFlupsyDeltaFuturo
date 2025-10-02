@@ -155,7 +155,7 @@ export default function VagliaturaConMappa() {
     
     // Filtra i cestelli in base alla modalità:
     // - source: cestelli con ciclo attivo (origine per vagliatura)
-    // - destination: cestelli disponibili senza ciclo attivo (destinazione per vagliatura)
+    // - destination: tutti i cestelli del FLUPSY (disponibili + origine)
     const filteredBaskets = baskets.filter(b => {
       const matchesFlupsy = b.flupsyId === (selectedFlupsyId ? parseInt(selectedFlupsyId) : null);
       if (!matchesFlupsy) return false;
@@ -163,7 +163,8 @@ export default function VagliaturaConMappa() {
       if (mode === 'source') {
         return b.currentCycleId !== null; // Solo cestelli con ciclo attivo
       } else {
-        return b.currentCycleId === null; // Solo cestelli disponibili
+        // In destination: mostra tutti i cestelli (sia disponibili che con ciclo attivo)
+        return true;
       }
     });
     
