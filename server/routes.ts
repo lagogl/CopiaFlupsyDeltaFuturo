@@ -8176,11 +8176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const puppeteer = await import('puppeteer-core');
       const chromium = await import('@sparticuz/chromium');
       
+      // Usa il percorso dell'eseguibile di Chromium precompilato per Lambda/Serverless
+      const executablePath = await chromium.default.executablePath('/tmp/chromium');
+      
       const browser = await puppeteer.launch({
-        args: chromium.default.args,
+        args: [...chromium.default.args, '--single-process', '--no-zygote'],
         defaultViewport: chromium.default.defaultViewport,
-        executablePath: await chromium.default.executablePath(),
-        headless: chromium.default.headless
+        executablePath,
+        headless: true,
+        ignoreHTTPSErrors: true
       });
       
       const page = await browser.newPage();
