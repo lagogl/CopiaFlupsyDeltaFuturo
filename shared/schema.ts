@@ -872,6 +872,8 @@ export const advancedSales = pgTable("advanced_sales", {
   totalBags: integer("total_bags"), // Numero sacchi totali
   notes: text("notes"), // Note vendita
   pdfPath: text("pdf_path"), // Percorso file PDF generato
+  ddtId: integer("ddt_id"), // Riferimento DDT creato
+  ddtStatus: text("ddt_status", { enum: ["nessuno", "locale", "inviato"] }).notNull().default("nessuno"), // Stato DDT
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
 });
@@ -1004,11 +1006,22 @@ export const ddt = pgTable("ddt", {
   numero: integer("numero").notNull(),
   data: date("data").notNull(),
   clienteId: integer("cliente_id").notNull(),
+  // Snapshot immutabile dati cliente al momento della creazione DDT
+  clienteNome: text("cliente_nome"),
+  clienteIndirizzo: text("cliente_indirizzo"),
+  clienteCitta: text("cliente_citta"),
+  clienteCap: text("cliente_cap"),
+  clienteProvincia: text("cliente_provincia"),
+  clientePiva: text("cliente_piva"),
+  clienteCodiceFiscale: text("cliente_codice_fiscale"),
+  clientePaese: text("cliente_paese").default("Italia"),
+  // Dati trasporto e totali
   totaleColli: integer("totale_colli").notNull().default(0),
   pesoTotale: decimal("peso_totale", { precision: 10, scale: 2 }).notNull().default("0"),
   note: text("note"),
   ddtStato: text("ddt_stato", { enum: ["nessuno", "locale", "inviato"] }).notNull().default("nessuno"),
   fattureInCloudId: integer("fatture_in_cloud_id"),
+  fattureInCloudNumero: text("fatture_in_cloud_numero"), // Numero DDT in FIC
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
 });
@@ -1021,7 +1034,14 @@ export const ddtRighe = pgTable("ddt_righe", {
   quantita: decimal("quantita", { precision: 10, scale: 2 }).notNull(),
   unitaMisura: text("unita_misura").notNull().default("NR"),
   prezzoUnitario: decimal("prezzo_unitario", { precision: 10, scale: 2 }).notNull().default("0"),
+  // Tracciabilità origine consegne esterne
   reportDettaglioId: integer("report_dettaglio_id"),
+  // Tracciabilità origine vendite avanzate
+  advancedSaleId: integer("advanced_sale_id"),
+  saleBagId: integer("sale_bag_id"),
+  basketId: integer("basket_id"),
+  sizeCode: text("size_code"),
+  flupsyName: text("flupsy_name"),
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
