@@ -8106,11 +8106,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.fillColor('#dc2626').text(`Mortalità: ${mortality.toLocaleString('it-IT')} (${mortalityPct}%)`).fillColor('#000');
       doc.moveDown(1.5);
       
-      // Tabella cestelli origine
-      doc.fontSize(12).fillColor('#000').text('Cestelli Origine', { underline: true, align: 'left' });
-      doc.moveDown(0.5);
-      doc.fontSize(9);
-      
       // Headers - Larghezze ottimizzate per layout orizzontale (più spazio disponibile)
       const margin = 50;
       const tableWidth = doc.page.width - (2 * margin);
@@ -8124,7 +8119,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const col6Width = tableWidth * 0.14;  // Anim/kg
       const col7Width = tableWidth * 0.10;  // Dismiss
       
+      // Tabella cestelli origine
       let currentY = doc.y;
+      doc.fontSize(12).fillColor('#000').text('Cestelli Origine', margin, currentY, { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(9);
+      
+      currentY = doc.y;
       let xPos = margin;
       doc.text('Cestello', xPos, currentY, { width: col1Width, continued: false });
       xPos += col1Width;
