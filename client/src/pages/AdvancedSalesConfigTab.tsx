@@ -72,8 +72,6 @@ export default function AdvancedSalesConfigTab({
   const [selectedBasketId, setSelectedBasketId] = useState<number | null>(null);
   const [newBagAnimals, setNewBagAnimals] = useState("");
   const [newBagWeightKg, setNewBagWeightKg] = useState("");
-  const [newBagIdentifier, setNewBagIdentifier] = useState("");
-  const [newBagSection, setNewBagSection] = useState("");
 
   const basketsArray = Object.values(baseSupplyByBasket);
   const hasValidationErrors = Object.values(remainingByBasket).some(r => r < 0);
@@ -84,9 +82,7 @@ export default function AdvancedSalesConfigTab({
     onAddBag(
       selectedBasketId,
       parseInt(newBagAnimals),
-      parseFloat(newBagWeightKg),
-      newBagIdentifier,
-      newBagSection
+      parseFloat(newBagWeightKg)
     );
     
     // Reset form
@@ -94,8 +90,6 @@ export default function AdvancedSalesConfigTab({
     setSelectedBasketId(null);
     setNewBagAnimals("");
     setNewBagWeightKg("");
-    setNewBagIdentifier("");
-    setNewBagSection("");
   };
 
   const calculateAnimalsPerKg = (bag: BagConfiguration): number => {
@@ -145,29 +139,6 @@ export default function AdvancedSalesConfigTab({
                           ({(remainingByBasket[supply.basketId] || 0).toLocaleString()} disponibili)
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Identificativo</Label>
-                  <Input
-                    placeholder="A, B, C..."
-                    value={newBagIdentifier}
-                    onChange={(e) => setNewBagIdentifier(e.target.value)}
-                    data-testid="input-identifier"
-                  />
-                </div>
-                <div>
-                  <Label>Sezione</Label>
-                  <Select value={newBagSection} onValueChange={setNewBagSection}>
-                    <SelectTrigger data-testid="select-section">
-                      <SelectValue placeholder="Seleziona sezione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="-">-</SelectItem>
-                      <SelectItem value="A">A</SelectItem>
-                      <SelectItem value="B">B</SelectItem>
-                      <SelectItem value="C">C</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -261,8 +232,6 @@ export default function AdvancedSalesConfigTab({
               <TableHeader>
                 <TableRow>
                   <TableHead>Sacco #</TableHead>
-                  <TableHead>Identificativo</TableHead>
-                  <TableHead>Sezione</TableHead>
                   <TableHead>Peso Netto (kg)</TableHead>
                   <TableHead>Scarto (%)</TableHead>
                   <TableHead>Animali/kg</TableHead>
@@ -278,44 +247,9 @@ export default function AdvancedSalesConfigTab({
                   const basketId = bag.allocations[0].sourceBasketId;
                   const supply = baseSupplyByBasket[basketId];
                   
-                  // Parse notes for identifier/section
-                  const noteParts = (bag.notes || "").split(" - ");
-                  const identifier = noteParts[0] || "-";
-                  const section = noteParts[1] || "-";
-                  
                   return (
                     <TableRow key={index} data-testid={`bag-row-${index}`}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>
-                        <Input
-                          value={identifier}
-                          onChange={(e) => {
-                            const newNotes = [e.target.value, section].filter(Boolean).join(" - ");
-                            onUpdateBag(index, { notes: newNotes });
-                          }}
-                          className="w-20"
-                          data-testid={`input-identifier-${index}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={section}
-                          onValueChange={(v) => {
-                            const newNotes = [identifier, v].filter(Boolean).join(" - ");
-                            onUpdateBag(index, { notes: newNotes });
-                          }}
-                        >
-                          <SelectTrigger className="w-20" data-testid={`select-section-${index}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="-">-</SelectItem>
-                            <SelectItem value="A">A</SelectItem>
-                            <SelectItem value="B">B</SelectItem>
-                            <SelectItem value="C">C</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
                       <TableCell>
                         <Input
                           type="number"
