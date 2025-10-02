@@ -8044,7 +8044,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           animalCount: selectionSourceBaskets.animalCount,
           totalWeight: selectionSourceBaskets.totalWeight,
           animalsPerKg: selectionSourceBaskets.animalsPerKg,
-          flupsyId: baskets.flupsyId,
           flupsyName: flupsys.name
         })
         .from(selectionSourceBaskets)
