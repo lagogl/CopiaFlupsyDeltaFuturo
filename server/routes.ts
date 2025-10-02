@@ -8054,13 +8054,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: selectionDestinationBaskets.id,
           selectionId: selectionDestinationBaskets.selectionId,
           basketId: selectionDestinationBaskets.basketId,
-          category: selectionDestinationBaskets.category,
+          destinationType: selectionDestinationBaskets.destinationType,
           animalCount: selectionDestinationBaskets.animalCount,
           totalWeight: selectionDestinationBaskets.totalWeight,
           animalsPerKg: selectionDestinationBaskets.animalsPerKg,
-          positionAssigned: selectionDestinationBaskets.positionAssigned,
           flupsyId: selectionDestinationBaskets.flupsyId,
-          row: selectionDestinationBaskets.row,
           position: selectionDestinationBaskets.position,
           flupsyName: flupsys.name
         })
@@ -8139,7 +8137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
         doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
         doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
-        doc.text(basket.dismissed ? 'Sì' : 'No', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text('N/D', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
         doc.moveDown(0.5);
       });
       
@@ -8166,13 +8164,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       destBaskets.forEach((basket) => {
         currentY = doc.y;
         doc.text(String(basket.basketId), margin, currentY, { width: colWidth, continued: false });
-        doc.text(basket.category || 'N/D', margin + colWidth, currentY, { width: colWidth, continued: false });
+        doc.text(basket.destinationType === 'sold' ? 'Venduto' : 'Posizionato', margin + colWidth, currentY, { width: colWidth, continued: false });
         doc.text(basket.flupsyName || 'N/D', margin + (2 * colWidth), currentY, { width: colWidth, continued: false });
         doc.text((basket.animalCount || 0).toLocaleString('it-IT'), margin + (3 * colWidth), currentY, { width: colWidth, continued: false });
         doc.text((basket.totalWeight || 0).toLocaleString('it-IT'), margin + (4 * colWidth), currentY, { width: colWidth, continued: false });
         doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), margin + (5 * colWidth), currentY, { width: colWidth, continued: false });
-        const position = basket.positionAssigned ? `${basket.row}${basket.position}` : 'N/A';
-        doc.text(position, margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
+        doc.text(basket.position || 'N/A', margin + (6 * colWidth), currentY, { width: colWidth, continued: false });
         doc.moveDown(0.5);
       });
       
