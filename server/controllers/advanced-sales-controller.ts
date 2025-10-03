@@ -1485,6 +1485,10 @@ export async function generateDDTPDF(req: Request, res: Response) {
 
     // Aggiorna yPosition dopo i box
     yPosition = boxStartY + boxHeight + 25;
+    
+    // CRITICO: Resetta il cursore interno di PDFKit per evitare sovrapposizioni
+    doc.x = margin;
+    doc.y = yPosition;
 
     // Tabella righe DDT
     let currentY = yPosition;
