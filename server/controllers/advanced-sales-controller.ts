@@ -1395,86 +1395,99 @@ export async function generateDDTPDF(req: Request, res: Response) {
 
     // === TABELLA MITTENTE E DESTINATARIO ===
     const boxWidth = (tableWidth - 20) / 2;
-    const boxHeight = 130;
-
-    // Box Mittente (sinistra) con bordo
-    doc.rect(margin, yPosition, boxWidth, boxHeight).stroke();
-    let boxY = yPosition + 10;
+    const boxStartY = yPosition;
+    
+    // Box Mittente (sinistra) con bordo - calcolo altezza dinamica
+    let mittenteY = boxStartY + 10;
+    const mittenteStartY = mittenteY;
     
     doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold')
-       .text('MITTENTE', margin + 10, boxY);
-    boxY += 20;
+       .text('MITTENTE', margin + 10, mittenteY);
+    mittenteY += 22;
 
     if (ddtData.mittenteRagioneSociale) {
       doc.fontSize(10).fillColor('#000').font('Helvetica-Bold');
-      doc.text(ddtData.mittenteRagioneSociale, margin + 10, boxY, { width: boxWidth - 20 });
-      boxY += 15;
+      doc.text(ddtData.mittenteRagioneSociale, margin + 10, mittenteY, { width: boxWidth - 20 });
+      mittenteY += 16;
       doc.font('Helvetica');
       
       if (ddtData.mittenteIndirizzo) {
-        doc.text(ddtData.mittenteIndirizzo, margin + 10, boxY, { width: boxWidth - 20 });
-        boxY += 12;
+        doc.text(ddtData.mittenteIndirizzo, margin + 10, mittenteY, { width: boxWidth - 20 });
+        mittenteY += 14;
       }
       if (ddtData.mittenteCitta) {
-        doc.text(`${ddtData.mittenteCap || ''} ${ddtData.mittenteCitta} (${ddtData.mittenteProvincia || ''})`, margin + 10, boxY, { width: boxWidth - 20 });
-        boxY += 12;
+        doc.text(`${ddtData.mittenteCap || ''} ${ddtData.mittenteCitta} (${ddtData.mittenteProvincia || ''})`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        mittenteY += 14;
       }
       if (ddtData.mittentePartitaIva) {
-        doc.text(`P.IVA: ${ddtData.mittentePartitaIva}`, margin + 10, boxY, { width: boxWidth - 20 });
-        boxY += 12;
+        doc.text(`P.IVA: ${ddtData.mittentePartitaIva}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        mittenteY += 14;
       }
       if (ddtData.mittenteCodiceFiscale && ddtData.mittenteCodiceFiscale !== ddtData.mittentePartitaIva) {
-        doc.text(`C.F.: ${ddtData.mittenteCodiceFiscale}`, margin + 10, boxY, { width: boxWidth - 20 });
-        boxY += 12;
+        doc.text(`C.F.: ${ddtData.mittenteCodiceFiscale}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        mittenteY += 14;
       }
       if (ddtData.mittenteEmail) {
-        doc.fontSize(9).text(`Email: ${ddtData.mittenteEmail}`, margin + 10, boxY, { width: boxWidth - 20 });
-        boxY += 11;
+        doc.fontSize(9).text(`Email: ${ddtData.mittenteEmail}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        mittenteY += 12;
       }
       if (ddtData.mittenteTelefono) {
-        doc.fontSize(9).text(`Tel: ${ddtData.mittenteTelefono}`, margin + 10, boxY, { width: boxWidth - 20 });
+        doc.fontSize(9).text(`Tel: ${ddtData.mittenteTelefono}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        mittenteY += 12;
       }
     }
+    mittenteY += 10; // Padding finale
 
-    // Box Destinatario (destra) con bordo
+    // Box Destinatario (destra) con bordo - calcolo altezza dinamica
     const boxRightX = margin + boxWidth + 20;
-    doc.rect(boxRightX, yPosition, boxWidth, boxHeight).stroke();
-    boxY = yPosition + 10;
+    let destinatarioY = boxStartY + 10;
 
     doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold')
-       .text('DESTINATARIO', boxRightX + 10, boxY);
-    boxY += 20;
+       .text('DESTINATARIO', boxRightX + 10, destinatarioY);
+    destinatarioY += 22;
 
     doc.fontSize(10).fillColor('#000').font('Helvetica-Bold');
-    doc.text(ddtData.clienteNome || '', boxRightX + 10, boxY, { width: boxWidth - 20 });
-    boxY += 15;
+    doc.text(ddtData.clienteNome || '', boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+    destinatarioY += 16;
     doc.font('Helvetica');
     
     if (ddtData.clienteIndirizzo) {
-      doc.text(ddtData.clienteIndirizzo, boxRightX + 10, boxY, { width: boxWidth - 20 });
-      boxY += 12;
+      doc.text(ddtData.clienteIndirizzo, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      destinatarioY += 14;
     }
     if (ddtData.clienteCitta) {
-      doc.text(`${ddtData.clienteCap || ''} ${ddtData.clienteCitta} (${ddtData.clienteProvincia || ''})`, boxRightX + 10, boxY, { width: boxWidth - 20 });
-      boxY += 12;
+      doc.text(`${ddtData.clienteCap || ''} ${ddtData.clienteCitta} (${ddtData.clienteProvincia || ''})`, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      destinatarioY += 14;
     }
     if (ddtData.clientePaese && ddtData.clientePaese !== 'Italia') {
-      doc.text(ddtData.clientePaese, boxRightX + 10, boxY, { width: boxWidth - 20 });
-      boxY += 12;
+      doc.text(ddtData.clientePaese, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      destinatarioY += 14;
     }
     if (ddtData.clientePiva) {
-      doc.text(`P.IVA: ${ddtData.clientePiva}`, boxRightX + 10, boxY, { width: boxWidth - 20 });
-      boxY += 12;
+      doc.text(`P.IVA: ${ddtData.clientePiva}`, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      destinatarioY += 14;
     }
     if (ddtData.clienteCodiceFiscale && ddtData.clienteCodiceFiscale !== ddtData.clientePiva) {
-      doc.text(`C.F.: ${ddtData.clienteCodiceFiscale}`, boxRightX + 10, boxY, { width: boxWidth - 20 });
+      doc.text(`C.F.: ${ddtData.clienteCodiceFiscale}`, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      destinatarioY += 14;
     }
+    destinatarioY += 10; // Padding finale
 
-    yPosition += boxHeight + 20;
+    // Usa l'altezza maggiore tra i due box
+    const boxHeight = Math.max(mittenteY - boxStartY, destinatarioY - boxStartY);
+    
+    // Disegna i box con l'altezza calcolata
+    doc.rect(margin, boxStartY, boxWidth, boxHeight).stroke();
+    doc.rect(boxRightX, boxStartY, boxWidth, boxHeight).stroke();
+
+    // Aggiorna yPosition dopo i box
+    yPosition = boxStartY + boxHeight + 25;
 
     // Tabella righe DDT
-    doc.fontSize(12).fillColor('#000').text('Dettaglio Merce', margin, doc.y, { underline: true });
-    doc.moveDown(0.5);
+    let currentY = yPosition;
+    doc.fontSize(12).fillColor('#000').text('Dettaglio Merce', margin, currentY, { underline: true });
+    currentY += 20;
+    
     doc.fontSize(9);
 
     // Headers
@@ -1482,7 +1495,6 @@ export async function generateDDTPDF(req: Request, res: Response) {
     const col2Width = tableWidth * 0.20;  // Quantità
     const col3Width = tableWidth * 0.20;  // U.M.
 
-    let currentY = doc.y;
     let xPos = margin;
     doc.text('Descrizione', xPos, currentY, { width: col1Width, continued: false });
     xPos += col1Width;
@@ -1490,11 +1502,10 @@ export async function generateDDTPDF(req: Request, res: Response) {
     xPos += col2Width;
     doc.text('U.M.', xPos, currentY, { width: col3Width, continued: false });
 
-    doc.moveDown(0.5);
+    currentY += 18;
 
     // Righe
     for (const riga of righe) {
-      currentY = doc.y;
       xPos = margin;
       
       // Evidenzia i subtotali
@@ -1513,21 +1524,23 @@ export async function generateDDTPDF(req: Request, res: Response) {
         doc.font('Helvetica');
       }
       
-      doc.moveDown(0.3);
+      currentY += 14;
     }
 
-    doc.moveDown(1);
+    currentY += 20;
 
     // Totali
-    doc.fontSize(12).fillColor('#000').text('Totali', margin, doc.y, { underline: true });
-    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor('#000').text('Totali', margin, currentY, { underline: true });
+    currentY += 18;
     doc.fontSize(10);
-    doc.text(`Colli: ${ddtData.totaleColli || 0}`);
-    doc.text(`Peso totale: ${parseFloat(ddtData.pesoTotale || '0').toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`);
+    doc.text(`Colli: ${ddtData.totaleColli || 0}`, margin, currentY);
+    currentY += 15;
+    doc.text(`Peso totale: ${parseFloat(ddtData.pesoTotale || '0').toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, margin, currentY);
+    currentY += 15;
 
     if (ddtData.note) {
-      doc.moveDown(1);
-      doc.fontSize(10).fillColor('#666').text(`Note: ${ddtData.note}`);
+      currentY += 20;
+      doc.fontSize(10).fillColor('#666').text(`Note: ${ddtData.note}`, margin, currentY, { width: tableWidth });
     }
 
     // Footer
