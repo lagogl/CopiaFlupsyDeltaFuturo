@@ -1256,20 +1256,20 @@ export async function generatePDFReport(req: Request, res: Response) {
     currentY += 20;
 
     // Totali con box (altezza aumentata per evitare che il testo venga tagliato)
-    doc.rect(margin, currentY, tableWidth, 95).stroke();
-    currentY += 12;
+    doc.rect(margin, currentY, tableWidth, 110).stroke();
+    currentY += 15;
     
     doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold').text('RIEPILOGO TOTALE', margin + 10, currentY);
-    currentY += 22;
+    currentY += 25;
     
     doc.fontSize(10).fillColor('#000').font('Helvetica');
     doc.text(`Sacchi totali: ${saleData.totalBags || 0}`, margin + 10, currentY);
-    currentY += 18;
+    currentY += 20;
     doc.text(`Animali totali: ${(saleData.totalAnimals || 0).toLocaleString('it-IT')}`, margin + 10, currentY);
-    currentY += 18;
+    currentY += 20;
     doc.text(`Peso totale: ${((saleData.totalWeight || 0) / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, margin + 10, currentY);
     
-    currentY += 20;
+    currentY += 25;
 
     if (saleData.notes) {
       currentY += 30;
