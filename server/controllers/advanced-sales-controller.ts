@@ -211,6 +211,27 @@ export async function createAdvancedSale(req: Request, res: Response) {
 }
 
 /**
+ * Helper: Calcola sizeCode in base agli animali/kg
+ */
+async function calculateSizeCode(animalsPerKg: number): Promise<string> {
+  const allSizes = await db.select({
+    code: sizes.code,
+    minAnimalsPerKg: sizes.minAnimalsPerKg,
+    maxAnimalsPerKg: sizes.maxAnimalsPerKg
+  })
+  .from(sizes)
+  .where(sql`${sizes.minAnimalsPerKg} IS NOT NULL AND ${sizes.maxAnimalsPerKg} IS NOT NULL`);
+
+  for (const size of allSizes) {
+    if (animalsPerKg >= (size.minAnimalsPerKg || 0) && animalsPerKg <= (size.maxAnimalsPerKg || Infinity)) {
+      return size.code;
+    }
+  }
+
+  return ''; // Nessuna taglia trovata
+}
+
+/**
  * Configura i sacchi per una vendita specifica
  */
 export async function configureBags(req: Request, res: Response) {
@@ -265,10 +286,14 @@ export async function configureBags(req: Request, res: Response) {
             (newAnimalsPerKg > bag.originalAnimalsPerKg ? maxVariation : -maxVariation);
         }
 
+        // Calcola automaticamente la taglia in base agli animali/kg
+        const calculatedSizeCode = await calculateSizeCode(Math.round(newAnimalsPerKg));
+        const finalSizeCode = calculatedSizeCode || bag.sizeCode || '';
+
         const [newBag] = await tx.insert(saleBags).values({
           advancedSaleId: parseInt(saleId),
           bagNumber: i + 1,
-          sizeCode: bag.sizeCode,
+          sizeCode: finalSizeCode,
           totalWeight: finalWeight,
           originalWeight: bag.originalWeight,
           weightLoss: weightLossGrams,
