@@ -1070,7 +1070,7 @@ export async function generatePDFReport(req: Request, res: Response) {
     // Recupera dati fiscali dalla configurazione attiva
     const companiesResult = await db.select()
       .from(fattureInCloudConfig)
-      .where(eq(fattureInCloudConfig.isActive, sql`true`))
+      .where(eq(fattureInCloudConfig.attivo, true))
       .limit(1);
     const companyData = companiesResult.length > 0 ? companiesResult[0] : null;
 
