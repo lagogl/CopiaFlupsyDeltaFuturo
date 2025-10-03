@@ -1244,13 +1244,24 @@ export async function generateDDTPDF(req: Request, res: Response) {
     if (ddtData.mittenteLogoPath) {
       try {
         const logoPath = path.join(process.cwd(), 'attached_assets', 'logos', path.basename(ddtData.mittenteLogoPath));
+        console.log('🖼️ Tentativo caricamento logo:', {
+          mittenteLogoPath: ddtData.mittenteLogoPath,
+          logoPath,
+          exists: fs.existsSync(logoPath),
+          cwd: process.cwd()
+        });
         if (fs.existsSync(logoPath)) {
           doc.image(logoPath, margin, yPosition, { width: 80, height: 40, fit: [80, 40] });
           yPosition += 50;
+          console.log('✅ Logo caricato con successo');
+        } else {
+          console.log('❌ File logo non trovato al percorso:', logoPath);
         }
       } catch (error) {
-        console.error('Errore caricamento logo:', error);
+        console.error('❌ Errore caricamento logo:', error);
       }
+    } else {
+      console.log('ℹ️ Nessun logo configurato per questo DDT');
     }
 
     // Intestazione
