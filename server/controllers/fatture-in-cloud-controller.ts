@@ -832,7 +832,7 @@ router.get('/fiscal-data', async (req: Request, res: Response) => {
   }
 });
 
-// PUT /fiscal-data - Aggiorna i dati fiscali dell'azienda attiva
+// PUT /fiscal-data - Crea o aggiorna i dati fiscali dell'azienda attiva (UPSERT)
 router.put('/fiscal-data', async (req: Request, res: Response) => {
   try {
     const companyId = await getConfigValue('fatture_in_cloud_company_id');
@@ -863,14 +863,9 @@ router.put('/fiscal-data', async (req: Request, res: Response) => {
       .limit(1);
     
     if (configs.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: "Configurazione non trovata per questa azienda"
-      });
-    }
-    
-    await db.update(fattureInCloudConfig)
-      .set({
+      // Record non esiste, lo creiamo (INSERT)
+      await db.insert(fattureInCloudConfig).values({
+        companyId: parseInt(companyId),
         ragioneSociale,
         indirizzo,
         cap,
@@ -880,22 +875,40 @@ router.put('/fiscal-data', async (req: Request, res: Response) => {
         codiceFiscale,
         telefono,
         email,
-        logoPath,
-        updatedAt: new Date()
-      })
-      .where(eq(fattureInCloudConfig.companyId, parseInt(companyId)));
-    
-    console.log(`✅ Dati fiscali aggiornati per company_id ${companyId}`);
+        logoPath
+      });
+      
+      console.log(`✅ Dati fiscali creati per company_id ${companyId}`);
+    } else {
+      // Record esiste, lo aggiorniamo (UPDATE)
+      await db.update(fattureInCloudConfig)
+        .set({
+          ragioneSociale,
+          indirizzo,
+          cap,
+          citta,
+          provincia,
+          partitaIva,
+          codiceFiscale,
+          telefono,
+          email,
+          logoPath,
+          updatedAt: new Date()
+        })
+        .where(eq(fattureInCloudConfig.companyId, parseInt(companyId)));
+      
+      console.log(`✅ Dati fiscali aggiornati per company_id ${companyId}`);
+    }
     
     res.json({
       success: true,
-      message: "Dati fiscali aggiornati con successo"
+      message: "Dati fiscali salvati con successo"
     });
   } catch (error: any) {
-    console.error('Errore nell\'aggiornamento dati fiscali:', error);
+    console.error('Errore nel salvataggio dati fiscali:', error);
     res.status(500).json({
       success: false,
-      error: error.message || "Errore nell'aggiornamento dei dati fiscali"
+      error: error.message || "Errore nel salvataggio dei dati fiscali"
     });
   }
 });
