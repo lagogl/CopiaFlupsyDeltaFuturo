@@ -1110,11 +1110,11 @@ export async function generatePDFReport(req: Request, res: Response) {
       xPos += col3Width;
       doc.text(bagData.animalCount.toLocaleString('it-IT'), xPos, currentY, { width: col4Width, continued: false });
       xPos += col4Width;
-      doc.text(bagData.totalWeight.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), xPos, currentY, { width: col5Width, continued: false });
+      doc.text((bagData.totalWeight / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), xPos, currentY, { width: col5Width, continued: false });
       xPos += col5Width;
       doc.text(Math.round(bagData.animalsPerKg).toLocaleString('it-IT'), xPos, currentY, { width: col6Width, continued: false });
       xPos += col6Width;
-      doc.text(bagData.wastePercentage?.toFixed(1) || '0.0', xPos, currentY, { width: col7Width, continued: false });
+      doc.text((bagData.wastePercentage || 0).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), xPos, currentY, { width: col7Width, continued: false });
       doc.moveDown(0.5);
     }
 
@@ -1126,7 +1126,7 @@ export async function generatePDFReport(req: Request, res: Response) {
     doc.fontSize(10);
     doc.text(`Sacchi totali: ${saleData.totalBags || 0}`);
     doc.text(`Animali totali: ${(saleData.totalAnimals || 0).toLocaleString('it-IT')}`);
-    doc.text(`Peso totale: ${(saleData.totalWeight || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`);
+    doc.text(`Peso totale: ${((saleData.totalWeight || 0) / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`);
 
     if (saleData.notes) {
       doc.moveDown(1);
