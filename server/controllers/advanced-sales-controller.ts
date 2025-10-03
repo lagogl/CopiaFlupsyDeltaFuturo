@@ -1383,92 +1383,95 @@ export async function generateDDTPDF(req: Request, res: Response) {
     }
 
     // Intestazione a destra del logo
+    let headerY = yPosition + 10;
     doc.fontSize(22).fillColor('#1e40af').font('Helvetica-Bold')
-       .text('DOCUMENTO DI TRASPORTO', margin + 170, yPosition + 10);
+       .text('DOCUMENTO DI TRASPORTO', margin + 170, headerY, { width: tableWidth - 170 });
+    headerY += 28;
     doc.fontSize(18).fillColor('#1e40af')
-       .text(`N. ${ddtData.numero}`, margin + 170, doc.y + 5);
+       .text(`N. ${ddtData.numero}`, margin + 170, headerY, { width: tableWidth - 170 });
+    headerY += 24;
     doc.fontSize(10).fillColor('#64748b').font('Helvetica')
-       .text(`Data: ${new Date(ddtData.data).toLocaleDateString('it-IT')}`, margin + 170, doc.y + 5);
-    doc.text(`Stato: ${ddtData.ddtStato === 'inviato' ? 'Inviato a FIC' : 'Locale'}`, margin + 170, doc.y);
+       .text(`Data: ${new Date(ddtData.data).toLocaleDateString('it-IT')}`, margin + 170, headerY, { width: tableWidth - 170 });
+    headerY += 14;
+    doc.text(`Stato: ${ddtData.ddtStato === 'inviato' ? 'Inviato a FIC' : 'Locale'}`, margin + 170, headerY, { width: tableWidth - 170 });
 
-    yPosition += 90;
+    yPosition += 100;
 
     // === TABELLA MITTENTE E DESTINATARIO ===
     const boxWidth = (tableWidth - 20) / 2;
     const boxStartY = yPosition;
     
-    // Box Mittente (sinistra) con bordo - calcolo altezza dinamica
+    // Box Mittente (sinistra) - calcolo altezza dinamica con lineBreak: false
     let mittenteY = boxStartY + 10;
-    const mittenteStartY = mittenteY;
     
     doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold')
-       .text('MITTENTE', margin + 10, mittenteY);
+       .text('MITTENTE', margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
     mittenteY += 22;
 
     if (ddtData.mittenteRagioneSociale) {
       doc.fontSize(10).fillColor('#000').font('Helvetica-Bold');
-      doc.text(ddtData.mittenteRagioneSociale, margin + 10, mittenteY, { width: boxWidth - 20 });
+      doc.text(ddtData.mittenteRagioneSociale, margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
       mittenteY += 16;
       doc.font('Helvetica');
       
       if (ddtData.mittenteIndirizzo) {
-        doc.text(ddtData.mittenteIndirizzo, margin + 10, mittenteY, { width: boxWidth - 20 });
+        doc.text(ddtData.mittenteIndirizzo, margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
         mittenteY += 14;
       }
       if (ddtData.mittenteCitta) {
-        doc.text(`${ddtData.mittenteCap || ''} ${ddtData.mittenteCitta} (${ddtData.mittenteProvincia || ''})`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        doc.text(`${ddtData.mittenteCap || ''} ${ddtData.mittenteCitta} (${ddtData.mittenteProvincia || ''})`, margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
         mittenteY += 14;
       }
       if (ddtData.mittentePartitaIva) {
-        doc.text(`P.IVA: ${ddtData.mittentePartitaIva}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        doc.text(`P.IVA: ${ddtData.mittentePartitaIva}`, margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
         mittenteY += 14;
       }
       if (ddtData.mittenteCodiceFiscale && ddtData.mittenteCodiceFiscale !== ddtData.mittentePartitaIva) {
-        doc.text(`C.F.: ${ddtData.mittenteCodiceFiscale}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        doc.text(`C.F.: ${ddtData.mittenteCodiceFiscale}`, margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
         mittenteY += 14;
       }
       if (ddtData.mittenteEmail) {
-        doc.fontSize(9).text(`Email: ${ddtData.mittenteEmail}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        doc.fontSize(9).text(`Email: ${ddtData.mittenteEmail}`, margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
         mittenteY += 12;
       }
       if (ddtData.mittenteTelefono) {
-        doc.fontSize(9).text(`Tel: ${ddtData.mittenteTelefono}`, margin + 10, mittenteY, { width: boxWidth - 20 });
+        doc.fontSize(9).text(`Tel: ${ddtData.mittenteTelefono}`, margin + 10, mittenteY, { width: boxWidth - 20, lineBreak: false });
         mittenteY += 12;
       }
     }
     mittenteY += 10; // Padding finale
 
-    // Box Destinatario (destra) con bordo - calcolo altezza dinamica
+    // Box Destinatario (destra) - calcolo altezza dinamica con lineBreak: false
     const boxRightX = margin + boxWidth + 20;
     let destinatarioY = boxStartY + 10;
 
     doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold')
-       .text('DESTINATARIO', boxRightX + 10, destinatarioY);
+       .text('DESTINATARIO', boxRightX + 10, destinatarioY, { width: boxWidth - 20, lineBreak: false });
     destinatarioY += 22;
 
     doc.fontSize(10).fillColor('#000').font('Helvetica-Bold');
-    doc.text(ddtData.clienteNome || '', boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+    doc.text(ddtData.clienteNome || '', boxRightX + 10, destinatarioY, { width: boxWidth - 20, lineBreak: false });
     destinatarioY += 16;
     doc.font('Helvetica');
     
     if (ddtData.clienteIndirizzo) {
-      doc.text(ddtData.clienteIndirizzo, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      doc.text(ddtData.clienteIndirizzo, boxRightX + 10, destinatarioY, { width: boxWidth - 20, lineBreak: false });
       destinatarioY += 14;
     }
     if (ddtData.clienteCitta) {
-      doc.text(`${ddtData.clienteCap || ''} ${ddtData.clienteCitta} (${ddtData.clienteProvincia || ''})`, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      doc.text(`${ddtData.clienteCap || ''} ${ddtData.clienteCitta} (${ddtData.clienteProvincia || ''})`, boxRightX + 10, destinatarioY, { width: boxWidth - 20, lineBreak: false });
       destinatarioY += 14;
     }
     if (ddtData.clientePaese && ddtData.clientePaese !== 'Italia') {
-      doc.text(ddtData.clientePaese, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      doc.text(ddtData.clientePaese, boxRightX + 10, destinatarioY, { width: boxWidth - 20, lineBreak: false });
       destinatarioY += 14;
     }
     if (ddtData.clientePiva) {
-      doc.text(`P.IVA: ${ddtData.clientePiva}`, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      doc.text(`P.IVA: ${ddtData.clientePiva}`, boxRightX + 10, destinatarioY, { width: boxWidth - 20, lineBreak: false });
       destinatarioY += 14;
     }
     if (ddtData.clienteCodiceFiscale && ddtData.clienteCodiceFiscale !== ddtData.clientePiva) {
-      doc.text(`C.F.: ${ddtData.clienteCodiceFiscale}`, boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+      doc.text(`C.F.: ${ddtData.clienteCodiceFiscale}`, boxRightX + 10, destinatarioY, { width: boxWidth - 20, lineBreak: false });
       destinatarioY += 14;
     }
     destinatarioY += 10; // Padding finale
