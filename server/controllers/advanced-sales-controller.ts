@@ -22,6 +22,8 @@ import {
   ddt,
   ddtRighe,
   flupsys,
+  configurazione,
+  fattureInCloudConfig,
   insertAdvancedSaleSchema,
   insertSaleBagSchema,
   insertBagAllocationSchema,
@@ -842,7 +844,30 @@ export async function generateDDT(req: Request, res: Response) {
     const ultimoDDT = await db.select().from(ddt).orderBy(desc(ddt.numero)).limit(1);
     const numeroDDT = ultimoDDT.length > 0 ? ultimoDDT[0].numero + 1 : 1;
 
-    // Crea DDT locale con snapshot cliente
+    // Recupera dati fiscali azienda attiva per snapshot mittente
+    const companyIdConfig = await db.select()
+      .from(configurazione)
+      .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
+      .limit(1);
+    
+    let companyId: number | null = null;
+    let fiscalData: any = null;
+    
+    if (companyIdConfig.length > 0 && companyIdConfig[0].valore) {
+      companyId = parseInt(companyIdConfig[0].valore);
+      
+      // Recupera dati fiscali dell'azienda
+      const fiscalDataResult = await db.select()
+        .from(fattureInCloudConfig)
+        .where(eq(fattureInCloudConfig.companyId, companyId))
+        .limit(1);
+      
+      if (fiscalDataResult.length > 0) {
+        fiscalData = fiscalDataResult[0];
+      }
+    }
+
+    // Crea DDT locale con snapshot cliente e mittente
     const [ddtCreato] = await db.insert(ddt).values({
       numero: numeroDDT,
       data: saleData.saleDate,
@@ -856,6 +881,18 @@ export async function generateDDT(req: Request, res: Response) {
       clientePiva: cliente.piva !== 'N/A' ? cliente.piva : '',
       clienteCodiceFiscale: cliente.codiceFiscale !== 'N/A' ? cliente.codiceFiscale : '',
       clientePaese: cliente.paese || 'Italia',
+      // Snapshot immutabile mittente (azienda)
+      companyId: companyId,
+      mittenteRagioneSociale: fiscalData?.ragioneSociale || null,
+      mittenteIndirizzo: fiscalData?.indirizzo || null,
+      mittenteCap: fiscalData?.cap || null,
+      mittenteCitta: fiscalData?.citta || null,
+      mittenteProvincia: fiscalData?.provincia || null,
+      mittentePartitaIva: fiscalData?.partitaIva || null,
+      mittenteCodiceFiscale: fiscalData?.codiceFiscale || null,
+      mittenteTelefono: fiscalData?.telefono || null,
+      mittenteEmail: fiscalData?.email || null,
+      mittenteLogoPath: fiscalData?.logoPath || null,
       // Totali
       totaleColli: saleData.totalBags || 0,
       pesoTotale: saleData.totalWeight?.toString() || '0',
