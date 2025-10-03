@@ -8073,6 +8073,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mortality = totalSourceAnimals - totalDestAnimals;
       const mortalityPct = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0.00';
       
+      // Recupera dati fiscali dalla configurazione attiva
+      const companiesResult = await db.select().from(fattureInCloudConfig).where(eq(fattureInCloudConfig.isActive, true)).limit(1);
+      const companyData = companiesResult.length > 0 ? companiesResult[0] : null;
+
       // Genera PDF con PDFKit in formato orizzontale
       const PDFDocument = (await import('pdfkit')).default;
       const doc = new PDFDocument({ margin: 50, size: 'A4', layout: 'landscape' });
@@ -8086,29 +8090,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.send(pdfBuffer);
       });
       
-      // Titolo
-      doc.fontSize(24).fillColor('#1e40af').text(`Report Vagliatura #${screening.selectionNumber}`, { align: 'left' });
-      doc.fontSize(10).fillColor('#64748b').text(`Data: ${new Date(screening.date).toLocaleDateString('it-IT')}`, { align: 'left' });
-      doc.moveDown(1.5);
-      
-      // Informazioni generali
-      doc.fontSize(12).fillColor('#000').text('Scopo: ', { continued: true }).fillColor('#666').text(screening.purpose || 'Non specificato');
-      doc.fillColor('#000').text('Taglia di Riferimento: ', { continued: true }).fillColor('#666').text(referenceSize?.code || 'N/D');
-      doc.fillColor('#000').text('Stato: ', { continued: true }).fillColor('#666').text(screening.status === 'completed' ? 'Completata' : screening.status);
-      doc.moveDown(1);
-      
-      // Riepilogo
-      doc.fontSize(14).fillColor('#000').text('Riepilogo', { underline: true });
-      doc.moveDown(0.5);
-      doc.fontSize(10);
-      doc.text(`Cestelli Origine: ${sourceBaskets.length} | Animali: ${totalSourceAnimals.toLocaleString('it-IT')}`);
-      doc.text(`Cestelli Destinazione: ${destBaskets.length} | Animali: ${totalDestAnimals.toLocaleString('it-IT')}`);
-      doc.fillColor('#dc2626').text(`Mortalità: ${mortality.toLocaleString('it-IT')} (${mortalityPct}%)`).fillColor('#000');
-      doc.moveDown(1.5);
-      
-      // Headers - Larghezze ottimizzate per layout orizzontale (più spazio disponibile)
       const margin = 50;
       const tableWidth = doc.page.width - (2 * margin);
+      
+      // Logo aziendale (se presente)
+      let yPosition = margin;
+      if (companyData?.logoPath) {
+        try {
+          const logoPath = path.join(process.cwd(), 'attached_assets', 'logos', path.basename(companyData.logoPath));
+          if (fs.existsSync(logoPath)) {
+            doc.image(logoPath, margin, yPosition, { width: 120, height: 60, fit: [120, 60] });
+          }
+        } catch (error) {
+          console.error('Errore caricamento logo:', error);
+        }
+      }
+
+      // Intestazione principale a destra del logo
+      doc.fontSize(22).fillColor('#1e40af').font('Helvetica-Bold')
+         .text(`REPORT VAGLIATURA #${screening.selectionNumber}`, margin + 140, yPosition + 5);
+      doc.fontSize(10).fillColor('#64748b').font('Helvetica')
+         .text(`Data: ${new Date(screening.date).toLocaleDateString('it-IT')}`, margin + 140, doc.y + 3);
+      doc.text(`Stato: ${screening.status === 'completed' ? 'Completata' : screening.status}`, margin + 140, doc.y);
+
+      yPosition += 75;
+
+      // Box informazioni con dati azienda
+      if (companyData) {
+        doc.rect(margin, yPosition, tableWidth * 0.45, 55).stroke();
+        let boxY = yPosition + 8;
+        doc.fontSize(10).fillColor('#1e40af').font('Helvetica-Bold')
+           .text('AZIENDA', margin + 10, boxY);
+        boxY += 15;
+        doc.fontSize(9).fillColor('#000').font('Helvetica');
+        doc.text(companyData.ragioneSociale || '', margin + 10, boxY, { width: tableWidth * 0.42 });
+        boxY += 12;
+        if (companyData.indirizzo) {
+          doc.text(`${companyData.indirizzo} - ${companyData.cap} ${companyData.citta}`, margin + 10, boxY, { width: tableWidth * 0.42 });
+          boxY += 12;
+        }
+        if (companyData.partitaIva) {
+          doc.text(`P.IVA: ${companyData.partitaIva}`, margin + 10, boxY);
+        }
+      }
+
+      // Box informazioni vagliatura
+      const boxRightX = margin + (tableWidth * 0.45) + 20;
+      doc.rect(boxRightX, yPosition, tableWidth * 0.52, 55).stroke();
+      let infoY = yPosition + 8;
+      doc.fontSize(10).fillColor('#1e40af').font('Helvetica-Bold')
+         .text('INFORMAZIONI VAGLIATURA', boxRightX + 10, infoY);
+      infoY += 15;
+      doc.fontSize(9).fillColor('#000').font('Helvetica');
+      doc.text(`Scopo: ${screening.purpose || 'Non specificato'}`, boxRightX + 10, infoY, { width: tableWidth * 0.48 });
+      infoY += 12;
+      doc.text(`Taglia Riferimento: ${referenceSize?.code || 'N/D'}`, boxRightX + 10, infoY);
+      infoY += 12;
+      doc.text(`Cestelli Origine: ${sourceBaskets.length} | Destinazione: ${destBaskets.length}`, boxRightX + 10, infoY);
+
+      yPosition += 70;
+
+      // Riepilogo statistiche con box
+      doc.rect(margin, yPosition, tableWidth, 45).fill('#f1f5f9');
+      yPosition += 10;
+      doc.fontSize(11).fillColor('#1e40af').font('Helvetica-Bold')
+         .text('RIEPILOGO OPERAZIONE', margin + 10, yPosition);
+      yPosition += 18;
+      doc.fontSize(10).fillColor('#000').font('Helvetica');
+      doc.text(`Animali Origine: ${totalSourceAnimals.toLocaleString('it-IT')}`, margin + 10, yPosition);
+      doc.text(`Animali Destinazione: ${totalDestAnimals.toLocaleString('it-IT')}`, margin + 240, yPosition);
+      doc.fillColor('#dc2626').font('Helvetica-Bold')
+         .text(`Mortalità: ${mortality.toLocaleString('it-IT')} (${mortalityPct}%)`, margin + 520, yPosition)
+         .fillColor('#000').font('Helvetica');
+
+      yPosition += 30;
       
       // Larghezze personalizzate per ogni colonna (in percentuale) - Orizzontale ha ~840px di larghezza
       const col1Width = tableWidth * 0.08;  // Cestello
@@ -8120,33 +8175,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const col7Width = tableWidth * 0.10;  // Dismiss
       
       // Tabella cestelli origine
-      let currentY = doc.y;
-      doc.fontSize(12).fillColor('#000').text('Cestelli Origine', margin, currentY, { underline: true });
-      doc.moveDown(0.5);
-      doc.fontSize(9);
+      let currentY = yPosition;
+      doc.fontSize(12).fillColor('#000').font('Helvetica-Bold').text('CESTELLI ORIGINE', margin, currentY);
+      currentY += 22;
+      doc.fontSize(9).font('Helvetica');
       
-      currentY = doc.y;
+      // Header con sfondo colorato
+      doc.rect(margin, currentY, tableWidth, 15).fill('#059669');
+      doc.fillColor('#ffffff').font('Helvetica-Bold');
       let xPos = margin;
-      doc.text('Cestello', xPos, currentY, { width: col1Width, continued: false });
+      doc.text('Cestello', xPos, currentY + 3, { width: col1Width, continued: false });
       xPos += col1Width;
-      doc.text('Ciclo', xPos, currentY, { width: col2Width, continued: false });
+      doc.text('Ciclo', xPos, currentY + 3, { width: col2Width, continued: false });
       xPos += col2Width;
-      doc.text('FLUPSY', xPos, currentY, { width: col3Width, continued: false });
+      doc.text('FLUPSY', xPos, currentY + 3, { width: col3Width, continued: false });
       xPos += col3Width;
-      doc.text('Animali', xPos, currentY, { width: col4Width, continued: false });
+      doc.text('Animali', xPos, currentY + 3, { width: col4Width, continued: false });
       xPos += col4Width;
-      doc.text('Peso (kg)', xPos, currentY, { width: col5Width, continued: false });
+      doc.text('Peso (kg)', xPos, currentY + 3, { width: col5Width, continued: false });
       xPos += col5Width;
-      doc.text('Anim/kg', xPos, currentY, { width: col6Width, continued: false });
+      doc.text('Anim/kg', xPos, currentY + 3, { width: col6Width, continued: false });
       xPos += col6Width;
-      doc.text('Dismiss', xPos, currentY, { width: col7Width, continued: false });
+      doc.text('Dismiss', xPos, currentY + 3, { width: col7Width, continued: false });
       
-      doc.moveDown(0.5);
+      currentY += 18;
+      doc.fillColor('#000').font('Helvetica');
       
       // Data rows
-      sourceBaskets.forEach((basket) => {
-        currentY = doc.y;
+      sourceBaskets.forEach((basket, idx) => {
         xPos = margin;
+        
+        // Alterna sfondo
+        if (idx % 2 === 1) {
+          doc.rect(margin, currentY, tableWidth, 12).fill('#ecfdf5');
+          doc.fillColor('#000');
+        }
+        
         doc.text(String(basket.basketId), xPos, currentY, { width: col1Width, continued: false });
         xPos += col1Width;
         doc.text(String(basket.cycleId), xPos, currentY, { width: col2Width, continued: false });
@@ -8160,40 +8224,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), xPos, currentY, { width: col6Width, continued: false });
         xPos += col6Width;
         doc.text('N/D', xPos, currentY, { width: col7Width, continued: false });
-        doc.moveDown(0.5);
+        currentY += 13;
       });
       
-      doc.moveDown(1);
+      currentY += 20;
       
       // Tabella cestelli destinazione  
-      currentY = doc.y;
-      doc.fontSize(12).fillColor('#000').text('Cestelli Destinazione', margin, currentY, { underline: true });
-      doc.moveDown(0.5);
-      doc.fontSize(9);
+      doc.fontSize(12).fillColor('#000').font('Helvetica-Bold').text('CESTELLI DESTINAZIONE', margin, currentY);
+      currentY += 22;
+      doc.fontSize(9).font('Helvetica');
       
-      // Headers - Stesso layout ottimizzato per orizzontale
-      currentY = doc.y;
+      // Headers con sfondo colorato
+      doc.rect(margin, currentY, tableWidth, 15).fill('#2563eb');
+      doc.fillColor('#ffffff').font('Helvetica-Bold');
       xPos = margin;
-      doc.text('Cestello', xPos, currentY, { width: col1Width, continued: false });
+      doc.text('Cestello', xPos, currentY + 3, { width: col1Width, continued: false });
       xPos += col1Width;
-      doc.text('Categoria', xPos, currentY, { width: col2Width, continued: false });
+      doc.text('Categoria', xPos, currentY + 3, { width: col2Width, continued: false });
       xPos += col2Width;
-      doc.text('FLUPSY', xPos, currentY, { width: col3Width, continued: false });
+      doc.text('FLUPSY', xPos, currentY + 3, { width: col3Width, continued: false });
       xPos += col3Width;
-      doc.text('Animali', xPos, currentY, { width: col4Width, continued: false });
+      doc.text('Animali', xPos, currentY + 3, { width: col4Width, continued: false });
       xPos += col4Width;
-      doc.text('Peso (kg)', xPos, currentY, { width: col5Width, continued: false });
+      doc.text('Peso (kg)', xPos, currentY + 3, { width: col5Width, continued: false });
       xPos += col5Width;
-      doc.text('Anim/kg', xPos, currentY, { width: col6Width, continued: false });
+      doc.text('Anim/kg', xPos, currentY + 3, { width: col6Width, continued: false });
       xPos += col6Width;
-      doc.text('Posizione', xPos, currentY, { width: col7Width, continued: false });
+      doc.text('Posizione', xPos, currentY + 3, { width: col7Width, continued: false });
       
-      doc.moveDown(0.5);
+      currentY += 18;
+      doc.fillColor('#000').font('Helvetica');
       
       // Data rows
-      destBaskets.forEach((basket) => {
-        currentY = doc.y;
+      destBaskets.forEach((basket, idx) => {
         xPos = margin;
+        
+        // Alterna sfondo
+        if (idx % 2 === 1) {
+          doc.rect(margin, currentY, tableWidth, 12).fill('#eff6ff');
+          doc.fillColor('#000');
+        }
+        
         doc.text(String(basket.basketId), xPos, currentY, { width: col1Width, continued: false });
         xPos += col1Width;
         const catText = basket.destinationType === 'sold' ? 'Venduto' : 'Posizionato';
@@ -8208,21 +8279,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.text((basket.animalsPerKg || 0).toLocaleString('it-IT'), xPos, currentY, { width: col6Width, continued: false });
         xPos += col6Width;
         doc.text(basket.position || 'N/A', xPos, currentY, { width: col7Width, continued: false });
-        doc.moveDown(0.5);
+        currentY += 13;
       });
       
       // Note (se presenti)
       if (screening.notes) {
-        doc.moveDown(1);
-        doc.fontSize(12).text('Note', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(10).text(screening.notes);
+        currentY += 20;
+        doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold').text('NOTE', margin, currentY);
+        currentY += 18;
+        doc.fontSize(10).fillColor('#000').font('Helvetica').text(screening.notes, margin, currentY, { width: tableWidth });
       }
       
       // Footer
-      doc.moveDown(2);
-      doc.fontSize(9).fillColor('#64748b').text(`Report generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}`, { align: 'center' });
-      doc.text('FLUPSY Management System - MITO SRL', { align: 'center' });
+      doc.fontSize(9).fillColor('#64748b').font('Helvetica')
+         .text(`Report generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}`, 
+               margin, 
+               doc.page.height - 50, 
+               { align: 'center', width: tableWidth });
+      doc.text(companyData ? `${companyData.ragioneSociale} - FLUPSY Management System` : 'FLUPSY Management System', 
+               { align: 'center', width: tableWidth });
       
       doc.end();
       
