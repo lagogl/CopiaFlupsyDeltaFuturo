@@ -527,7 +527,7 @@ export default function AdvancedSales() {
                           <Badge variant="outline">{op.sizeCode}</Badge>
                         </TableCell>
                         <TableCell>{op.animalCount?.toLocaleString()}</TableCell>
-                        <TableCell>{op.totalWeight?.toFixed(2)}</TableCell>
+                        <TableCell>{op.totalWeight ? (op.totalWeight / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}</TableCell>
                         <TableCell>{op.animalsPerKg?.toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge variant={op.processed ? "secondary" : "default"}>
@@ -710,7 +710,7 @@ export default function AdvancedSales() {
                         <TableCell>{format(new Date(sale.saleDate), 'dd/MM/yyyy')}</TableCell>
                         <TableCell>{sale.totalBags || 0}</TableCell>
                         <TableCell>{sale.totalAnimals?.toLocaleString() || 0}</TableCell>
-                        <TableCell>{sale.totalWeight?.toFixed(2) || 0}</TableCell>
+                        <TableCell>{sale.totalWeight ? (sale.totalWeight / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}</TableCell>
                         <TableCell>
                           <Badge variant={
                             sale.status === 'completed' ? 'default' : 
