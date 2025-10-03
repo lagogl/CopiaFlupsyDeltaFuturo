@@ -1578,6 +1578,8 @@ export async function sendDDTToFIC(req: Request, res: Response) {
   try {
     const { ddtId } = req.params;
     
+    console.log(`📤 Richiesta invio DDT a FIC - DDT ID: ${ddtId}`);
+    
     if (!ddtId) {
       return res.status(400).json({
         success: false,
@@ -1589,6 +1591,7 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     const ddtResult = await db.select().from(ddt).where(eq(ddt.id, parseInt(ddtId))).limit(1);
     
     if (ddtResult.length === 0) {
+      console.error(`❌ DDT non trovato - ID: ${ddtId}`);
       return res.status(404).json({
         success: false,
         error: "DDT non trovato"
@@ -1596,6 +1599,8 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     }
 
     const ddtData = ddtResult[0];
+    
+    console.log(`✅ DDT recuperato - Numero: ${ddtData.numero}, Cliente: ${ddtData.clienteNome}, Stato attuale: ${ddtData.ddtStato}`);
 
     // Verifica se già inviato
     if (ddtData.ddtStato === 'inviato') {
