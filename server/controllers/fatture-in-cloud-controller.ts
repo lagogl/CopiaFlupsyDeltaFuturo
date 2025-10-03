@@ -9,6 +9,7 @@ import {
   ddtRighe, 
   externalDeliveriesSync,
   externalDeliveryDetailsSync,
+  fattureInCloudConfig,
   insertConfigurazioneSchema,
   insertClientiSchema,
   insertDdtSchema,
@@ -774,6 +775,163 @@ router.patch('/company-id', async (req: Request, res: Response) => {
     res.status(500).json({ 
       success: false,
       error: error.message || "Errore interno del server" 
+    });
+  }
+});
+
+// ===== ENDPOINTS DATI FISCALI AZIENDA =====
+
+// GET /fiscal-data - Recupera i dati fiscali dell'azienda attiva
+router.get('/fiscal-data', async (req: Request, res: Response) => {
+  try {
+    const companyId = await getConfigValue('fatture_in_cloud_company_id');
+    
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "Nessuna azienda selezionata. Seleziona prima un'azienda."
+      });
+    }
+    
+    const configs = await db.select()
+      .from(fattureInCloudConfig)
+      .where(eq(fattureInCloudConfig.companyId, parseInt(companyId)))
+      .limit(1);
+    
+    if (configs.length === 0) {
+      return res.json({
+        success: true,
+        fiscalData: null,
+        message: "Nessun dato fiscale configurato per questa azienda"
+      });
+    }
+    
+    const config = configs[0];
+    
+    res.json({
+      success: true,
+      fiscalData: {
+        ragioneSociale: config.ragioneSociale,
+        indirizzo: config.indirizzo,
+        cap: config.cap,
+        citta: config.citta,
+        provincia: config.provincia,
+        partitaIva: config.partitaIva,
+        codiceFiscale: config.codiceFiscale,
+        telefono: config.telefono,
+        email: config.email,
+        logoPath: config.logoPath
+      }
+    });
+  } catch (error: any) {
+    console.error('Errore nel recupero dati fiscali:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Errore nel recupero dei dati fiscali"
+    });
+  }
+});
+
+// PUT /fiscal-data - Aggiorna i dati fiscali dell'azienda attiva
+router.put('/fiscal-data', async (req: Request, res: Response) => {
+  try {
+    const companyId = await getConfigValue('fatture_in_cloud_company_id');
+    
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "Nessuna azienda selezionata. Seleziona prima un'azienda."
+      });
+    }
+    
+    const {
+      ragioneSociale,
+      indirizzo,
+      cap,
+      citta,
+      provincia,
+      partitaIva,
+      codiceFiscale,
+      telefono,
+      email,
+      logoPath
+    } = req.body;
+    
+    const configs = await db.select()
+      .from(fattureInCloudConfig)
+      .where(eq(fattureInCloudConfig.companyId, parseInt(companyId)))
+      .limit(1);
+    
+    if (configs.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Configurazione non trovata per questa azienda"
+      });
+    }
+    
+    await db.update(fattureInCloudConfig)
+      .set({
+        ragioneSociale,
+        indirizzo,
+        cap,
+        citta,
+        provincia,
+        partitaIva,
+        codiceFiscale,
+        telefono,
+        email,
+        logoPath,
+        updatedAt: new Date()
+      })
+      .where(eq(fattureInCloudConfig.companyId, parseInt(companyId)));
+    
+    console.log(`✅ Dati fiscali aggiornati per company_id ${companyId}`);
+    
+    res.json({
+      success: true,
+      message: "Dati fiscali aggiornati con successo"
+    });
+  } catch (error: any) {
+    console.error('Errore nell\'aggiornamento dati fiscali:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Errore nell'aggiornamento dei dati fiscali"
+    });
+  }
+});
+
+// GET /available-logos - Lista dei loghi disponibili
+router.get('/available-logos', async (req: Request, res: Response) => {
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    
+    const logosDir = path.join(process.cwd(), 'attached_assets', 'logos');
+    
+    try {
+      const files = await fs.readdir(logosDir);
+      const logos = files
+        .filter(file => /\.(png|jpg|jpeg|svg)$/i.test(file))
+        .map(file => ({
+          name: file,
+          path: `/assets/logos/${file}`
+        }));
+      
+      res.json({
+        success: true,
+        logos
+      });
+    } catch (error: any) {
+      res.json({
+        success: true,
+        logos: []
+      });
+    }
+  } catch (error: any) {
+    console.error('Errore nel recupero loghi disponibili:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Errore nel recupero dei loghi disponibili"
     });
   }
 });
