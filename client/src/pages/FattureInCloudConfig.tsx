@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Settings, 
@@ -20,7 +21,9 @@ import {
   ExternalLink,
   Key,
   Building,
-  RefreshCw
+  RefreshCw,
+  FileCheck,
+  Save
 } from 'lucide-react';
 
 interface ConfigurationType {
@@ -246,6 +249,85 @@ const FattureInCloudConfig: React.FC = () => {
     onError: (error: any) => {
       toast({
         title: "Errore aggiornamento azienda",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Query per recuperare i dati fiscali
+  const fiscalDataQuery = useQuery({
+    queryKey: ['/api/fatture-in-cloud/fiscal-data'],
+    queryFn: async () => {
+      const response = await fetch('/api/fatture-in-cloud/fiscal-data');
+      if (!response.ok) throw new Error('Errore nel caricamento dati fiscali');
+      return response.json();
+    }
+  });
+
+  // Query per recuperare i loghi disponibili
+  const logosQuery = useQuery({
+    queryKey: ['/api/fatture-in-cloud/available-logos'],
+    queryFn: async () => {
+      const response = await fetch('/api/fatture-in-cloud/available-logos');
+      if (!response.ok) throw new Error('Errore nel caricamento loghi');
+      return response.json();
+    }
+  });
+
+  // Stati per il form dati fiscali
+  const [fiscalData, setFiscalData] = useState({
+    ragioneSociale: '',
+    indirizzo: '',
+    cap: '',
+    citta: '',
+    provincia: '',
+    partitaIva: '',
+    codiceFiscale: '',
+    telefono: '',
+    email: '',
+    logoPath: ''
+  });
+
+  // Aggiorna il form quando arrivano i dati
+  useEffect(() => {
+    if (fiscalDataQuery.data?.fiscalData) {
+      setFiscalData({
+        ragioneSociale: fiscalDataQuery.data.fiscalData.ragioneSociale || '',
+        indirizzo: fiscalDataQuery.data.fiscalData.indirizzo || '',
+        cap: fiscalDataQuery.data.fiscalData.cap || '',
+        citta: fiscalDataQuery.data.fiscalData.citta || '',
+        provincia: fiscalDataQuery.data.fiscalData.provincia || '',
+        partitaIva: fiscalDataQuery.data.fiscalData.partitaIva || '',
+        codiceFiscale: fiscalDataQuery.data.fiscalData.codiceFiscale || '',
+        telefono: fiscalDataQuery.data.fiscalData.telefono || '',
+        email: fiscalDataQuery.data.fiscalData.email || '',
+        logoPath: fiscalDataQuery.data.fiscalData.logoPath || ''
+      });
+    }
+  }, [fiscalDataQuery.data]);
+
+  // Mutation per salvare i dati fiscali
+  const saveFiscalDataMutation = useMutation({
+    mutationFn: async (data: typeof fiscalData) => {
+      const response = await fetch('/api/fatture-in-cloud/fiscal-data', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Errore nel salvataggio dati fiscali');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/fiscal-data'] });
+      toast({
+        title: "✅ Dati fiscali salvati",
+        description: "I dati fiscali dell'azienda sono stati salvati con successo"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
         description: error.message,
         variant: "destructive"
       });
@@ -621,6 +703,170 @@ const FattureInCloudConfig: React.FC = () => {
                 <div className="text-center py-8 text-gray-500">
                   <Building className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>Clicca su "Carica Aziende" per visualizzare le aziende disponibili</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileCheck className="w-5 h-5" />
+                Dati Fiscali Azienda
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {fiscalDataQuery.isLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+                  Caricamento dati fiscali...
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <Alert>
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>
+                      Inserisci i dati fiscali dell'azienda. Questi dati verranno utilizzati nei documenti DDT come mittente.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="ragioneSociale">Ragione Sociale *</Label>
+                      <Input
+                        id="ragioneSociale"
+                        value={fiscalData.ragioneSociale}
+                        onChange={(e) => setFiscalData({ ...fiscalData, ragioneSociale: e.target.value })}
+                        placeholder="Es: MITO SRL"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <Label htmlFor="indirizzo">Indirizzo *</Label>
+                      <Input
+                        id="indirizzo"
+                        value={fiscalData.indirizzo}
+                        onChange={(e) => setFiscalData({ ...fiscalData, indirizzo: e.target.value })}
+                        placeholder="Es: Via Roma 123"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="cap">CAP</Label>
+                      <Input
+                        id="cap"
+                        value={fiscalData.cap}
+                        onChange={(e) => setFiscalData({ ...fiscalData, cap: e.target.value })}
+                        placeholder="Es: 30100"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="citta">Città *</Label>
+                      <Input
+                        id="citta"
+                        value={fiscalData.citta}
+                        onChange={(e) => setFiscalData({ ...fiscalData, citta: e.target.value })}
+                        placeholder="Es: Venezia"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="provincia">Provincia</Label>
+                      <Input
+                        id="provincia"
+                        value={fiscalData.provincia}
+                        onChange={(e) => setFiscalData({ ...fiscalData, provincia: e.target.value })}
+                        placeholder="Es: VE"
+                        maxLength={2}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="partitaIva">Partita IVA *</Label>
+                      <Input
+                        id="partitaIva"
+                        value={fiscalData.partitaIva}
+                        onChange={(e) => setFiscalData({ ...fiscalData, partitaIva: e.target.value })}
+                        placeholder="Es: IT12345678901"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="codiceFiscale">Codice Fiscale</Label>
+                      <Input
+                        id="codiceFiscale"
+                        value={fiscalData.codiceFiscale}
+                        onChange={(e) => setFiscalData({ ...fiscalData, codiceFiscale: e.target.value })}
+                        placeholder="Es: 12345678901"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="telefono">Telefono</Label>
+                      <Input
+                        id="telefono"
+                        value={fiscalData.telefono}
+                        onChange={(e) => setFiscalData({ ...fiscalData, telefono: e.target.value })}
+                        placeholder="Es: +39 041 1234567"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={fiscalData.email}
+                        onChange={(e) => setFiscalData({ ...fiscalData, email: e.target.value })}
+                        placeholder="Es: info@azienda.it"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <Label htmlFor="logoPath">Logo Aziendale</Label>
+                      {logosQuery.data?.logos && logosQuery.data.logos.length > 0 ? (
+                        <Select
+                          value={fiscalData.logoPath}
+                          onValueChange={(value) => setFiscalData({ ...fiscalData, logoPath: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleziona un logo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {logosQuery.data.logos.map((logo: any) => (
+                              <SelectItem key={logo.path} value={logo.path}>
+                                {logo.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          id="logoPath"
+                          value={fiscalData.logoPath}
+                          onChange={(e) => setFiscalData({ ...fiscalData, logoPath: e.target.value })}
+                          placeholder="/assets/logos/azienda.png"
+                        />
+                      )}
+                      <p className="text-sm text-gray-500 mt-1">
+                        Percorso del logo da utilizzare nei DDT
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => saveFiscalDataMutation.mutate(fiscalData)}
+                    disabled={saveFiscalDataMutation.isPending || !fiscalData.ragioneSociale || !fiscalData.indirizzo || !fiscalData.citta || !fiscalData.partitaIva}
+                    className="w-full md:w-auto"
+                  >
+                    {saveFiscalDataMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    Salva Dati Fiscali
+                  </Button>
                 </div>
               )}
             </CardContent>
