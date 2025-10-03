@@ -200,6 +200,64 @@ export default function AdvancedSales() {
     }
   });
 
+  // Carica sacchi esistenti quando si seleziona una vendita
+  useEffect(() => {
+    if (currentSaleId && activeTab === "config") {
+      apiRequest(`/api/advanced-sales/${currentSaleId}`)
+        .then((response: any) => {
+          // Carica sacchi esistenti
+          if (response.bags && response.bags.length > 0) {
+            const loadedBags: BagConfiguration[] = response.bags.map((bag: any) => ({
+              sizeCode: bag.sizeCode,
+              animalCount: bag.animalCount,
+              originalWeight: bag.originalWeight,
+              weightLoss: bag.weightLoss || 0,
+              wastePercentage: bag.wastePercentage || 0,
+              originalAnimalsPerKg: bag.originalAnimalsPerKg,
+              notes: bag.notes || "",
+              allocations: bag.allocations.map((alloc: any) => ({
+                sourceOperationId: alloc.sourceOperationId,
+                sourceBasketId: alloc.sourceBasketId,
+                allocatedAnimals: alloc.allocatedAnimals,
+                allocatedWeight: alloc.allocatedWeight,
+                sourceAnimalsPerKg: alloc.sourceAnimalsPerKg,
+                sourceSizeCode: alloc.sourceSizeCode
+              }))
+            }));
+            setBagConfigs(loadedBags);
+          } else {
+            setBagConfigs([]);
+          }
+
+          // Carica operazioni disponibili
+          if (response.operations && response.operations.length > 0) {
+            const supply: Record<number, BasketSupply> = {};
+            response.operations.forEach((op: any) => {
+              supply[op.basketId] = {
+                basketId: op.basketId,
+                basketPhysicalNumber: op.basketPhysicalNumber,
+                operationId: op.operationId,
+                sizeCode: "", // Non disponibile in questo endpoint
+                sizeName: "",
+                totalAnimals: op.originalAnimals,
+                totalWeightKg: op.originalWeight / 1000,
+                animalsPerKg: op.originalAnimalsPerKg
+              };
+            });
+            setBaseSupplyByBasket(supply);
+          }
+        })
+        .catch((error: any) => {
+          console.error("Errore nel caricamento dei sacchi:", error);
+          toast({
+            title: "Errore",
+            description: "Impossibile caricare i dettagli della vendita",
+            variant: "destructive"
+          });
+        });
+    }
+  }, [currentSaleId, activeTab]);
+
   const handleOperationSelect = (operationId: number, checked: boolean) => {
     if (checked) {
       setSelectedOperations(prev => [...prev, operationId]);
