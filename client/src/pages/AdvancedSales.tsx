@@ -445,6 +445,36 @@ export default function AdvancedSales() {
     generateDDTMutation.mutate(saleId);
   };
 
+  const sendDDTToFICMutation = useMutation({
+    mutationFn: async (ddtId: number) => {
+      return await apiRequest(`/api/ddt/${ddtId}/send-to-fic`, {
+        method: 'POST'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
+      toast({
+        title: "Successo",
+        description: "DDT inviato con successo a Fatture in Cloud",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore nell'invio del DDT a Fatture in Cloud",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSendDDTToFIC = (ddtId: number) => {
+    sendDDTToFICMutation.mutate(ddtId);
+  };
+
+  const handleDownloadDDTPDF = (ddtId: number) => {
+    window.open(`/api/ddt/${ddtId}/pdf`, '_blank');
+  };
+
   const handleOpenReport = (saleId: number) => {
     window.open(`/api/advanced-sales/${saleId}/report.pdf`, '_blank');
   };
@@ -775,19 +805,70 @@ export default function AdvancedSales() {
                             )}
 
                             {sale.status === 'confirmed' && sale.totalBags > 0 && (
-                              <Button 
-                                variant={sale.ddtStatus === 'inviato' ? 'secondary' : 'default'}
-                                size="sm"
-                                onClick={() => handleGenerateDDT(sale.id)}
-                                disabled={sale.ddtStatus === 'inviato' || generateDDTMutation.isPending}
-                                className={sale.ddtStatus !== 'inviato' ? 'bg-green-600 hover:bg-green-700' : ''}
-                                title={sale.ddtStatus === 'inviato' ? 'DDT già generato' : 'Genera Documento di Trasporto'}
-                                data-testid={`button-generate-ddt-${sale.id}`}
-                              >
-                                <Truck className="h-4 w-4 mr-1" />
-                                {sale.ddtStatus === 'inviato' ? 'DDT Inviato' : 
-                                 sale.ddtStatus === 'locale' ? 'DDT Locale' : 'Genera DDT'}
-                              </Button>
+                              <>
+                                {sale.ddtStatus === 'nessuno' && (
+                                  <Button 
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleGenerateDDT(sale.id)}
+                                    disabled={generateDDTMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700"
+                                    title="Genera Documento di Trasporto"
+                                    data-testid={`button-generate-ddt-${sale.id}`}
+                                  >
+                                    <Truck className="h-4 w-4 mr-1" />
+                                    Genera DDT
+                                  </Button>
+                                )}
+
+                                {sale.ddtStatus === 'locale' && sale.ddtId && (
+                                  <>
+                                    <Button 
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDownloadDDTPDF(sale.ddtId!)}
+                                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                                      title="Scarica PDF DDT"
+                                      data-testid={`button-download-ddt-pdf-${sale.id}`}
+                                    >
+                                      <FileText className="h-4 w-4 mr-1" />
+                                      PDF DDT
+                                    </Button>
+                                    
+                                    <Button 
+                                      variant="default"
+                                      size="sm"
+                                      onClick={() => handleSendDDTToFIC(sale.ddtId!)}
+                                      disabled={sendDDTToFICMutation.isPending}
+                                      className="bg-purple-600 hover:bg-purple-700"
+                                      title="Invia DDT a Fatture in Cloud"
+                                      data-testid={`button-send-ddt-fic-${sale.id}`}
+                                    >
+                                      <Truck className="h-4 w-4 mr-1" />
+                                      Invia a FIC
+                                    </Button>
+                                  </>
+                                )}
+
+                                {sale.ddtStatus === 'inviato' && sale.ddtId && (
+                                  <>
+                                    <Badge variant="default" className="bg-green-600">
+                                      DDT Inviato
+                                    </Badge>
+                                    <Button 
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDownloadDDTPDF(sale.ddtId!)}
+                                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                                      title="Scarica PDF DDT"
+                                      data-testid={`button-download-ddt-pdf-${sale.id}`}
+                                    >
+                                      <FileText className="h-4 w-4 mr-1" />
+                                      PDF DDT
+                                    </Button>
+                                  </>
+                                )}
+                              </>
                             )}
 
                             {sale.status === 'draft' && (

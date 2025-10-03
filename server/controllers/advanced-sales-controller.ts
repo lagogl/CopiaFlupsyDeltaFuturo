@@ -1151,3 +1151,287 @@ export async function generatePDFReport(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Genera PDF del DDT
+ */
+export async function generateDDTPDF(req: Request, res: Response) {
+  try {
+    const { ddtId } = req.params;
+    
+    if (!ddtId) {
+      return res.status(400).json({
+        success: false,
+        error: "ID DDT richiesto"
+      });
+    }
+
+    // Recupera DDT
+    const ddtResult = await db.select().from(ddt).where(eq(ddt.id, parseInt(ddtId))).limit(1);
+    
+    if (ddtResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "DDT non trovato"
+      });
+    }
+
+    const ddtData = ddtResult[0];
+
+    // Recupera righe DDT
+    const righe = await db.select().from(ddtRighe).where(eq(ddtRighe.ddtId, parseInt(ddtId))).orderBy(ddtRighe.id);
+
+    // Genera PDF usando pdfkit
+    const PDFDocument = (await import('pdfkit')).default;
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'portrait',
+      margin: 50
+    });
+
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(chunks);
+      res.contentType('application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="DDT_${ddtData.numero}_${ddtData.data}.pdf"`);
+      res.send(pdfBuffer);
+    });
+
+    const margin = 50;
+    const tableWidth = doc.page.width - (2 * margin);
+
+    // Intestazione
+    doc.fontSize(20).fillColor('#1e40af').text(`DOCUMENTO DI TRASPORTO #${ddtData.numero}`, margin, margin);
+    doc.fontSize(10).fillColor('#64748b').text(`Data: ${new Date(ddtData.data).toLocaleDateString('it-IT')}`, margin, doc.y);
+    doc.text(`Stato: ${ddtData.ddtStato === 'inviato' ? 'Inviato a FIC' : 'Locale'}`, margin, doc.y);
+    doc.moveDown(1.5);
+
+    // Dati cliente
+    doc.fontSize(14).fillColor('#000').text('Destinatario', margin, doc.y, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10);
+    doc.text(ddtData.clienteNome || '', margin, doc.y);
+    if (ddtData.clienteIndirizzo) doc.text(ddtData.clienteIndirizzo, margin, doc.y);
+    if (ddtData.clienteCitta) doc.text(`${ddtData.clienteCap || ''} ${ddtData.clienteCitta} (${ddtData.clienteProvincia || ''})`, margin, doc.y);
+    if (ddtData.clientePaese && ddtData.clientePaese !== 'Italia') doc.text(ddtData.clientePaese, margin, doc.y);
+    if (ddtData.clientePiva) doc.text(`P.IVA: ${ddtData.clientePiva}`, margin, doc.y);
+    if (ddtData.clienteCodiceFiscale && ddtData.clienteCodiceFiscale !== ddtData.clientePiva) doc.text(`C.F.: ${ddtData.clienteCodiceFiscale}`, margin, doc.y);
+    doc.moveDown(1.5);
+
+    // Tabella righe DDT
+    doc.fontSize(12).fillColor('#000').text('Dettaglio Merce', margin, doc.y, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(9);
+
+    // Headers
+    const col1Width = tableWidth * 0.60;  // Descrizione
+    const col2Width = tableWidth * 0.20;  // Quantità
+    const col3Width = tableWidth * 0.20;  // U.M.
+
+    let currentY = doc.y;
+    let xPos = margin;
+    doc.text('Descrizione', xPos, currentY, { width: col1Width, continued: false });
+    xPos += col1Width;
+    doc.text('Quantità', xPos, currentY, { width: col2Width, continued: false });
+    xPos += col2Width;
+    doc.text('U.M.', xPos, currentY, { width: col3Width, continued: false });
+
+    doc.moveDown(0.5);
+
+    // Righe
+    for (const riga of righe) {
+      currentY = doc.y;
+      xPos = margin;
+      
+      // Evidenzia i subtotali
+      const isSubtotal = riga.descrizione?.startsWith('SUBTOTALE');
+      if (isSubtotal) {
+        doc.font('Helvetica-Bold');
+      }
+      
+      doc.text(riga.descrizione || '', xPos, currentY, { width: col1Width, continued: false });
+      xPos += col1Width;
+      doc.text(parseFloat(riga.quantita || '0').toLocaleString('it-IT'), xPos, currentY, { width: col2Width, continued: false });
+      xPos += col2Width;
+      doc.text(riga.unitaMisura || '', xPos, currentY, { width: col3Width, continued: false });
+      
+      if (isSubtotal) {
+        doc.font('Helvetica');
+      }
+      
+      doc.moveDown(0.3);
+    }
+
+    doc.moveDown(1);
+
+    // Totali
+    doc.fontSize(12).fillColor('#000').text('Totali', margin, doc.y, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10);
+    doc.text(`Colli: ${ddtData.totaleColli || 0}`);
+    doc.text(`Peso totale: ${parseFloat(ddtData.pesoTotale || '0').toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`);
+
+    if (ddtData.note) {
+      doc.moveDown(1);
+      doc.fontSize(10).fillColor('#666').text(`Note: ${ddtData.note}`);
+    }
+
+    // Footer
+    doc.fontSize(8).fillColor('#999').text(
+      `DDT generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')} - FLUPSY Management System - MITO SRL`,
+      margin,
+      doc.page.height - 70,
+      { align: 'center', width: tableWidth }
+    );
+
+    doc.end();
+
+  } catch (error) {
+    console.error("Errore nella generazione PDF DDT:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore nella generazione del PDF DDT"
+    });
+  }
+}
+
+/**
+ * Invia DDT a Fatture in Cloud
+ */
+export async function sendDDTToFIC(req: Request, res: Response) {
+  try {
+    const { ddtId } = req.params;
+    
+    if (!ddtId) {
+      return res.status(400).json({
+        success: false,
+        error: "ID DDT richiesto"
+      });
+    }
+
+    // Recupera DDT
+    const ddtResult = await db.select().from(ddt).where(eq(ddt.id, parseInt(ddtId))).limit(1);
+    
+    if (ddtResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "DDT non trovato"
+      });
+    }
+
+    const ddtData = ddtResult[0];
+
+    // Verifica se già inviato
+    if (ddtData.ddtStato === 'inviato') {
+      return res.status(400).json({
+        success: false,
+        error: "DDT già inviato a Fatture in Cloud"
+      });
+    }
+
+    // Recupera configurazione OAuth2
+    const { default: axios } = await import('axios');
+    const configResult = await db.select().from(fattureInCloudConfig).limit(1);
+    
+    if (configResult.length === 0 || !configResult[0].accessToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Configurazione Fatture in Cloud non trovata o token non valido"
+      });
+    }
+
+    const config = configResult[0];
+    const FATTURE_IN_CLOUD_API_BASE = 'https://api-v2.fattureincloud.it';
+    const companyId = process.env.FATTURE_IN_CLOUD_COMPANY_ID;
+
+    // Funzione helper per chiamate API con retry
+    async function apiRequest(method: string, endpoint: string, data?: any) {
+      const url = `${FATTURE_IN_CLOUD_API_BASE}/c/${companyId}${endpoint}`;
+      
+      try {
+        return await axios({
+          method,
+          url,
+          headers: {
+            'Authorization': `Bearer ${config.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          data
+        });
+      } catch (error: any) {
+        if (error.response?.status === 401) {
+          throw new Error('Token scaduto. Riautenticare.');
+        }
+        throw error;
+      }
+    }
+
+    // Recupera righe DDT
+    const righe = await db.select().from(ddtRighe).where(eq(ddtRighe.ddtId, parseInt(ddtId))).orderBy(ddtRighe.id);
+
+    // Prepara payload per Fatture in Cloud
+    const ddtPayload = {
+      data: {
+        type: 'delivery_note',
+        entity: {
+          name: ddtData.clienteNome,
+          address_street: ddtData.clienteIndirizzo || '',
+          address_city: ddtData.clienteCitta || '',
+          address_postal_code: ddtData.clienteCap || '',
+          address_province: ddtData.clienteProvincia || '',
+          country: ddtData.clientePaese || 'Italia',
+          vat_number: ddtData.clientePiva || '',
+          tax_code: ddtData.clienteCodiceFiscale || ''
+        },
+        date: ddtData.data,
+        number: ddtData.numero,
+        items_list: righe.map(riga => ({
+          name: riga.descrizione,
+          qty: parseFloat(riga.quantita || '0'),
+          measure: riga.unitaMisura,
+          net_price: parseFloat(riga.prezzoUnitario || '0')
+        })),
+        template: {
+          id: null,
+          locked: false
+        },
+        delivery_note_template: null
+      }
+    };
+    
+    // Invia a Fatture in Cloud
+    const ficResponse = await apiRequest('POST', '/issued_documents', ddtPayload);
+    
+    // Aggiorna DDT con ID esterno
+    await db.update(ddt).set({
+      fattureInCloudId: ficResponse.data.data.id?.toString(),
+      fattureInCloudNumero: ficResponse.data.data.numeration || ddtData.numero,
+      ddtStato: 'inviato',
+      updatedAt: new Date()
+    }).where(eq(ddt.id, parseInt(ddtId)));
+    
+    // Aggiorna anche la vendita associata
+    if (ddtData.advancedSaleId) {
+      await db.update(advancedSales).set({
+        ddtStatus: 'inviato',
+        updatedAt: new Date()
+      }).where(eq(advancedSales.id, ddtData.advancedSaleId));
+    }
+
+    res.json({
+      success: true,
+      ddtId: parseInt(ddtId),
+      fattureInCloudId: ficResponse.data.data.id,
+      numero: ficResponse.data.data.numeration || ddtData.numero,
+      message: 'DDT inviato con successo a Fatture in Cloud'
+    });
+    
+  } catch (error: any) {
+    console.error("Errore nell'invio DDT a Fatture in Cloud:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Errore nell'invio del DDT a Fatture in Cloud"
+    });
+  }
+}
