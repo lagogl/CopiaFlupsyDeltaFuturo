@@ -1255,25 +1255,51 @@ export async function generatePDFReport(req: Request, res: Response) {
 
     currentY += 20;
 
-    // Totali con box (altezza aumentata per evitare che il testo venga tagliato)
-    doc.rect(margin, currentY, tableWidth, 110).stroke();
-    currentY += 15;
+    // Calcola altezza necessaria per box RIEPILOGO TOTALE
+    const summaryBoxPadding = 15;
+    const summaryTitleHeight = 20;
+    const summaryLineHeight = 20;
+    const summaryLinesCount = 3; // Sacchi, Animali, Peso
+    const summaryBoxHeight = summaryBoxPadding + summaryTitleHeight + (summaryLineHeight * summaryLinesCount) + summaryBoxPadding;
+    
+    // Controlla se c'è spazio sufficiente sulla pagina corrente
+    const pageBottomLimit = doc.page.height - doc.page.margins.bottom - 50; // 50px di margine extra
+    if (currentY + summaryBoxHeight > pageBottomLimit) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
+
+    // Totali con box
+    doc.rect(margin, currentY, tableWidth, summaryBoxHeight).stroke();
+    currentY += summaryBoxPadding;
     
     doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold').text('RIEPILOGO TOTALE', margin + 10, currentY);
-    currentY += 25;
+    currentY += summaryTitleHeight;
     
     doc.fontSize(10).fillColor('#000').font('Helvetica');
     doc.text(`Sacchi totali: ${saleData.totalBags || 0}`, margin + 10, currentY);
-    currentY += 20;
+    currentY += summaryLineHeight;
     doc.text(`Animali totali: ${(saleData.totalAnimals || 0).toLocaleString('it-IT')}`, margin + 10, currentY);
-    currentY += 20;
+    currentY += summaryLineHeight;
     doc.text(`Peso totale: ${((saleData.totalWeight || 0) / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, margin + 10, currentY);
     
-    currentY += 25;
+    currentY += summaryBoxPadding;
 
     if (saleData.notes) {
       currentY += 30;
-      doc.fontSize(10).fillColor('#666').text(`Note: ${saleData.notes}`, margin, currentY);
+      
+      // Calcola altezza necessaria per le note
+      doc.fontSize(10);
+      const notesHeight = doc.heightOfString(`Note: ${saleData.notes}`, { width: tableWidth });
+      const notesBottomLimit = doc.page.height - doc.page.margins.bottom - 80; // spazio per footer
+      
+      // Controlla se c'è spazio sufficiente per le note
+      if (currentY + notesHeight > notesBottomLimit) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      
+      doc.fillColor('#666').text(`Note: ${saleData.notes}`, margin, currentY, { width: tableWidth });
     }
 
     // Footer
