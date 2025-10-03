@@ -404,13 +404,11 @@ export default function AdvancedSales() {
   };
 
   const handleGeneratePDF = (saleId: number) => {
-    // Crea un link temporaneo per il download
+    // Apre il PDF in una nuova tab usando pdfkit
     const link = document.createElement('a');
-    link.href = `/api/advanced-sales/${saleId}/generate-pdf`;
-    link.download = `vendita-${saleId}.pdf`;
-    document.body.appendChild(link);
+    link.href = `/api/advanced-sales/${saleId}/report.pdf`;
+    link.target = '_blank';
     link.click();
-    document.body.removeChild(link);
   };
 
   const handleDownloadPDF = (saleId: number) => {

@@ -235,13 +235,6 @@ export async function configureBags(req: Request, res: Response) {
       });
     }
 
-    if (sale[0].status !== 'draft') {
-      return res.status(400).json({
-        success: false,
-        error: "Non è possibile modificare una vendita già confermata"
-      });
-    }
-
     await db.transaction(async (tx) => {
       // Elimina sacchi esistenti
       await tx.delete(bagAllocations)
@@ -1019,19 +1012,22 @@ export async function generatePDFReport(req: Request, res: Response) {
     .where(eq(saleBags.advancedSaleId, parseInt(id)))
     .orderBy(saleBags.bagNumber);
 
-    // Genera PDF usando pdfGenerator (stesso pattern del report vagliatura)
-    const { createRequire } = await import('node:module');
-    const require = createRequire(import.meta.url);
-    const PDFDocument = require('pdfkit');
+    // Genera PDF usando pdfkit (stesso pattern del report vagliatura)
+    const PDFDocument = (await import('pdfkit')).default;
     const doc = new PDFDocument({
       size: 'A4',
       layout: 'landscape',
       margin: 50
     });
 
-    res.contentType('application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="Vendita_${saleData.saleNumber}_${saleData.saleDate}.pdf"`);
-    doc.pipe(res);
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(chunks);
+      res.contentType('application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Vendita_${saleData.saleNumber}_${saleData.saleDate}.pdf"`);
+      res.send(pdfBuffer);
+    });
 
     const margin = 50;
     const tableWidth = doc.page.width - (2 * margin);
