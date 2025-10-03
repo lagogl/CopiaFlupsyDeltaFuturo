@@ -1256,7 +1256,7 @@ export async function generatePDFReport(req: Request, res: Response) {
     currentY += 20;
 
     // Totali con box
-    doc.rect(margin, currentY, tableWidth, 65).stroke();
+    doc.rect(margin, currentY, tableWidth, 80).stroke();
     currentY += 10;
     
     doc.fontSize(12).fillColor('#1e40af').font('Helvetica-Bold').text('RIEPILOGO TOTALE', margin + 10, currentY);
@@ -1268,6 +1268,8 @@ export async function generatePDFReport(req: Request, res: Response) {
     doc.text(`Animali totali: ${(saleData.totalAnimals || 0).toLocaleString('it-IT')}`, margin + 10, currentY);
     currentY += 15;
     doc.text(`Peso totale: ${((saleData.totalWeight || 0) / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, margin + 10, currentY);
+    
+    currentY += 15;
 
     if (saleData.notes) {
       currentY += 30;
