@@ -23,7 +23,8 @@ import {
   screeningOperations,
   screeningSourceBaskets,
   screeningDestinationBaskets,
-  notifications
+  notifications,
+  fattureInCloudConfig
 } from "../shared/schema";
 import { registerAIRoutes } from "./controllers/ai-controller";
 import { 
@@ -8074,7 +8075,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mortalityPct = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0.00';
       
       // Recupera dati fiscali dalla configurazione attiva
-      const companiesResult = await db.select().from(fattureInCloudConfig).where(eq(fattureInCloudConfig.isActive, true)).limit(1);
+      const companiesResult = await db.select()
+        .from(fattureInCloudConfig)
+        .where(eq(fattureInCloudConfig.isActive, sql`true`))
+        .limit(1);
       const companyData = companiesResult.length > 0 ? companiesResult[0] : null;
 
       // Genera PDF con PDFKit in formato orizzontale
