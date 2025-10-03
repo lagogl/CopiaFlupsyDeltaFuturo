@@ -7,7 +7,8 @@ import { db } from "../db";
 import { eq, desc, and, gte, lte, sql, isNotNull, inArray } from "drizzle-orm";
 import { pdfGenerator } from "../services/pdf-generator";
 import path from "path";
-import fs from "fs/promises";
+import fs from "fs";
+import fsPromises from "fs/promises";
 import { 
   advancedSales,
   saleBags,
@@ -1238,11 +1239,42 @@ export async function generateDDTPDF(req: Request, res: Response) {
     const margin = 50;
     const tableWidth = doc.page.width - (2 * margin);
 
+    // Logo aziendale (se presente)
+    let yPosition = margin;
+    if (ddtData.mittenteLogoPath) {
+      try {
+        const logoPath = path.join(process.cwd(), 'attached_assets', 'logos', path.basename(ddtData.mittenteLogoPath));
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, margin, yPosition, { width: 80, height: 40, fit: [80, 40] });
+          yPosition += 50;
+        }
+      } catch (error) {
+        console.error('Errore caricamento logo:', error);
+      }
+    }
+
     // Intestazione
-    doc.fontSize(20).fillColor('#1e40af').text(`DOCUMENTO DI TRASPORTO #${ddtData.numero}`, margin, margin);
+    doc.fontSize(20).fillColor('#1e40af').text(`DOCUMENTO DI TRASPORTO #${ddtData.numero}`, margin, yPosition);
     doc.fontSize(10).fillColor('#64748b').text(`Data: ${new Date(ddtData.data).toLocaleDateString('it-IT')}`, margin, doc.y);
     doc.text(`Stato: ${ddtData.ddtStato === 'inviato' ? 'Inviato a FIC' : 'Locale'}`, margin, doc.y);
     doc.moveDown(1.5);
+
+    // Dati mittente
+    if (ddtData.mittenteRagioneSociale) {
+      doc.fontSize(14).fillColor('#000').text('Mittente', margin, doc.y, { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#000');
+      doc.text(ddtData.mittenteRagioneSociale, margin, doc.y);
+      if (ddtData.mittenteIndirizzo) doc.text(ddtData.mittenteIndirizzo, margin, doc.y);
+      if (ddtData.mittenteCitta) doc.text(`${ddtData.mittenteCap || ''} ${ddtData.mittenteCitta} (${ddtData.mittenteProvincia || ''})`, margin, doc.y);
+      if (ddtData.mittentePartitaIva) doc.text(`P.IVA: ${ddtData.mittentePartitaIva}`, margin, doc.y);
+      if (ddtData.mittenteCodiceFiscale && ddtData.mittenteCodiceFiscale !== ddtData.mittentePartitaIva) {
+        doc.text(`C.F.: ${ddtData.mittenteCodiceFiscale}`, margin, doc.y);
+      }
+      if (ddtData.mittenteEmail) doc.text(`Email: ${ddtData.mittenteEmail}`, margin, doc.y);
+      if (ddtData.mittenteTelefono) doc.text(`Tel: ${ddtData.mittenteTelefono}`, margin, doc.y);
+      doc.moveDown(1.5);
+    }
 
     // Dati cliente
     doc.fontSize(14).fillColor('#000').text('Destinatario', margin, doc.y, { underline: true });
