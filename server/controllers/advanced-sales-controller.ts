@@ -1572,6 +1572,49 @@ export async function generateDDTPDF(req: Request, res: Response) {
 }
 
 /**
+ * Helper per recuperare valori dalla tabella configurazione
+ */
+async function getConfigValue(chiave: string): Promise<string | null> {
+  const configResult = await db.select()
+    .from(configurazione)
+    .where(eq(configurazione.chiave, chiave))
+    .limit(1);
+  return configResult.length > 0 ? configResult[0].valore : null;
+}
+
+/**
+ * Helper per chiamate API Fatture in Cloud
+ */
+async function ficApiRequest(method: string, companyId: string, accessToken: string, endpoint: string, data?: any) {
+  const { default: axios } = await import('axios');
+  const FATTURE_IN_CLOUD_API_BASE = 'https://api-v2.fattureincloud.it';
+  const url = `${FATTURE_IN_CLOUD_API_BASE}/c/${companyId}${endpoint}`;
+  
+  console.log(`🔗 FIC API Request: ${method} ${url}`);
+  
+  try {
+    return await axios({
+      method,
+      url,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      data
+    });
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      throw new Error('Token scaduto. Riautenticare dalla pagina Fatture in Cloud.');
+    }
+    if (error.response?.data) {
+      console.error('FIC API Error:', error.response.data);
+      throw new Error(error.response.data.error?.message || error.message);
+    }
+    throw error;
+  }
+}
+
+/**
  * Invia DDT a Fatture in Cloud
  */
 export async function sendDDTToFIC(req: Request, res: Response) {
@@ -1611,17 +1654,6 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     }
 
     // Recupera configurazione OAuth2 dalla tabella configurazione
-    const { default: axios } = await import('axios');
-    
-    // Helper per recuperare valori di configurazione
-    async function getConfigValue(chiave: string): Promise<string | null> {
-      const configResult = await db.select()
-        .from(configurazione)
-        .where(eq(configurazione.chiave, chiave))
-        .limit(1);
-      return configResult.length > 0 ? configResult[0].valore : null;
-    }
-    
     const accessToken = await getConfigValue('fatture_in_cloud_access_token');
     const companyId = await getConfigValue('fatture_in_cloud_company_id');
     
@@ -1637,36 +1669,6 @@ export async function sendDDTToFIC(req: Request, res: Response) {
         success: false,
         error: "ID azienda Fatture in Cloud mancante."
       });
-    }
-
-    const FATTURE_IN_CLOUD_API_BASE = 'https://api-v2.fattureincloud.it';
-
-    // Funzione helper per chiamate API
-    async function apiRequest(method: string, endpoint: string, data?: any) {
-      const url = `${FATTURE_IN_CLOUD_API_BASE}/c/${companyId}${endpoint}`;
-      
-      console.log(`🔗 FIC API Request: ${method} ${url}`);
-      
-      try {
-        return await axios({
-          method,
-          url,
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          data
-        });
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-          throw new Error('Token scaduto. Riautenticare dalla pagina Fatture in Cloud.');
-        }
-        if (error.response?.data) {
-          console.error('FIC API Error:', error.response.data);
-          throw new Error(error.response.data.error?.message || error.message);
-        }
-        throw error;
-      }
     }
 
     // Recupera righe DDT
@@ -1703,7 +1705,10 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     };
     
     // Invia a Fatture in Cloud
-    const ficResponse = await apiRequest('POST', '/issued_documents', ddtPayload);
+    console.log(`🚀 Invio DDT ${ddtData.numero} a Fatture in Cloud...`);
+    const ficResponse = await ficApiRequest('POST', companyId, accessToken, '/issued_documents', ddtPayload);
+    
+    console.log(`✅ DDT inviato con successo! FIC ID: ${ficResponse.data.data.id}`);
     
     // Aggiorna DDT con ID esterno
     await db.update(ddt).set({
@@ -1712,14 +1717,6 @@ export async function sendDDTToFIC(req: Request, res: Response) {
       ddtStato: 'inviato',
       updatedAt: new Date()
     }).where(eq(ddt.id, parseInt(ddtId)));
-    
-    // Aggiorna anche la vendita associata
-    if (ddtData.advancedSaleId) {
-      await db.update(advancedSales).set({
-        ddtStatus: 'inviato',
-        updatedAt: new Date()
-      }).where(eq(advancedSales.id, ddtData.advancedSaleId));
-    }
 
     res.json({
       success: true,

@@ -84,6 +84,7 @@ export default function AdvancedSales() {
   const [showBagConfig, setShowBagConfig] = useState(false);
   const [currentSaleId, setCurrentSaleId] = useState<number | null>(null);
   const [bagConfigs, setBagConfigs] = useState<BagConfiguration[]>([]);
+  const [sendingDDTId, setSendingDDTId] = useState<number | null>(null);
   const [baseSupplyByBasket, setBaseSupplyByBasket] = useState<Record<number, BasketSupply>>({});
   const [openCustomerCombobox, setOpenCustomerCombobox] = useState(false);
 
@@ -447,11 +448,13 @@ export default function AdvancedSales() {
 
   const sendDDTToFICMutation = useMutation({
     mutationFn: async (ddtId: number) => {
+      setSendingDDTId(ddtId);
       return await apiRequest(`/api/ddt/${ddtId}/send-to-fic`, {
         method: 'POST'
       });
     },
     onSuccess: () => {
+      setSendingDDTId(null);
       queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
       toast({
         title: "Successo",
@@ -459,6 +462,7 @@ export default function AdvancedSales() {
       });
     },
     onError: (error: any) => {
+      setSendingDDTId(null);
       toast({
         title: "Errore",
         description: error.message || "Errore nell'invio del DDT a Fatture in Cloud",
@@ -839,13 +843,13 @@ export default function AdvancedSales() {
                                       variant="default"
                                       size="sm"
                                       onClick={() => handleSendDDTToFIC(sale.ddtId!)}
-                                      disabled={sendDDTToFICMutation.isPending}
+                                      disabled={sendingDDTId === sale.ddtId}
                                       className="bg-purple-600 hover:bg-purple-700"
                                       title="Invia DDT a Fatture in Cloud"
                                       data-testid={`button-send-ddt-fic-${sale.id}`}
                                     >
                                       <Truck className="h-4 w-4 mr-1" />
-                                      Invia a FIC
+                                      {sendingDDTId === sale.ddtId ? 'Invio...' : 'Invia a FIC'}
                                     </Button>
                                   </>
                                 )}
