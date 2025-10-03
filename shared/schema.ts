@@ -1027,6 +1027,18 @@ export const ddt = pgTable("ddt", {
   clientePiva: text("cliente_piva"),
   clienteCodiceFiscale: text("cliente_codice_fiscale"),
   clientePaese: text("cliente_paese").default("Italia"),
+  // Collegamento all'azienda e snapshot dati fiscali mittente
+  companyId: integer("company_id"),
+  mittenteRagioneSociale: text("mittente_ragione_sociale"),
+  mittenteIndirizzo: text("mittente_indirizzo"),
+  mittenteCap: text("mittente_cap"),
+  mittenteCitta: text("mittente_citta"),
+  mittenteProvincia: text("mittente_provincia"),
+  mittentePartitaIva: text("mittente_partita_iva"),
+  mittenteCodiceFiscale: text("mittente_codice_fiscale"),
+  mittenteTelefono: text("mittente_telefono"),
+  mittenteEmail: text("mittente_email"),
+  mittenteLogoPath: text("mittente_logo_path"),
   // Dati trasporto e totali
   totaleColli: integer("totale_colli").notNull().default(0),
   pesoTotale: decimal("peso_totale", { precision: 10, scale: 2 }).notNull().default("0"),
