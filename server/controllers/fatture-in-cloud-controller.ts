@@ -16,6 +16,9 @@ import {
   insertDdtRigheSchema
 } from '@shared/schema';
 import { eq, desc } from 'drizzle-orm';
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
 
@@ -1006,6 +1009,231 @@ router.get('/test', async (req: Request, res: Response) => {
       status: "errore",
       message: error.message || 'Errore nella connessione a Fatture in Cloud',
       details: error.response?.data || null
+    });
+  }
+});
+
+// GET /ddt/:id/pdf - Genera e scarica PDF del DDT
+router.get('/ddt/:id/pdf', async (req: Request, res: Response) => {
+  try {
+    const ddtId = parseInt(req.params.id);
+    
+    // Recupera DDT
+    const ddtResult = await db.select().from(ddt).where(eq(ddt.id, ddtId)).limit(1);
+    
+    if (ddtResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'DDT non trovato'
+      });
+    }
+    
+    const ddtData = ddtResult[0];
+    
+    // Recupera righe DDT
+    const righe = await db.select()
+      .from(ddtRighe)
+      .where(eq(ddtRighe.ddtId, ddtId))
+      .orderBy(ddtRighe.id);
+    
+    // Crea documento PDF (landscape per più spazio)
+    const doc = new PDFDocument({ 
+      size: 'A4',
+      layout: 'landscape',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+    });
+    
+    // Set headers per download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=DDT-${ddtData.numero}-${ddtData.data}.pdf`);
+    
+    // Pipe PDF al response
+    doc.pipe(res);
+    
+    const pageWidth = 842; // A4 landscape width
+    const pageHeight = 595; // A4 landscape height
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    let yPosition = margin;
+    
+    // === HEADER CON LOGO E DATI MITTENTE ===
+    // Logo aziendale (se presente)
+    if (ddtData.mittenteLogoPath) {
+      try {
+        const logoPath = path.join(process.cwd(), 'attached_assets', 'logos', path.basename(ddtData.mittenteLogoPath));
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, margin, yPosition, { width: 100, height: 50, fit: [100, 50] });
+        }
+      } catch (error) {
+        console.error('Errore caricamento logo:', error);
+      }
+    }
+    
+    // Intestazione DDT
+    doc.fontSize(24).font('Helvetica-Bold')
+       .text('DOCUMENTO DI TRASPORTO', margin + 120, yPosition, { align: 'center', width: contentWidth - 120 });
+    
+    yPosition += 30;
+    doc.fontSize(16).font('Helvetica')
+       .text(`DDT N. ${ddtData.numero} del ${new Date(ddtData.data).toLocaleDateString('it-IT')}`, 
+             margin + 120, yPosition, { align: 'center', width: contentWidth - 120 });
+    
+    yPosition += 40;
+    
+    // === DATI MITTENTE E DESTINATARIO ===
+    const boxHeight = 120;
+    const boxWidth = (contentWidth - 20) / 2;
+    
+    // Box Mittente (sinistra)
+    doc.rect(margin, yPosition, boxWidth, boxHeight).stroke();
+    let boxY = yPosition + 10;
+    
+    doc.fontSize(12).font('Helvetica-Bold')
+       .text('MITTENTE', margin + 10, boxY);
+    boxY += 20;
+    
+    doc.fontSize(10).font('Helvetica');
+    if (ddtData.mittenteRagioneSociale) {
+      doc.font('Helvetica-Bold').text(ddtData.mittenteRagioneSociale, margin + 10, boxY);
+      boxY += 15;
+      doc.font('Helvetica');
+    }
+    if (ddtData.mittenteIndirizzo) {
+      doc.text(ddtData.mittenteIndirizzo, margin + 10, boxY);
+      boxY += 12;
+    }
+    if (ddtData.mittenteCap || ddtData.mittenteCitta || ddtData.mittenteProvincia) {
+      doc.text(`${ddtData.mittenteCap || ''} ${ddtData.mittenteCitta || ''} (${ddtData.mittenteProvincia || ''})`, margin + 10, boxY);
+      boxY += 12;
+    }
+    if (ddtData.mittentePartitaIva) {
+      doc.text(`P.IVA: ${ddtData.mittentePartitaIva}`, margin + 10, boxY);
+      boxY += 12;
+    }
+    if (ddtData.mittenteCodiceFiscale) {
+      doc.text(`CF: ${ddtData.mittenteCodiceFiscale}`, margin + 10, boxY);
+    }
+    
+    // Box Destinatario (destra)
+    const boxRightX = margin + boxWidth + 20;
+    doc.rect(boxRightX, yPosition, boxWidth, boxHeight).stroke();
+    boxY = yPosition + 10;
+    
+    doc.fontSize(12).font('Helvetica-Bold')
+       .text('DESTINATARIO', boxRightX + 10, boxY);
+    boxY += 20;
+    
+    doc.fontSize(10).font('Helvetica');
+    if (ddtData.clienteNome) {
+      doc.font('Helvetica-Bold').text(ddtData.clienteNome, boxRightX + 10, boxY);
+      boxY += 15;
+      doc.font('Helvetica');
+    }
+    if (ddtData.clienteIndirizzo) {
+      doc.text(ddtData.clienteIndirizzo, boxRightX + 10, boxY);
+      boxY += 12;
+    }
+    if (ddtData.clienteCap || ddtData.clienteCitta || ddtData.clienteProvincia) {
+      doc.text(`${ddtData.clienteCap || ''} ${ddtData.clienteCitta || ''} (${ddtData.clienteProvincia || ''})`, boxRightX + 10, boxY);
+      boxY += 12;
+    }
+    if (ddtData.clientePaese) {
+      doc.text(ddtData.clientePaese, boxRightX + 10, boxY);
+      boxY += 12;
+    }
+    if (ddtData.clientePiva) {
+      doc.text(`P.IVA: ${ddtData.clientePiva}`, boxRightX + 10, boxY);
+    }
+    
+    yPosition += boxHeight + 20;
+    
+    // === TABELLA RIGHE DDT ===
+    doc.fontSize(12).font('Helvetica-Bold')
+       .text('DETTAGLIO MERCE', margin, yPosition);
+    
+    yPosition += 20;
+    
+    // Header tabella
+    const tableTop = yPosition;
+    const colWidths = {
+      descrizione: 450,
+      quantita: 80,
+      um: 60,
+      prezzo: 80
+    };
+    
+    doc.font('Helvetica-Bold').fontSize(10);
+    doc.text('Descrizione', margin, tableTop, { width: colWidths.descrizione });
+    doc.text('Quantità', margin + colWidths.descrizione, tableTop, { width: colWidths.quantita, align: 'right' });
+    doc.text('U.M.', margin + colWidths.descrizione + colWidths.quantita, tableTop, { width: colWidths.um, align: 'center' });
+    doc.text('Prezzo', margin + colWidths.descrizione + colWidths.quantita + colWidths.um, tableTop, { width: colWidths.prezzo, align: 'right' });
+    
+    yPosition += 20;
+    doc.moveTo(margin, yPosition).lineTo(pageWidth - margin, yPosition).stroke();
+    yPosition += 10;
+    
+    // Righe tabella
+    doc.font('Helvetica').fontSize(9);
+    for (const riga of righe) {
+      // Se la descrizione inizia con "SUBTOTALE", rendila in grassetto
+      if (riga.descrizione.startsWith('SUBTOTALE')) {
+        doc.font('Helvetica-Bold');
+      } else {
+        doc.font('Helvetica');
+      }
+      
+      doc.text(riga.descrizione, margin, yPosition, { width: colWidths.descrizione });
+      doc.text(parseFloat(riga.quantita).toLocaleString('it-IT'), 
+               margin + colWidths.descrizione, yPosition, { width: colWidths.quantita, align: 'right' });
+      doc.text(riga.unitaMisura, 
+               margin + colWidths.descrizione + colWidths.quantita, yPosition, { width: colWidths.um, align: 'center' });
+      doc.text(parseFloat(riga.prezzoUnitario).toLocaleString('it-IT', { minimumFractionDigits: 2 }),
+               margin + colWidths.descrizione + colWidths.quantita + colWidths.um, yPosition, { width: colWidths.prezzo, align: 'right' });
+      
+      yPosition += 15;
+      
+      // Check se serve nuova pagina
+      if (yPosition > pageHeight - 100) {
+        doc.addPage({ size: 'A4', layout: 'landscape', margins: { top: 50, bottom: 50, left: 50, right: 50 } });
+        yPosition = margin;
+      }
+    }
+    
+    yPosition += 10;
+    doc.moveTo(margin, yPosition).lineTo(pageWidth - margin, yPosition).stroke();
+    yPosition += 20;
+    
+    // === TOTALI ===
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text(`Totale Colli: ${ddtData.totaleColli}`, margin, yPosition);
+    doc.text(`Peso Totale: ${(parseFloat(ddtData.pesoTotale.toString()) / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2 })} kg`, 
+             pageWidth - margin - 200, yPosition, { width: 200, align: 'right' });
+    
+    yPosition += 30;
+    
+    // Note
+    if (ddtData.note) {
+      doc.fontSize(10).font('Helvetica');
+      doc.text('Note:', margin, yPosition);
+      yPosition += 15;
+      doc.text(ddtData.note, margin, yPosition, { width: contentWidth });
+    }
+    
+    // Footer
+    doc.fontSize(8).font('Helvetica')
+       .text(`Documento generato il ${new Date().toLocaleString('it-IT')}`, 
+             margin, pageHeight - 30, { width: contentWidth, align: 'center' });
+    
+    // Finalizza PDF
+    doc.end();
+    
+  } catch (error: any) {
+    console.error('Errore nella generazione PDF DDT:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Errore nella generazione del PDF',
+      details: error.message
     });
   }
 });
