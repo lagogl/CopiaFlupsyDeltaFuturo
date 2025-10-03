@@ -977,6 +977,18 @@ export const fattureInCloudConfig = pgTable("fatture_in_cloud_config", {
   emailOggettoTemplate: text("email_oggetto_template"),
   emailCorpoTemplate: text("email_corpo_template"),
   attivo: boolean("attivo").default(true),
+  
+  ragioneSociale: text("ragione_sociale"),
+  indirizzo: text("indirizzo"),
+  cap: text("cap"),
+  citta: text("citta"),
+  provincia: text("provincia"),
+  partitaIva: text("partita_iva"),
+  codiceFiscale: text("codice_fiscale"),
+  telefono: text("telefono"),
+  email: text("email"),
+  logoPath: text("logo_path"),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
