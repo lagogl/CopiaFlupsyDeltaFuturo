@@ -1605,38 +1605,60 @@ export async function sendDDTToFIC(req: Request, res: Response) {
       });
     }
 
-    // Recupera configurazione OAuth2
+    // Recupera configurazione OAuth2 dalla tabella configurazione
     const { default: axios } = await import('axios');
-    const configResult = await db.select().from(fattureInCloudConfig).limit(1);
     
-    if (configResult.length === 0 || !configResult[0].accessToken) {
+    // Helper per recuperare valori di configurazione
+    async function getConfigValue(chiave: string): Promise<string | null> {
+      const configResult = await db.select()
+        .from(configurazione)
+        .where(eq(configurazione.chiave, chiave))
+        .limit(1);
+      return configResult.length > 0 ? configResult[0].valore : null;
+    }
+    
+    const accessToken = await getConfigValue('fatture_in_cloud_access_token');
+    const companyId = await getConfigValue('fatture_in_cloud_company_id');
+    
+    if (!accessToken) {
       return res.status(400).json({
         success: false,
-        error: "Configurazione Fatture in Cloud non trovata o token non valido"
+        error: "Token di accesso Fatture in Cloud mancante. Eseguire prima l'autenticazione OAuth2."
       });
     }
 
-    const config = configResult[0];
-    const FATTURE_IN_CLOUD_API_BASE = 'https://api-v2.fattureincloud.it';
-    const companyId = process.env.FATTURE_IN_CLOUD_COMPANY_ID;
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "ID azienda Fatture in Cloud mancante."
+      });
+    }
 
-    // Funzione helper per chiamate API con retry
+    const FATTURE_IN_CLOUD_API_BASE = 'https://api-v2.fattureincloud.it';
+
+    // Funzione helper per chiamate API
     async function apiRequest(method: string, endpoint: string, data?: any) {
       const url = `${FATTURE_IN_CLOUD_API_BASE}/c/${companyId}${endpoint}`;
+      
+      console.log(`🔗 FIC API Request: ${method} ${url}`);
       
       try {
         return await axios({
           method,
           url,
           headers: {
-            'Authorization': `Bearer ${config.accessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           data
         });
       } catch (error: any) {
         if (error.response?.status === 401) {
-          throw new Error('Token scaduto. Riautenticare.');
+          throw new Error('Token scaduto. Riautenticare dalla pagina Fatture in Cloud.');
+        }
+        if (error.response?.data) {
+          console.error('FIC API Error:', error.response.data);
+          throw new Error(error.response.data.error?.message || error.message);
         }
         throw error;
       }
