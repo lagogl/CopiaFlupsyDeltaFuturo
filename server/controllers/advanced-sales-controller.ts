@@ -1020,7 +1020,7 @@ export async function generatePDFReport(req: Request, res: Response) {
     .orderBy(saleBags.bagNumber);
 
     // Genera PDF usando pdfGenerator (stesso pattern del report vagliatura)
-    const PDFDocument = require('pdfkit');
+    const PDFDocument = (await import('pdfkit')).default;
     const doc = new PDFDocument({
       size: 'A4',
       layout: 'landscape',
