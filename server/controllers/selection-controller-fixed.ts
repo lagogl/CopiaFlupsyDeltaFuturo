@@ -14,6 +14,7 @@ import {
   selectionDestinationBaskets, 
   selectionBasketHistory, 
   selectionLotReferences,
+  basketLotComposition,
   operations,
   cycles,
   baskets,
