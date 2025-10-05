@@ -7,7 +7,7 @@ import { it } from 'date-fns/locale';
 import { formatNumberWithCommas } from '@/lib/utils';
 import { useWebSocketMessage } from '@/lib/websocket';
 
-// Helper per formattare date in modo sicuro
+// Helper per formattare date in modo sicuro - v2025.10.05
 const safeFormatDate = (dateValue: string | Date | null | undefined, formatString: string = 'dd/MM/yyyy'): string => {
   if (!dateValue) return 'N/D';
   try {
