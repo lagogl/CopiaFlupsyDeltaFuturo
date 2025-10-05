@@ -141,42 +141,34 @@ export function implementDirectOperationRoute(app: Express) {
         return res.status(400).json({ message: "Invalid operation ID" });
       }
 
-      // Prima recupera l'operazione per ottenere i dettagli
-      const operationToDelete = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
+      // Importa lo storage per usare il metodo completo di eliminazione
+      const { storage } = await import('./storage.js');
       
-      if (!operationToDelete || operationToDelete.length === 0) {
-        console.log(`❌ Nessuna operazione trovata con ID ${id}`);
+      // Recupera i dettagli dell'operazione prima di eliminarla
+      const operation = await storage.getOperation(id);
+      
+      if (!operation) {
+        console.log(`❌ Operazione ${id} non trovata`);
         return res.status(404).json({ message: "Operation not found" });
       }
 
-      const operation = operationToDelete[0];
       console.log(`🔍 Operazione trovata: tipo=${operation.type}, basketId=${operation.basketId}, cycleId=${operation.cycleId}`);
 
-      // Elimina l'operazione dal database
-      console.log("🗑️ Eliminazione operazione dal database...");
-      const deletedOperations = await db.delete(operations).where(eq(operations.id, id)).returning();
+      // Usa il metodo storage.deleteOperation() che include TUTTE le pulizie necessarie:
+      // - Eliminazione operazioni del ciclo
+      // - Pulizia basket_lot_composition
+      // - Pulizia cycle_impacts
+      // - Pulizia lot_ledger
+      // - Pulizia screening_lot_references
+      // - Pulizia selection_lot_references
+      // - Pulizia screening/selection source/destination baskets
+      // - Eliminazione ciclo
+      // - Reset cestello
+      console.log("🗑️ Eliminazione operazione con pulizia completa tramite storage.deleteOperation()...");
+      const success = await storage.deleteOperation(id);
       
-      if (deletedOperations && deletedOperations.length > 0) {
-        console.log(`✅ Operazione ${id} eliminata con successo`);
-
-        // Se è un'operazione di prima attivazione, elimina anche il ciclo e resetta il cestello
-        if (operation.type === 'prima-attivazione' && operation.cycleId) {
-          console.log(`🔄 Eliminazione ciclo associato ID: ${operation.cycleId}`);
-          
-          // Elimina il ciclo
-          await db.delete(cycles).where(eq(cycles.id, operation.cycleId));
-          console.log(`✅ Ciclo ${operation.cycleId} eliminato`);
-          
-          // Resetta il cestello a stato disponibile
-          await db.update(baskets)
-            .set({
-              state: 'available',
-              currentCycleId: null,
-              cycleCode: null
-            })
-            .where(eq(baskets.id, operation.basketId));
-          console.log(`✅ Cestello ${operation.basketId} resettato a available`);
-        }
+      if (success) {
+        console.log(`✅ Operazione ${id} eliminata con successo con pulizia completa database`);
 
         // Invalida cache operazioni
         const { OperationsCache } = await import('./operations-cache-service.js');
@@ -216,7 +208,7 @@ export function implementDirectOperationRoute(app: Express) {
         return res.status(200).json({ 
           message: "Operation deleted successfully with all related data cleanup",
           operationId: id,
-          deletedOperation: deletedOperations[0],
+          deletedOperation: operation,
           cycleDeleted: operation.type === 'prima-attivazione' && operation.cycleId ? operation.cycleId : null,
           basketReset: operation.basketId
         });
