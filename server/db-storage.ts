@@ -1193,6 +1193,10 @@ export class DbStorage implements IStorage {
       .set(lotUpdate)
       .where(eq(lots.id, id))
       .returning();
+    
+    // Invalida la cache dei lotti
+    this.invalidateLotsCache();
+    
     return results[0];
   }
   
@@ -1205,6 +1209,9 @@ export class DbStorage implements IStorage {
       const results = await db.delete(lots)
         .where(eq(lots.id, id))
         .returning({ id: lots.id });
+      
+      // Invalida la cache dei lotti
+      this.invalidateLotsCache();
       
       // Restituisce true se almeno un record è stato eliminato
       return results.length > 0;
