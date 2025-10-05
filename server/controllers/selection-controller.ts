@@ -906,9 +906,19 @@ export async function completeSelectionFixed(req: Request, res: Response) {
         }
 
         // 3. OPERAZIONE PRIMA-ATTIVAZIONE (APPROCCIO IBRIDO)
-        const operationNotes = isMixedLot 
-          ? `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date} - LOTTO MISTO (dominante: ${primaryLotId}, dettagli in composizione)`
-          : `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`;
+        let operationNotes = `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`;
+        
+        if (isMixedLot) {
+          // Crea stringa con composizione dettagliata
+          const compositionDetails = lotDistributions
+            .map(({ lotId, animals }) => {
+              const percentage = basketAnimalCount > 0 ? ((animals / basketAnimalCount) * 100).toFixed(1) : '0.0';
+              return `Lotto ${lotId} (${percentage}%, ${animals.toLocaleString('it-IT')} pz)`;
+            })
+            .join(', ');
+          
+          operationNotes += ` - LOTTO MISTO: ${compositionDetails}`;
+        }
         
         const operationMetadata = isMixedLot 
           ? JSON.stringify({ isMixed: true, sourceSelection: Number(id), dominantLot: primaryLotId, lotCount: lotComposition.size })
@@ -936,9 +946,19 @@ export async function completeSelectionFixed(req: Request, res: Response) {
         // 4. GESTISCI POSIZIONAMENTO O VENDITA
         if (destBasket.destinationType === 'sold') {
           // VENDITA IMMEDIATA (APPROCCIO IBRIDO)
-          const saleNotes = isMixedLot 
-            ? `Vendita diretta da vagliatura #${selection[0].selectionNumber} - LOTTO MISTO (dominante: ${primaryLotId})`
-            : `Vendita diretta da vagliatura #${selection[0].selectionNumber}`;
+          let saleNotes = `Vendita diretta da vagliatura #${selection[0].selectionNumber}`;
+          
+          if (isMixedLot) {
+            // Crea stringa con composizione dettagliata
+            const compositionDetails = lotDistributions
+              .map(({ lotId, animals }) => {
+                const percentage = basketAnimalCount > 0 ? ((animals / basketAnimalCount) * 100).toFixed(1) : '0.0';
+                return `Lotto ${lotId} (${percentage}%, ${animals.toLocaleString('it-IT')} pz)`;
+              })
+              .join(', ');
+            
+            saleNotes += ` - LOTTO MISTO: ${compositionDetails}`;
+          }
           
           await tx.insert(operations).values({
             date: selection[0].date,
