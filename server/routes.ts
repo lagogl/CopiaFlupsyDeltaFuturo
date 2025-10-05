@@ -4307,16 +4307,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/lots/optimized", async (req, res) => {
     try {
-      // 🚨 SOLUZIONE DRASTICA: Usa esattamente il codice che funziona da /api/lots
-      const lots = await storage.getLots();
+      // ✅ OTTIMIZZAZIONE: Carica lotti e taglie in parallelo (non N+1 query)
+      const [lots, allSizes] = await Promise.all([
+        storage.getLots(),
+        storage.getAllSizes()
+      ]);
       
-      // Fetch size for each lot (stesso codice che funziona)
-      const lotsWithSizes = await Promise.all(
-        lots.map(async (lot) => {
-          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
-          return { ...lot, size };
-        })
-      );
+      // Crea mappa delle taglie per lookup veloce
+      const sizesMap = new Map(allSizes.map(size => [size.id, size]));
+      
+      // Match taglie in memoria (velocissimo)
+      const lotsWithSizes = lots.map(lot => ({
+        ...lot,
+        size: lot.sizeId ? sizesMap.get(lot.sizeId) || null : null
+      }));
       
       // Applica filtri manualmente (paginazione simulata)
       const page = parseInt(req.query.page as string) || 1;
