@@ -186,20 +186,120 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       // ====== FASE 2: ATTIVAZIONE CESTELLI DESTINAZIONE ======
       console.log(`🆕 FASE 2: Attivazione ${destinationBaskets.length} cestelli destinazione`);
       
-      // Raccogli lotti dalle origini per destinazioni
-      const sourceLots = [...new Set(sourceBaskets.map(sb => sb.lotId).filter(lotId => lotId !== null))];
-      const primaryLotId = sourceLots.length > 0 ? sourceLots[0] : null;
+      // ====== DISTRIBUZIONE PROPORZIONALE DEI LOTTI ======
+      // Raccogli lotti dalle origini REALI nel database (non dai dati input)
+      const sourceBasketData = await tx.select()
+        .from(selectionSourceBaskets)
+        .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+      
+      const lotComposition = new Map<number, number>();
+      
+      for (const sourceBasket of sourceBasketData) {
+        if (sourceBasket.lotId) {
+          const current = lotComposition.get(sourceBasket.lotId) || 0;
+          lotComposition.set(sourceBasket.lotId, current + (sourceBasket.animalCount || 0));
+          console.log(`🔍 Lotto trovato: ${sourceBasket.lotId} con ${sourceBasket.animalCount} animali (cestello ${sourceBasket.basketId})`);
+        }
+      }
+      
+      // Gestione caso senza lotti: usa lotto di default
+      let primaryLotId: number;
+      let lotPercentages = new Map<number, number>();
+      let isMixedLot = false;
+      
+      if (lotComposition.size === 0) {
+        console.log(`⚠️ ATTENZIONE: Nessun lotto trovato nei cestelli origine, uso lotto di default`);
+        // Usa il primo lotto disponibile nel sistema come default
+        const [defaultLot] = await tx.select({ id: lots.id }).from(lots).limit(1);
+        if (!defaultLot) {
+          await tx.rollback();
+          return res.status(500).json({
+            success: false,
+            error: "ERRORE CRITICO: Nessun lotto disponibile nel sistema per completare la vagliatura"
+          });
+        }
+        primaryLotId = defaultLot.id;
+        lotPercentages.set(primaryLotId, 1.0); // 100% al lotto default
+        console.log(`🎯 Lotto default assegnato: ${primaryLotId} (100%)`);
+      } else {
+        // Calcola percentuali per distribuzione proporzionale
+        const totalAnimals = Array.from(lotComposition.values()).reduce((a, b) => a + b, 0);
+        isMixedLot = lotComposition.size > 1;
+        
+        for (const [lotId, count] of Array.from(lotComposition.entries())) {
+          lotPercentages.set(lotId, count / totalAnimals);
+        }
+        
+        // Trova il lotto PRINCIPALE per il ciclo (maggior quantità)
+        const dominantLot = Array.from(lotComposition.entries())
+          .sort(([, a], [, b]) => b - a)[0];
+        primaryLotId = dominantLot[0];
+        
+        console.log(`🎯 Lotto principale: ${primaryLotId} (${dominantLot[1]} animali)`);
+        if (isMixedLot) {
+          console.log(`🔀 Vagliatura MISTA rilevata: ${lotComposition.size} lotti diversi`);
+          console.log(`📊 Composizione percentuale:`, Array.from(lotPercentages.entries()).map(([id, perc]) => `Lotto ${id}: ${(perc * 100).toFixed(1)}%`));
+        }
+      }
       
       for (const destBasket of destinationBaskets) {
         const wasAlsoSource = overlappingBasketIds.has(destBasket.basketId);
         console.log(`   Processando cestello destinazione ${destBasket.basketId}${wasAlsoSource ? ' (era anche origine)' : ''}...`);
         
-        // 1. CREA NUOVO CICLO
+        // 1. CREA NUOVO CICLO CON LOTTO PRINCIPALE
         const [newCycle] = await tx.insert(cycles).values({
           basketId: destBasket.basketId,
+          lotId: primaryLotId, // ✅ LOTTO PRINCIPALE per compatibilità DB
           startDate: selection[0].date,
           state: 'active'
         }).returning();
+
+        // 1.1. AGGIORNA cycle_id in selection_destination_baskets
+        await tx.update(selectionDestinationBaskets)
+          .set({ cycleId: newCycle.id })
+          .where(
+            and(
+              eq(selectionDestinationBaskets.selectionId, Number(id)),
+              eq(selectionDestinationBaskets.basketId, destBasket.basketId)
+            )
+          );
+
+        // 1.5. DISTRIBUZIONE PROPORZIONALE DEI LOTTI
+        console.log(`   📊 Distribuzione proporzionale ${lotPercentages.size} lotti nel cestello ${destBasket.basketId}:`);
+        let totalDistributed = 0;
+        const lotDistributions: { lotId: number; animals: number }[] = [];
+        
+        // Calcola animali per ogni lotto secondo le percentuali  
+        const basketAnimalCount = destBasket.animalCount || 0;
+        for (const [lotId, percentage] of Array.from(lotPercentages.entries())) {
+          const proportionalAnimals = Math.round(basketAnimalCount * percentage);
+          lotDistributions.push({ lotId, animals: proportionalAnimals });
+          totalDistributed += proportionalAnimals;
+          console.log(`      Lotto ${lotId}: ${proportionalAnimals} animali (${(percentage * 100).toFixed(1)}%)`);
+        }
+        
+        // Gestione remainder per arrotondamenti
+        const remainder = basketAnimalCount - totalDistributed;
+        if (remainder !== 0 && lotDistributions.length > 0) {
+          lotDistributions[0].animals += remainder; // Assegna il remainder al lotto principale
+          console.log(`      Remainder ${remainder} animali assegnati al lotto principale ${lotDistributions[0].lotId}`);
+        }
+        
+        // Registra composizione nella tabella basketLotComposition
+        for (const { lotId, animals } of lotDistributions) {
+          if (animals > 0) { // Solo se ci sono animali da registrare
+            const percentage = basketAnimalCount > 0 ? (animals / basketAnimalCount) : 0;
+            await tx.insert(basketLotComposition).values({
+              basketId: destBasket.basketId,
+              cycleId: newCycle.id,
+              lotId: lotId,
+              animalCount: animals,
+              percentage: percentage,
+              sourceSelectionId: Number(id), // Tracciabilità della vagliatura
+              notes: `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
+            });
+          }
+        }
 
         // 2. DETERMINA TAGLIA
         let actualSizeId = destBasket.sizeId;
@@ -209,12 +309,31 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           }
         }
 
-        // 3. OPERAZIONE PRIMA-ATTIVAZIONE
+        // 3. OPERAZIONE PRIMA-ATTIVAZIONE (APPROCCIO IBRIDO)
+        let operationNotes = `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}${wasAlsoSource ? ' (cestello riutilizzato)' : ''}`;
+        
+        if (isMixedLot) {
+          // Crea stringa con composizione dettagliata
+          const compositionDetails = lotDistributions
+            .map(({ lotId, animals }) => {
+              const percentage = basketAnimalCount > 0 ? ((animals / basketAnimalCount) * 100).toFixed(1) : '0.0';
+              return `Lotto ${lotId} (${percentage}%, ${animals.toLocaleString('it-IT')} pz)`;
+            })
+            .join(', ');
+          
+          operationNotes += ` - LOTTO MISTO: ${compositionDetails}`;
+        }
+        
+        const operationMetadata = isMixedLot 
+          ? JSON.stringify({ isMixed: true, sourceSelection: Number(id), dominantLot: primaryLotId, lotCount: lotComposition.size })
+          : null;
+        
         await tx.insert(operations).values({
           date: selection[0].date,
           type: 'prima-attivazione',
           basketId: destBasket.basketId,
           cycleId: newCycle.id,
+          lotId: primaryLotId, // ✅ LOTTO DOMINANTE per query veloci
           animalCount: destBasket.animalCount,
           totalWeight: destBasket.totalWeight,
           animalsPerKg: destBasket.animalsPerKg,
@@ -224,13 +343,27 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           deadCount: destBasket.deadCount || 0,
           mortalityRate: destBasket.mortalityRate || 0,
           sizeId: actualSizeId,
-          lotId: primaryLotId, // Eredita lotto dalle origini
-          notes: `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}${wasAlsoSource ? ' (cestello riutilizzato)' : ''}`
+          metadata: operationMetadata,
+          notes: operationNotes
         });
 
         // 4. GESTISCI POSIZIONAMENTO O VENDITA
         if (destBasket.destinationType === 'sold') {
-          // VENDITA IMMEDIATA
+          // VENDITA IMMEDIATA (APPROCCIO IBRIDO)
+          let saleNotes = `Vendita diretta da vagliatura #${selection[0].selectionNumber}`;
+          
+          if (isMixedLot) {
+            // Crea stringa con composizione dettagliata
+            const compositionDetails = lotDistributions
+              .map(({ lotId, animals }) => {
+                const percentage = basketAnimalCount > 0 ? ((animals / basketAnimalCount) * 100).toFixed(1) : '0.0';
+                return `Lotto ${lotId} (${percentage}%, ${animals.toLocaleString('it-IT')} pz)`;
+              })
+              .join(', ');
+            
+            saleNotes += ` - LOTTO MISTO: ${compositionDetails}`;
+          }
+          
           await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
@@ -245,8 +378,9 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             deadCount: destBasket.deadCount || 0,
             mortalityRate: destBasket.mortalityRate || 0,
             sizeId: actualSizeId,
-            lotId: primaryLotId,
-            notes: `Vendita diretta da vagliatura #${selection[0].selectionNumber}`
+            lotId: primaryLotId, // ✅ LOTTO DOMINANTE per query veloci
+            metadata: operationMetadata,
+            notes: saleNotes
           });
 
           // Chiudi ciclo per vendita
