@@ -42,16 +42,17 @@ app.use(express.urlencoded({ extended: false }));
 // Rendi disponibile globalmente per l'uso nei controller
 globalThis.app = app;
 
-// Smart cache middleware - secure for production, flexible for development
-if (process.env.REPL_ID && process.env.NODE_ENV !== 'production') {
-  // Replit preview environment - minimal caching for development
-  app.use(createReplitPreviewCacheMiddleware());
-  secureLogger.info('Cache middleware: Replit preview mode (minimal caching)');
-} else {
-  // Production or local development - smart caching
-  app.use(createSmartCacheMiddleware());
-  secureLogger.info(`Cache middleware: Smart caching mode (env: ${process.env.NODE_ENV})`);
-}
+// Smart cache middleware - TEMPORANEAMENTE DISABILITATO per aggiornamento asset frontend
+// if (process.env.REPL_ID && process.env.NODE_ENV !== 'production') {
+//   // Replit preview environment - minimal caching for development
+//   app.use(createReplitPreviewCacheMiddleware());
+//   secureLogger.info('Cache middleware: Replit preview mode (minimal caching)');
+// } else {
+//   // Production or local development - smart caching
+//   app.use(createSmartCacheMiddleware());
+//   secureLogger.info(`Cache middleware: Smart caching mode (env: ${process.env.NODE_ENV})`);
+// }
+secureLogger.info('Cache middleware: DISABLED - forcing fresh asset download');
 
 // Secure API logging middleware - environment-gated with PII protection
 app.use(createSecureApiLogger());
