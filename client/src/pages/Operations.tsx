@@ -1940,7 +1940,7 @@ export default function Operations() {
                     const lotInfo = lastOperation?.lot?.supplier || '';
                     
                     // Ultima operazione info
-                    const lastOpDate = lastOperation ? format(new Date(lastOperation.date), 'dd/MM') : '';
+                    const lastOpDate = safeFormatDate(lastOperation?.date, 'dd/MM');
                     const lastOpType = lastOperation?.type || '';
                     
                     // Indicatore di stato performance
@@ -3322,7 +3322,7 @@ export default function Operations() {
                                 <div>
                                   <span className="text-gray-500 block text-xs">Inizio:</span>
                                   <span className="font-medium text-gray-700">
-                                    {cycle && cycle.startDate ? format(new Date(cycle.startDate), 'dd/MM/yyyy') : 'N/D'}
+                                    {safeFormatDate(cycle?.startDate, 'dd/MM/yyyy')}
                                   </span>
                                 </div>
                                 <div>
@@ -3330,14 +3330,14 @@ export default function Operations() {
                                     <>
                                       <span className="text-gray-500 block text-xs">Fine:</span>
                                       <span className="font-medium text-gray-700">
-                                        {format(new Date(cycle.endDate), 'dd/MM/yyyy')}
+                                        {safeFormatDate(cycle.endDate, 'dd/MM/yyyy')}
                                       </span>
                                     </>
                                   ) : (
                                     <>
                                       <span className="text-gray-500 block text-xs">Ultima operazione:</span>
                                       <span className="font-medium text-gray-700">
-                                        {cycleOps.length > 0 ? format(new Date(cycleOps[cycleOps.length - 1].date), 'dd/MM/yyyy') : 'N/D'}
+                                        {cycleOps.length > 0 ? safeFormatDate(cycleOps[cycleOps.length - 1]?.date, 'dd/MM/yyyy') : 'N/D'}
                                       </span>
                                     </>
                                   )}
