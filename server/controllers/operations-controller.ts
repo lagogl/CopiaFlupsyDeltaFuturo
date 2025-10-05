@@ -6,7 +6,7 @@
  */
 
 import { db } from '../db.js';
-import { operations, baskets, flupsys, lots, sizes } from '../../shared/schema.js';
+import { operations, baskets, flupsys, lots, sizes, basketLotComposition } from '../../shared/schema.js';
 import { sql, eq, and, or, between, desc, inArray } from 'drizzle-orm';
 import { OperationsCache } from '../operations-cache-service.js';
 
@@ -208,19 +208,125 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
     
     const results = await query;
     
-    // Trasforma i risultati per ricostruire l'oggetto lot
-    const transformedResults = results.map(row => {
-      // Ricostruisci l'oggetto lot solo se esiste lot_id
-      const lot = row.lot_id ? {
-        id: row.lot_id,
-        arrivalDate: row.lot_arrivalDate,
-        supplier: row.lot_supplier,
-        supplierLotNumber: row.lot_supplierLotNumber,
-        quality: row.lot_quality,
-        animalCount: row.lot_animalCount,
-        weight: row.lot_weight,
-        notes: row.lot_notes
-      } : null;
+    // Batch preload di tutte le composizioni per evitare N+1 query
+    const basketCyclePairs = results
+      .filter(row => row.basketId && row.cycleId)
+      .map(row => ({ basketId: row.basketId, cycleId: row.cycleId }));
+    
+    // Map per accesso veloce alle composizioni
+    const compositionsMap = new Map<string, any[]>();
+    
+    if (basketCyclePairs.length > 0) {
+      // Singola query batch con tutti i basket/cycle pairs
+      const allCompositions = await db
+        .select({
+          basketId: basketLotComposition.basketId,
+          cycleId: basketLotComposition.cycleId,
+          lotId: basketLotComposition.lotId,
+          animalCount: basketLotComposition.animalCount,
+          percentage: basketLotComposition.percentage,
+          notes: basketLotComposition.notes,
+          // Dati del lotto
+          lotArrivalDate: lots.arrivalDate,
+          lotSupplier: lots.supplier,
+          lotSupplierLotNumber: lots.supplierLotNumber,
+          lotQuality: lots.quality,
+          lotAnimalCount: lots.animalCount,
+          lotWeight: lots.weight,
+          lotNotes: lots.notes
+        })
+        .from(basketLotComposition)
+        .leftJoin(lots, eq(basketLotComposition.lotId, lots.id))
+        .where(
+          or(...basketCyclePairs.map(pair => 
+            and(
+              eq(basketLotComposition.basketId, pair.basketId),
+              eq(basketLotComposition.cycleId, pair.cycleId)
+            )
+          ))
+        )
+        .orderBy(desc(basketLotComposition.percentage)); // Ordinamento deterministico
+      
+      // Raggruppa per basketId-cycleId
+      for (const comp of allCompositions) {
+        const key = `${comp.basketId}-${comp.cycleId}`;
+        if (!compositionsMap.has(key)) {
+          compositionsMap.set(key, []);
+        }
+        compositionsMap.get(key)!.push(comp);
+      }
+    }
+    
+    // Trasforma i risultati usando i dati precaricati
+    const transformedResults = results.map((row) => {
+      let lot = null;
+      let lotComposition = null;
+      
+      // Cerca composizione nella map precaricata
+      if (row.basketId && row.cycleId) {
+        const key = `${row.basketId}-${row.cycleId}`;
+        const composition = compositionsMap.get(key);
+        
+        if (composition && composition.length > 0) {
+          // Ha composizione da vagliatura
+          if (composition.length === 1) {
+            // Lotto singolo dalla composizione
+            lot = {
+              id: composition[0].lotId,
+              arrivalDate: composition[0].lotArrivalDate,
+              supplier: composition[0].lotSupplier,
+              supplierLotNumber: composition[0].lotSupplierLotNumber,
+              quality: composition[0].lotQuality,
+              animalCount: composition[0].lotAnimalCount,
+              weight: composition[0].lotWeight,
+              notes: composition[0].lotNotes
+            };
+          } else {
+            // Lotto misto - usa il primo (già ordinato per percentage DESC) come principale
+            lot = {
+              id: composition[0].lotId,
+              arrivalDate: composition[0].lotArrivalDate,
+              supplier: composition[0].lotSupplier,
+              supplierLotNumber: composition[0].lotSupplierLotNumber,
+              quality: composition[0].lotQuality,
+              animalCount: composition[0].lotAnimalCount,
+              weight: composition[0].lotWeight,
+              notes: composition[0].lotNotes
+            };
+            
+            // Aggiungi la composizione completa
+            lotComposition = composition.map(c => ({
+              lotId: c.lotId,
+              animalCount: c.animalCount,
+              percentage: c.percentage,
+              lot: {
+                id: c.lotId,
+                arrivalDate: c.lotArrivalDate,
+                supplier: c.lotSupplier,
+                supplierLotNumber: c.lotSupplierLotNumber,
+                quality: c.lotQuality,
+                animalCount: c.lotAnimalCount,
+                weight: c.lotWeight,
+                notes: c.lotNotes
+              }
+            }));
+          }
+        }
+      }
+      
+      // Se non c'è composizione, usa il lotto dall'operazione (approccio legacy)
+      if (!lot && row.lot_id) {
+        lot = {
+          id: row.lot_id,
+          arrivalDate: row.lot_arrivalDate,
+          supplier: row.lot_supplier,
+          supplierLotNumber: row.lot_supplierLotNumber,
+          quality: row.lot_quality,
+          animalCount: row.lot_animalCount,
+          weight: row.lot_weight,
+          notes: row.lot_notes
+        };
+      }
       
       // Rimuovi i campi lot_* e aggiungi l'oggetto lot
       const { lot_id, lot_arrivalDate, lot_supplier, lot_supplierLotNumber, 
@@ -228,7 +334,8 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
       
       return {
         ...operation,
-        lot
+        lot,
+        lotComposition // Aggiungi composizione se esiste (null altrimenti)
       };
     });
     
