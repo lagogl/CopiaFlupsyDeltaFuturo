@@ -1695,12 +1695,7 @@ export async function sendDDTToFIC(req: Request, res: Response) {
           qty: parseFloat(riga.quantita || '0'),
           measure: riga.unitaMisura,
           net_price: parseFloat(riga.prezzoUnitario || '0')
-        })),
-        template: {
-          id: null,
-          locked: false
-        },
-        delivery_note_template: null
+        }))
       }
     };
     
