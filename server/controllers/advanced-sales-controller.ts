@@ -1713,6 +1713,18 @@ export async function sendDDTToFIC(req: Request, res: Response) {
       updatedAt: new Date()
     }).where(eq(ddt.id, parseInt(ddtId)));
 
+    // Recupera advancedSaleId dalla prima riga DDT per aggiornare anche la vendita
+    if (righe.length > 0 && righe[0].advancedSaleId) {
+      const advancedSaleId = righe[0].advancedSaleId;
+      
+      await db.update(advancedSales).set({
+        ddtStatus: 'inviato',
+        updatedAt: new Date()
+      }).where(eq(advancedSales.id, advancedSaleId));
+      
+      console.log(`✅ Vendita ${advancedSaleId} aggiornata con stato 'inviato'`);
+    }
+
     res.json({
       success: true,
       ddtId: parseInt(ddtId),
