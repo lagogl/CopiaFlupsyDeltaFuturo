@@ -4307,11 +4307,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/lots/optimized", async (req, res) => {
     try {
+      const startTime = Date.now();
+      
       // ✅ OTTIMIZZAZIONE: Carica lotti e taglie in parallelo (non N+1 query)
       const [lots, allSizes] = await Promise.all([
         storage.getLots(),
         storage.getAllSizes()
       ]);
+      console.log(`⚡ OTTIMIZZAZIONE: Lotti e taglie caricati in ${Date.now() - startTime}ms`);
       
       // Crea mappa delle taglie per lookup veloce
       const sizesMap = new Map(allSizes.map(size => [size.id, size]));
@@ -4321,6 +4324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...lot,
         size: lot.sizeId ? sizesMap.get(lot.sizeId) || null : null
       }));
+      console.log(`⚡ OTTIMIZZAZIONE: Mapping completato in ${Date.now() - startTime}ms totali`);
       
       // Applica filtri manualmente (paginazione simulata)
       const page = parseInt(req.query.page as string) || 1;
