@@ -845,7 +845,84 @@ export class DbStorage implements IStorage {
           console.error(`Errore durante pulizia riferimenti alla selezione: ${error instanceof Error ? error.message : String(error)}`);
         }
         
-        // 2.4 Infine, elimina il ciclo
+        // 2.4 Eliminazione composizione lotti misti (basket_lot_composition)
+        try {
+          const { basketLotComposition } = await import('@shared/schema');
+          
+          console.log(`Eliminazione composizione lotti per ciclo ${cycleId} dalla tabella basket_lot_composition`);
+          const deletedCompositions = await db.delete(basketLotComposition)
+            .where(eq(basketLotComposition.cycleId, cycleId))
+            .returning({ id: basketLotComposition.id });
+          
+          console.log(`✅ Eliminati ${deletedCompositions.length} record di composizione lotti per ciclo ${cycleId}`);
+        } catch (error) {
+          console.error(`Errore durante eliminazione composizione lotti: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.5 Eliminazione impatti del ciclo (cycle_impacts)
+        try {
+          const { cycleImpacts } = await import('@shared/schema');
+          
+          console.log(`Eliminazione impatti per ciclo ${cycleId} dalla tabella cycle_impacts`);
+          const deletedImpacts = await db.delete(cycleImpacts)
+            .where(eq(cycleImpacts.cycleId, cycleId))
+            .returning({ id: cycleImpacts.id });
+          
+          console.log(`✅ Eliminati ${deletedImpacts.length} record di impatti per ciclo ${cycleId}`);
+        } catch (error) {
+          console.error(`Errore durante eliminazione impatti ciclo: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.6 Pulizia movimenti lotti (lot_ledger)
+        try {
+          const { lotLedger } = await import('@shared/schema');
+          
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nella tabella lot_ledger`);
+          
+          // Azzera source_cycle_id
+          await db.update(lotLedger)
+            .set({ sourceCycleId: null })
+            .where(eq(lotLedger.sourceCycleId, cycleId));
+          
+          // Azzera dest_cycle_id
+          await db.update(lotLedger)
+            .set({ destCycleId: null })
+            .where(eq(lotLedger.destCycleId, cycleId));
+          
+          console.log(`✅ Puliti riferimenti al ciclo ${cycleId} in lot_ledger`);
+        } catch (error) {
+          console.error(`Errore durante pulizia lot_ledger: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.7 Pulizia riferimenti lotti screening (screening_lot_references)
+        try {
+          const { screeningLotReferences } = await import('@shared/schema');
+          
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nella tabella screening_lot_references`);
+          await db.update(screeningLotReferences)
+            .set({ destinationCycleId: null })
+            .where(eq(screeningLotReferences.destinationCycleId, cycleId));
+          
+          console.log(`✅ Puliti riferimenti al ciclo ${cycleId} in screening_lot_references`);
+        } catch (error) {
+          console.error(`Errore durante pulizia screening_lot_references: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.8 Pulizia riferimenti lotti selezione (selection_lot_references)
+        try {
+          const { selectionLotReferences } = await import('@shared/schema');
+          
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nella tabella selection_lot_references`);
+          await db.update(selectionLotReferences)
+            .set({ destinationCycleId: null })
+            .where(eq(selectionLotReferences.destinationCycleId, cycleId));
+          
+          console.log(`✅ Puliti riferimenti al ciclo ${cycleId} in selection_lot_references`);
+        } catch (error) {
+          console.error(`Errore durante pulizia selection_lot_references: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.9 Infine, elimina il ciclo
         console.log(`Eliminazione ciclo ID: ${cycleId}`);
         await db.delete(cycles)
           .where(eq(cycles.id, cycleId));
