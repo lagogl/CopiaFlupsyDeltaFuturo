@@ -477,6 +477,87 @@ export function MarineWeather() {
   // Ottieni il trend e i valori estremi della marea di Chioggia
   const chioggiaAnalysis = analyzeChioggiaForecast();
 
+  // Calcola marea di Goro con ritardo di 2 ore rispetto a Chioggia
+  const calculateGoroTide = () => {
+    // Serve solo max/min times, non il trend di Chioggia
+    if (!weatherData.chioggiaMaxTime || !weatherData.chioggiaMinTime) {
+      return {
+        goroLevel: weatherData.chioggiaLevel,
+        goroMaxTime: weatherData.chioggiaMaxTime,
+        goroMinTime: weatherData.chioggiaMinTime,
+        timeToExtreme: null,
+        arrow: null
+      };
+    }
+
+    // Aggiungi 2 ore ai tempi di Chioggia per Goro
+    const addTwoHours = (timeStr: string) => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const totalMinutes = (hours * 60 + minutes + 120) % 1440; // +120 minuti (2 ore)
+      const newHours = Math.floor(totalMinutes / 60);
+      const newMinutes = totalMinutes % 60;
+      return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+    };
+
+    const goroMaxTime = addTwoHours(weatherData.chioggiaMaxTime);
+    const goroMinTime = addTwoHours(weatherData.chioggiaMinTime);
+
+    // Calcola tempo al prossimo estremo BASATO SUI TEMPI DI GORO (non Chioggia)
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+    // Converte i tempi di Goro in minuti totali
+    const [maxHours, maxMinutes] = goroMaxTime.split(':').map(Number);
+    let maxTotalMinutes = maxHours * 60 + maxMinutes;
+    if (maxTotalMinutes < currentTotalMinutes) {
+      maxTotalMinutes += 1440; // domani
+    }
+
+    const [minHours, minMinutes] = goroMinTime.split(':').map(Number);
+    let minTotalMinutes = minHours * 60 + minMinutes;
+    if (minTotalMinutes < currentTotalMinutes) {
+      minTotalMinutes += 1440; // domani
+    }
+
+    // Determina quale estremo viene PRIMA per Goro
+    let nextExtremeTime: string;
+    let arrow: string;
+    let diffMinutes: number;
+
+    if (maxTotalMinutes < minTotalMinutes) {
+      // Il prossimo è il massimo → marea crescente a Goro
+      nextExtremeTime = goroMaxTime;
+      arrow = '↑';
+      diffMinutes = maxTotalMinutes - currentTotalMinutes;
+    } else {
+      // Il prossimo è il minimo → marea calante a Goro
+      nextExtremeTime = goroMinTime;
+      arrow = '↓';
+      diffMinutes = minTotalMinutes - currentTotalMinutes;
+    }
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+
+    let timeToExtreme = '';
+    if (hours > 0) {
+      timeToExtreme = `${hours}h ${minutes}min`;
+    } else {
+      timeToExtreme = `${minutes}min`;
+    }
+
+    return {
+      goroLevel: weatherData.chioggiaLevel, // Livello simile
+      goroMaxTime,
+      goroMinTime,
+      timeToExtreme,
+      arrow
+    };
+  };
+
+  const goroTide = calculateGoroTide();
+
   return (
     <div className="hidden sm:flex items-center space-x-4 px-3 text-white/80">
       <TooltipProvider>
@@ -502,28 +583,31 @@ export function MarineWeather() {
                 <Waves className="h-4 w-4 text-blue-300" />
                 <span className="text-sm">
                   Marea: {weatherData.chioggiaLevel.toFixed(2)}m 
-                  {weatherData.chioggiaTrend && ` (${weatherData.chioggiaTrend})`}
+                  {goroTide.arrow && goroTide.timeToExtreme && (
+                    <span className={goroTide.arrow === '↑' ? 'text-green-400' : 'text-red-400'}>
+                      {' '}{goroTide.arrow} {goroTide.timeToExtreme}
+                    </span>
+                  )}
                 </span>
               </div>
             </TooltipTrigger>
             <TooltipContent className="w-64">
               <div className="space-y-1">
-                <p className="font-medium text-blue-600">Marea a Chioggia</p>
+                <p className="font-medium text-blue-600">Marea a Goro (da Chioggia +2h)</p>
                 <p>Livello attuale: <span className="font-medium">{weatherData.chioggiaLevel.toFixed(2)}m</span></p>
-                {weatherData.chioggiaTrend && (
-                  <p>Trend: <span className={`font-medium ${
-                    weatherData.chioggiaTrend === "crescente" ? "text-green-600" : 
-                    weatherData.chioggiaTrend === "calante" ? "text-red-600" : 
-                    "text-amber-600"
-                  }`}>{weatherData.chioggiaTrend}</span></p>
+                {goroTide.arrow && goroTide.timeToExtreme && (
+                  <p>
+                    {goroTide.arrow === '↑' ? '↑ Crescente' : '↓ Calante'} - 
+                    {goroTide.arrow === '↑' ? ' alta' : ' bassa'} marea tra {goroTide.timeToExtreme}
+                  </p>
                 )}
                 
-                {/* Visualizza i valori massimi e minimi previsti */}
-                {weatherData.chioggiaMaxLevel && weatherData.chioggiaMaxTime && (
-                  <p>Max previsto: <span className="font-medium text-green-600">{weatherData.chioggiaMaxLevel.toFixed(2)}m</span> alle <span className="font-mono text-blue-500">{weatherData.chioggiaMaxTime}</span></p>
+                {/* Visualizza i valori massimi e minimi previsti per Goro */}
+                {goroTide.goroMaxTime && weatherData.chioggiaMaxLevel && (
+                  <p>Max previsto (Goro): <span className="font-medium text-green-600">{weatherData.chioggiaMaxLevel.toFixed(2)}m</span> alle <span className="font-mono text-blue-500">{goroTide.goroMaxTime}</span></p>
                 )}
-                {weatherData.chioggiaMinLevel && weatherData.chioggiaMinTime && (
-                  <p>Min previsto: <span className="font-medium text-red-600">{weatherData.chioggiaMinLevel.toFixed(2)}m</span> alle <span className="font-mono text-blue-500">{weatherData.chioggiaMinTime}</span></p>
+                {goroTide.goroMinTime && weatherData.chioggiaMinLevel && (
+                  <p>Min previsto (Goro): <span className="font-medium text-red-600">{weatherData.chioggiaMinLevel.toFixed(2)}m</span> alle <span className="font-mono text-blue-500">{goroTide.goroMinTime}</span></p>
                 )}
                 
                 <p className="text-xs text-gray-500">Aggiornato: {weatherData.chioggiaTime}</p>
