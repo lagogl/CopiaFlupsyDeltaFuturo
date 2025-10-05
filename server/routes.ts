@@ -5348,6 +5348,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("🔄 Forzando aggiornamento cache lotti...");
       
+      // Invalida cache LOTTI (priorità massima)
+      storage.invalidateLotsCache();
+      console.log("✅ Cache lotti invalidata");
+      
       // Invalida tutte le cache possibili che potrebbero influenzare i lotti
       try {
         const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller");

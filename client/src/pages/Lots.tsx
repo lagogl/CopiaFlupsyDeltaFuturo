@@ -411,7 +411,13 @@ export default function Lots() {
           <Button 
             variant="outline" 
             className="bg-blue-100 hover:bg-blue-200 mr-2"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] })}
+            onClick={async () => {
+              // Invalida cache backend
+              await fetch('/api/lots/refresh-cache', { method: 'POST' });
+              // Invalida cache frontend
+              queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] });
+            }}
           >
             <RefreshCw className="h-4 w-4 mr-1" />
             Aggiorna
