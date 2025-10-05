@@ -5922,9 +5922,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step18 = "📄 Eliminazione dati Fatture in Cloud...";
           console.log(step18);
           broadcastMessage("database_reset_progress", { message: step18, step: 18 });
+          // Prima elimina DDT (che hanno FK verso clienti), poi i clienti
+          await sql`DELETE FROM ddt`;
           await sql`DELETE FROM clienti`;
           await sql`DELETE FROM clients`;
-          await sql`DELETE FROM ddt`;
           await sql`DELETE FROM sync_log_fatture_in_cloud`;
           
           // 19. Resettiamo le sequenze degli ID di tutte le tabelle
