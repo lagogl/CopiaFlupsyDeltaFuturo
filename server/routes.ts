@@ -2958,19 +2958,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (operation.type === 'prima-attivazione') {
           // Notifica il frontend che c'è stata una cancellazione a cascata
-          if (req.app.locals.webSocketServer) {
-            req.app.locals.webSocketServer.broadcastMessage('operation-cascade-delete', {
+          try {
+            console.log("🚨 ROUTES.TS: Invio notifiche WebSocket per prima-attivazione eliminata");
+            
+            // Notifica eliminazione operazione e ciclo
+            broadcastMessage('operation_deleted', {
               operationId: id,
-              cycleId: operation.cycleId,
-              type: operation.type,
-              message: "Operazione e ciclo associato eliminati con successo"
+              basketId: operation.basketId,
+              operationType: operation.type,
+              message: `Operazione prima-attivazione eliminata`
             });
+            
+            // Notifica eliminazione ciclo  
+            broadcastMessage('cycle_deleted', {
+              cycleId: operation.cycleId,
+              basketId: operation.basketId,
+              message: `Ciclo eliminato dopo rimozione prima attivazione`
+            });
+            
+            // IMPORTANTE: Notifica aggiornamento cestello per aggiornare la UI
+            broadcastMessage('basket_updated', {
+              basketId: operation.basketId,
+              state: 'disponibile',
+              message: `Cestello aggiornato dopo eliminazione operazione`
+            });
+          } catch (wsError) {
+            console.error("❌ ROUTES.TS: Errore nell'invio notifiche WebSocket:", wsError);
           }
+          
           return res.status(200).json({
-            message: "Operazione e ciclo associato eliminati con successo",
-            cascadeDelete: true,
-            operationType: operation.type,
-            cycleId: operation.cycleId
+            message: "Operation deleted successfully with all related data cleanup",
+            operationId: id,
+            deletedOperation: operation,
+            cycleDeleted: operation.cycleId,
+            basketReset: operation.basketId
           });
         } else {
           // Broadcast operation deleted event via WebSockets
