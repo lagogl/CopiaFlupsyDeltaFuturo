@@ -339,7 +339,7 @@ export async function executeScreeningOperation(req: Request, res: Response) {
         const safeAnimalCount = safeInteger(destBasket.animalCount);
         const safeTotalWeight = safeNumber(destBasket.totalWeight);
         
-        const [operation] = await tx.insert(operations).values({
+        const operationData = {
           date: date || new Date().toISOString().split('T')[0], // date field expects YYYY-MM-DD format
           type: operationType,
           basketId: destBasket.basketId,
@@ -354,7 +354,9 @@ export async function executeScreeningOperation(req: Request, res: Response) {
           // Add sale fields support
           saleClient: destBasket.saleClient || null,
           saleDate: destBasket.saleDate || null
-        }).returning();
+        };
+        
+        const [operation] = await tx.insert(operations).values(operationData).returning();
         
         return operation;
       }));
@@ -378,13 +380,22 @@ export async function executeScreeningOperation(req: Request, res: Response) {
           const safePosition = safeInteger(destBasket.position);
           const safeFlupsyId = safeInteger(destBasket.flupsyId);
           
+          // Costruisci l'oggetto di update condizionalmente
+          const updateData: any = {
+            currentCycleId: sourceCycleId,
+            row: destBasket.row
+          };
+          
+          // Aggiungi solo se non null (campi notNull nel DB)
+          if (safeFlupsyId !== null) {
+            updateData.flupsyId = safeFlupsyId;
+          }
+          if (safePosition !== null) {
+            updateData.position = safePosition;
+          }
+          
           await tx.update(baskets)
-            .set({
-              currentCycleId: sourceCycleId,
-              flupsyId: safeFlupsyId,
-              row: destBasket.row,
-              position: safePosition
-            })
+            .set(updateData)
             .where(eq(baskets.id, destBasket.basketId));
             
           // Sistema cronologia posizioni rimosso per performance

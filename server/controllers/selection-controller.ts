@@ -485,7 +485,7 @@ export async function addSourceBaskets(req: Request, res: Response) {
         });
       }
       
-      await db.insert(selectionSourceBaskets).values({
+      const sourceBasketData = {
         selectionId: Number(id),
         basketId: sourceBasket.basketId,
         cycleId: basketData.currentCycleId,
@@ -495,7 +495,9 @@ export async function addSourceBaskets(req: Request, res: Response) {
         sizeId: sourceBasket.sizeId || null,
         lotId: sourceBasket.lotId, // ✅ RIMOSSO || null - deve essere presente
         notes: sourceBasket.notes || null
-      });
+      };
+      
+      await db.insert(selectionSourceBaskets).values(sourceBasketData);
       
       console.log(`✅ Cestello origine ${sourceBasket.basketId} aggiunto (${sourceBasket.animalCount} animali)`);
     }
