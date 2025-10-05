@@ -188,7 +188,7 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       console.log(`🆕 FASE 2: Attivazione ${destinationBaskets.length} cestelli destinazione`);
       
       // ====== DISTRIBUZIONE PROPORZIONALE DEI LOTTI ======
-      // Raccogli lotti dalle origini REALI nel database (non dai dati input)
+      // Raccogli lotti dalle origini REALI considerando anche composizioni miste
       const sourceBasketData = await tx.select()
         .from(selectionSourceBaskets)
         .where(eq(selectionSourceBaskets.selectionId, Number(id)));
@@ -196,10 +196,35 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       const lotComposition = new Map<number, number>();
       
       for (const sourceBasket of sourceBasketData) {
-        if (sourceBasket.lotId) {
-          const current = lotComposition.get(sourceBasket.lotId) || 0;
-          lotComposition.set(sourceBasket.lotId, current + (sourceBasket.animalCount || 0));
-          console.log(`🔍 Lotto trovato: ${sourceBasket.lotId} con ${sourceBasket.animalCount} animali (cestello ${sourceBasket.basketId})`);
+        // Prima verifica se il cestello ha una composizione mista in basketLotComposition
+        const mixedComposition = await tx.select()
+          .from(basketLotComposition)
+          .where(eq(basketLotComposition.cycleId, sourceBasket.cycleId!));
+        
+        if (mixedComposition.length > 0) {
+          // Cestello con composizione mista: usa i dati da basketLotComposition
+          console.log(`🔀 Cestello ${sourceBasket.basketId} ha composizione MISTA (${mixedComposition.length} lotti)`);
+          for (const comp of mixedComposition) {
+            const current = lotComposition.get(comp.lotId) || 0;
+            lotComposition.set(comp.lotId, current + comp.animalCount);
+            console.log(`   🔍 Lotto ${comp.lotId}: ${comp.animalCount} animali (${(comp.percentage * 100).toFixed(1)}%)`);
+          }
+        } else {
+          // Cestello mono-lotto: recupera lotId dal ciclo se non presente nella selezione
+          // Questo gestisce anche i cicli "legacy" che non hanno basketLotComposition
+          const cycleData = await tx.select({ lotId: cycles.lotId })
+            .from(cycles)
+            .where(eq(cycles.id, sourceBasket.cycleId!))
+            .limit(1);
+            
+          const lotId = sourceBasket.lotId || cycleData[0]?.lotId;
+          if (lotId) {
+            const current = lotComposition.get(lotId) || 0;
+            lotComposition.set(lotId, current + (sourceBasket.animalCount || 0));
+            console.log(`📦 Lotto ${lotId} recuperato dal ${sourceBasket.lotId ? 'selezione' : 'ciclo'}: ${sourceBasket.animalCount} animali (cestello ${sourceBasket.basketId})`);
+          } else {
+            console.log(`⚠️ ATTENZIONE: Cestello ${sourceBasket.basketId} senza lotto - verrà usato il default`);
+          }
         }
       }
       
