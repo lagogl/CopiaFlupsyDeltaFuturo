@@ -114,6 +114,7 @@ export default function Lots() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] });
       setIsCreateDialogOpen(false);
       toast({
         title: "Lotto creato",
@@ -138,6 +139,7 @@ export default function Lots() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] });
       setIsEditDialogOpen(false);
       toast({
         title: "Lotto aggiornato",
@@ -161,6 +163,7 @@ export default function Lots() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] });
       setIsDeleteDialogOpen(false);
       toast({
         title: "Lotto eliminato",
@@ -186,6 +189,7 @@ export default function Lots() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] });
       toast({
         title: "Stato aggiornato",
         description: "Lo stato del lotto è stato aggiornato con successo",
