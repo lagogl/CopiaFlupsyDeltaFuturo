@@ -1,5 +1,5 @@
-// Service Worker per FLUPSY PWA - Versione aggiornata 2025-08-17-fix
-const CACHE_NAME = 'flupsy-v2025-08-17-cache-fix';
+// Service Worker per FLUPSY PWA - Versione aggiornata 2025-10-05-critical-fix
+const CACHE_NAME = 'flupsy-v2025-10-05-critical-fix';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -44,25 +44,44 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  // Network First per file JS/CSS (sempre la versione più recente)
+  const isJsOrCss = event.request.url.match(/\.(js|css|tsx|ts)(\?.*)?$/);
+  
+  if (isJsOrCss) {
+    event.respondWith(
+      fetch(event.request)
+        .then(function(response) {
+          // Aggiorna la cache con la nuova versione
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(function() {
+          // Se la rete fallisce, usa la cache come fallback
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Cache First per altre risorse statiche (immagini, manifest, etc.)
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
-        // Restituisce la risorsa dalla cache se disponibile
         if (response) {
           return response;
         }
         
-        // Altrimenti effettua la richiesta di rete
         return fetch(event.request).then(function(response) {
-          // Controlla se la risposta è valida
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
 
-          // Clona la risposta
           var responseToCache = response.clone();
-
-          // Aggiunge la risorsa alla cache solo per risorse statiche
           caches.open(CACHE_NAME)
             .then(function(cache) {
               cache.put(event.request, responseToCache);
