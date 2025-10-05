@@ -1908,9 +1908,7 @@ export default function Operations() {
                       : '-';
                     
                     // Formatta la data di inizio
-                    const startDate = cycle.startDate 
-                      ? format(new Date(cycle.startDate), 'dd/MM/yy') 
-                      : '';
+                    const startDate = safeFormatDate(cycle.startDate, 'dd/MM/yy');
                     
                     // Informazioni sulla posizione
                     const posInfo = basket ? `[${basket.row || ''} ${basket.position || ''}]` : '';
