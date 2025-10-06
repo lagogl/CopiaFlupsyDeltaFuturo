@@ -281,10 +281,10 @@ export default function GiacenzeRange() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-blue-600">
-                    {formatNumber(giacenzeData.data.totale_giacenza)}
+                    {formatNumber(giacenzeData.data.totale_giacenza || 0)}
                   </div>
                   <div className="text-sm text-gray-500">Giacenza Totale</div>
                 </div>
@@ -292,7 +292,7 @@ export default function GiacenzeRange() {
                   <div className="flex items-center justify-center gap-1">
                     <TrendingUp className="h-5 w-5 text-green-500" />
                     <div className="text-2xl font-bold text-green-600">
-                      {formatNumber(giacenzeData.data.totale_entrate)}
+                      {formatNumber(giacenzeData.data.totale_entrate || 0)}
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">Entrate Totali</div>
@@ -301,18 +301,10 @@ export default function GiacenzeRange() {
                   <div className="flex items-center justify-center gap-1">
                     <TrendingDown className="h-5 w-5 text-red-500" />
                     <div className="text-2xl font-bold text-red-600">
-                      {formatNumber(giacenzeData.data.totale_uscite)}
+                      {formatNumber(giacenzeData.data.totale_uscite || 0)}
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">Uscite Totali</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">
-                    {formatNumber(giacenzeData.data.statistiche.numero_operazioni)}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Operazioni ({giacenzeData.data.statistiche.media_giornaliera}/giorno)
-                  </div>
                 </div>
               </div>
               
@@ -338,7 +330,7 @@ export default function GiacenzeRange() {
               <CardTitle>Giacenze per Taglia</CardTitle>
             </CardHeader>
             <CardContent>
-              {giacenzeData.data.dettaglio_taglie.length > 0 ? (
+              {giacenzeData.data.dettaglio_taglie && giacenzeData.data.dettaglio_taglie.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {giacenzeData.data.dettaglio_taglie
                     .sort((a, b) => b.giacenza - a.giacenza)
@@ -370,7 +362,7 @@ export default function GiacenzeRange() {
           </Card>
 
           {/* Dettaglio per FLUPSY */}
-          {giacenzeData.data.dettaglio_flupsys.length > 0 && (
+          {giacenzeData.data.dettaglio_flupsys && giacenzeData.data.dettaglio_flupsys.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
