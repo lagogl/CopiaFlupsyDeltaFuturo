@@ -143,7 +143,14 @@ export async function getGiacenzeSummary(req: Request, res: Response) {
       flupsys_coinvolti: 0
     };
 
-    const totale_giacenza = result.totale_entrate - result.totale_uscite;
+    // Converti stringhe in numeri (PostgreSQL restituisce SUM come numeric/string)
+    const totale_entrate = Number(result.totale_entrate) || 0;
+    const totale_uscite = Number(result.totale_uscite) || 0;
+    const numero_operazioni = Number(result.numero_operazioni) || 0;
+    const cestelli_coinvolti = Number(result.cestelli_coinvolti) || 0;
+    const flupsys_coinvolti = Number(result.flupsys_coinvolti) || 0;
+    
+    const totale_giacenza = totale_entrate - totale_uscite;
     
     const duration = Date.now() - startTime;
     console.log(`✅ RIEPILOGO COMPLETATO: ${duration}ms - Giacenza: ${totale_giacenza} animali`);
@@ -154,11 +161,11 @@ export async function getGiacenzeSummary(req: Request, res: Response) {
         dateFrom,
         dateTo,
         totale_giacenza,
-        totale_entrate: result.totale_entrate,
-        totale_uscite: result.totale_uscite,
-        numero_operazioni: result.numero_operazioni,
-        cestelli_coinvolti: result.cestelli_coinvolti,
-        flupsys_coinvolti: result.flupsys_coinvolti
+        totale_entrate,
+        totale_uscite,
+        numero_operazioni,
+        cestelli_coinvolti,
+        flupsys_coinvolti
       }
     });
 
