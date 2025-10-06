@@ -182,9 +182,152 @@ export async function getGiacenzeSummary(req: Request, res: Response) {
  * Calcola le giacenze esatte per un range di date
  */
 async function calculateGiacenzeForRange(startDate: Date, endDate: Date, flupsyId?: string) {
-  // Implementation would go here - returning placeholder for now
+  const dateFromStr = format(startDate, 'yyyy-MM-dd');
+  const dateToStr = format(endDate, 'yyyy-MM-dd');
+
+  // Costruisci condizioni per la query
+  let whereConditions = and(
+    gte(operations.date, dateFromStr),
+    lte(operations.date, dateToStr)
+  );
+
+  // Se è specificato un FLUPSY, filtra anche per quello
+  if (flupsyId) {
+    whereConditions = and(
+      whereConditions,
+      eq(baskets.flupsyId, parseInt(flupsyId))
+    );
+  }
+
+  // Query principale con tutte le operazioni del periodo
+  const operationsData = await db.select({
+    id: operations.id,
+    date: operations.date,
+    type: operations.type,
+    animalCount: operations.animalCount,
+    basketId: operations.basketId,
+    basketNumber: baskets.physicalNumber,
+    sizeCode: sizes.code,
+    flupsyId: baskets.flupsyId,
+    flupsyName: flupsys.name,
+  })
+  .from(operations)
+  .leftJoin(baskets, eq(operations.basketId, baskets.id))
+  .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+  .leftJoin(sizes, eq(operations.sizeId, sizes.id))
+  .where(whereConditions)
+  .orderBy(operations.date);
+
+  // Calcola totali e dettagli
+  let totale_entrate = 0;
+  let totale_uscite = 0;
+  const dettaglio_operazioni = {
+    'prima-attivazione': 0,
+    'ripopolamento': 0,
+    'cessazione': 0,
+    'vendita': 0,
+  };
+
+  // Mappa per dettagli per taglia
+  const taglieMap = new Map<string, { entrate: number; uscite: number }>();
+  
+  // Mappa per dettagli per FLUPSY
+  const flupsysMap = new Map<number, { name: string; entrate: number; uscite: number }>();
+
+  // Mappa per operazioni per data
+  const operationsByDate: Record<string, Array<any>> = {};
+
+  // Processa ogni operazione
+  for (const op of operationsData) {
+    const animalCount = op.animalCount || 0;
+    
+    // Classifica entrate e uscite
+    const isEntrata = ['prima-attivazione', 'ripopolamento'].includes(op.type);
+    const isUscita = ['vendita', 'cessazione'].includes(op.type);
+
+    if (isEntrata) {
+      totale_entrate += animalCount;
+      if (op.type in dettaglio_operazioni) {
+        dettaglio_operazioni[op.type as keyof typeof dettaglio_operazioni] += animalCount;
+      }
+    } else if (isUscita) {
+      totale_uscite += animalCount;
+      if (op.type in dettaglio_operazioni) {
+        dettaglio_operazioni[op.type as keyof typeof dettaglio_operazioni] += animalCount;
+      }
+    }
+
+    // Aggrega per taglia
+    if (op.sizeCode) {
+      if (!taglieMap.has(op.sizeCode)) {
+        taglieMap.set(op.sizeCode, { entrate: 0, uscite: 0 });
+      }
+      const taglia = taglieMap.get(op.sizeCode)!;
+      if (isEntrata) taglia.entrate += animalCount;
+      if (isUscita) taglia.uscite += animalCount;
+    }
+
+    // Aggrega per FLUPSY
+    if (op.flupsyId && op.flupsyName) {
+      if (!flupsysMap.has(op.flupsyId)) {
+        flupsysMap.set(op.flupsyId, { name: op.flupsyName, entrate: 0, uscite: 0 });
+      }
+      const flupsy = flupsysMap.get(op.flupsyId)!;
+      if (isEntrata) flupsy.entrate += animalCount;
+      if (isUscita) flupsy.uscite += animalCount;
+    }
+
+    // Aggrega per data
+    const dateKey = op.date;
+    if (!operationsByDate[dateKey]) {
+      operationsByDate[dateKey] = [];
+    }
+    operationsByDate[dateKey].push({
+      id: op.id,
+      type: op.type,
+      animalCount: animalCount,
+      basketNumber: op.basketNumber,
+      flupsyName: op.flupsyName || 'N/A',
+      sizeCode: op.sizeCode || 'N/A'
+    });
+  }
+
+  // Costruisci array dettaglio taglie
+  const dettaglio_taglie = Array.from(taglieMap.entries()).map(([code, data]) => ({
+    code,
+    name: code, // Il nome coincide con il codice
+    entrate: data.entrate,
+    uscite: data.uscite,
+    giacenza: data.entrate - data.uscite
+  }));
+
+  // Costruisci array dettaglio FLUPSY
+  const dettaglio_flupsys = Array.from(flupsysMap.entries()).map(([id, data]) => ({
+    id,
+    name: data.name,
+    entrate: data.entrate,
+    uscite: data.uscite,
+    giacenza: data.entrate - data.uscite
+  }));
+
+  // Calcola statistiche
+  const totale_giacenza = totale_entrate - totale_uscite;
+  const numeroOperazioni = operationsData.length;
+  const giorniAnalizzati = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const mediaGiornaliera = giorniAnalizzati > 0 ? Math.round(numeroOperazioni / giorniAnalizzati) : 0;
+
   return {
-    totale_giacenza: 0,
-    dettaglio: []
+    totale_giacenza,
+    totale_entrate,
+    totale_uscite,
+    dettaglio_operazioni,
+    dettaglio_taglie,
+    dettaglio_flupsys,
+    operations_by_date: operationsByDate,
+    statistiche: {
+      numero_operazioni: numeroOperazioni,
+      giorni_analizzati: giorniAnalizzati,
+      media_giornaliera: mediaGiornaliera,
+    }
   };
 }
