@@ -332,7 +332,7 @@ export default function SpreadsheetOperations() {
   });
 
   const { data: baskets } = useQuery({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets?includeAll=true'],
   });
 
   // Query operazioni ottimizzata - usa cache e paginazione efficiente

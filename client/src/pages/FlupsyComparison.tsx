@@ -97,7 +97,7 @@ export default function FlupsyComparison() {
   });
   
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets?includeAll=true'],
   });
   
   const { data: operations } = useQuery({

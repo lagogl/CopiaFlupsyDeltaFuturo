@@ -102,8 +102,10 @@ export class BasketsController {
         console.log(`SLOW: GET /api/baskets took ${elapsedTime}ms`);
       }
 
-      // Se includeAll=true, restituisci solo l'array dei baskets (compatibilità frontend)
-      if (includeAll && result.baskets) {
+      // COMPATIBILITÀ: Restituisci array diretto per default (senza paginazione)
+      // Restituisci oggetto con paginazione SOLO se includeAll=false esplicitamente
+      // Questo garantisce compatibilità con tutto il frontend legacy
+      if (req.query.includeAll !== 'false' && result.baskets) {
         return res.json(result.baskets);
       }
 
