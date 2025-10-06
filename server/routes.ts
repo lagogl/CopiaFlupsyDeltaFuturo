@@ -3079,9 +3079,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await getGiacenzeRange(req, res);
   });
 
-  // Endpoint per riepilogo rapido giacenze (temporaneamente disabilitato)
+  // Endpoint per riepilogo rapido giacenze
   app.get("/api/giacenze/summary", async (req, res) => {
-    res.status(501).json({ error: "Summary endpoint temporarily disabled" });
+    const { getGiacenzeSummary } = await import('./controllers/giacenze-controller');
+    await getGiacenzeSummary(req, res);
   });
 
   // === Diario di Bordo API routes ===

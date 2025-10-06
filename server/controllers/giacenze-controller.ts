@@ -73,6 +73,105 @@ export async function getGiacenzeRange(req: Request, res: Response) {
 }
 
 /**
+ * Endpoint per riepilogo rapido giacenze
+ * GET /api/giacenze/summary?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD
+ */
+export async function getGiacenzeSummary(req: Request, res: Response) {
+  const { dateFrom, dateTo } = req.query;
+
+  // Validazione parametri
+  if (!dateFrom || !dateTo) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "Parametri dateFrom e dateTo sono obbligatori. Formato: YYYY-MM-DD" 
+    });
+  }
+
+  // Validazione formato date
+  const startDate = parseISO(dateFrom as string);
+  const endDate = parseISO(dateTo as string);
+  
+  if (!isValid(startDate) || !isValid(endDate)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "Formato date non valido. Utilizzare il formato YYYY-MM-DD" 
+    });
+  }
+
+  if (startDate > endDate) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "La data di inizio deve essere antecedente o uguale alla data di fine" 
+    });
+  }
+
+  try {
+    console.log(`📊 RIEPILOGO GIACENZE: Range ${dateFrom} - ${dateTo}`);
+    
+    const startTime = Date.now();
+    
+    // Query per statistiche aggregate
+    const stats = await db.select({
+      totale_entrate: sql<number>`COALESCE(SUM(CASE 
+        WHEN ${operations.type} IN ('prima-attivazione', 'misura', 'peso', 'pulizia') 
+        THEN COALESCE(${operations.animalCount}, 0) 
+        ELSE 0 
+      END), 0)`,
+      totale_uscite: sql<number>`COALESCE(SUM(CASE 
+        WHEN ${operations.type} = 'vendita' 
+        THEN COALESCE(${operations.animalCount}, 0) 
+        ELSE 0 
+      END), 0)`,
+      numero_operazioni: sql<number>`COUNT(*)`,
+      cestelli_coinvolti: sql<number>`COUNT(DISTINCT ${operations.basketId})`,
+      flupsys_coinvolti: sql<number>`COUNT(DISTINCT ${baskets.flupsyId})`
+    })
+    .from(operations)
+    .leftJoin(baskets, eq(operations.basketId, baskets.id))
+    .where(
+      and(
+        gte(operations.date, dateFrom as string),
+        lte(operations.date, dateTo as string)
+      )
+    );
+
+    const result = stats[0] || {
+      totale_entrate: 0,
+      totale_uscite: 0,
+      numero_operazioni: 0,
+      cestelli_coinvolti: 0,
+      flupsys_coinvolti: 0
+    };
+
+    const totale_giacenza = result.totale_entrate - result.totale_uscite;
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ RIEPILOGO COMPLETATO: ${duration}ms - Giacenza: ${totale_giacenza} animali`);
+    
+    res.json({
+      success: true,
+      data: {
+        dateFrom,
+        dateTo,
+        totale_giacenza,
+        totale_entrate: result.totale_entrate,
+        totale_uscite: result.totale_uscite,
+        numero_operazioni: result.numero_operazioni,
+        cestelli_coinvolti: result.cestelli_coinvolti,
+        flupsys_coinvolti: result.flupsys_coinvolti
+      }
+    });
+
+  } catch (error: any) {
+    console.error("❌ ERRORE RIEPILOGO GIACENZE:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Errore interno nel calcolo del riepilogo" 
+    });
+  }
+}
+
+/**
  * Calcola le giacenze esatte per un range di date
  */
 async function calculateGiacenzeForRange(startDate: Date, endDate: Date, flupsyId?: string) {
