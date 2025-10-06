@@ -21,7 +21,8 @@ import {
   basketPositionHistory,
   flupsys,
   sizes,
-  lots
+  lots,
+  lotLedger
 } from "../../shared/schema";
 import { format } from "date-fns";
 
@@ -390,7 +391,7 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             saleNotes += ` - LOTTO MISTO: ${compositionDetails}`;
           }
           
-          await tx.insert(operations).values({
+          const [saleOperation] = await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
             basketId: destBasket.basketId,
@@ -407,7 +408,37 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             lotId: primaryLotId, // ✅ LOTTO DOMINANTE per query veloci
             metadata: operationMetadata,
             notes: saleNotes
-          });
+          }).returning();
+
+          // ✅ REGISTRA VENDITA NEL LOT_LEDGER
+          // Per ogni lotto nella distribuzione, registra la vendita
+          for (const { lotId, animals } of lotDistributions) {
+            const allocationBasisData = {
+              selectionId: Number(id),
+              totalAnimals: basketAnimalCount,
+              lotDistributions: lotDistributions.map(ld => ({
+                lotId: ld.lotId,
+                animals: ld.animals,
+                percentage: basketAnimalCount > 0 ? (ld.animals / basketAnimalCount) : 0
+              }))
+            };
+            
+            await tx.insert(lotLedger).values({
+              date: selection[0].date,
+              lotId: lotId,
+              type: 'sale',
+              quantity: String(animals), // Converti in stringa per numeric
+              basketId: destBasket.basketId,
+              operationId: saleOperation.id,
+              selectionId: Number(id),
+              allocationMethod: 'proportional',
+              allocationBasis: allocationBasisData,
+              idempotencyKey: `sale-selection-${id}-basket-${destBasket.basketId}-lot-${lotId}`,
+              notes: `Vendita da vagliatura #${selection[0].selectionNumber}`
+            });
+          }
+          
+          console.log(`   ✅ Registrate ${lotDistributions.length} vendite nel lot_ledger per operazione ${saleOperation.id}`);
 
           // Chiudi ciclo per vendita
           await tx.update(cycles)
