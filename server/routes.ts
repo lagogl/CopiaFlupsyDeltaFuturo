@@ -64,6 +64,7 @@ import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/oper
 
 // 🎯 MODULI ORGANIZZATI
 import { flupsyRoutes } from "./modules/core/flupsys";
+import { cyclesRoutes } from "./modules/operations/cycles";
 // import { updateBasketPosition } from "./controllers/basket-position-controller";
 // import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
@@ -273,6 +274,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const operationsModule = await import('./modules/operations/operations');
   app.use('/api/operations', operationsModule.operationsRoutes);
   console.log('✅ Modulo OPERATIONS registrato su /api/operations');
+
+  // Registra il modulo CYCLES
+  app.use('/api/cycles', cyclesRoutes);
+  console.log('✅ Modulo CYCLES registrato su /api/cycles');
 
   // Method-override workaround implemented - PATCH/PUT converted to POST + header in frontend
 
@@ -3607,8 +3612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === Cycle routes ===
-  app.get("/api/cycles", async (req, res) => {
+  // === Cycle routes === [MODULARIZZATO - vedere /modules/operations/cycles]
+  /* app.get("/api/cycles", async (req, res) => {
     try {
       const startTime = Date.now();
       
@@ -3675,9 +3680,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching cycles:", error);
       res.status(500).json({ message: "Failed to fetch cycles" });
     }
-  });
+  }); */
 
-  app.get("/api/cycles/active", async (req, res) => {
+  /* app.get("/api/cycles/active", async (req, res) => {
     try {
       const startTime = Date.now();
       
@@ -3727,9 +3732,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       return sendError(res, error, "Error fetching active cycles with details", 400);
     }
-  });
+  }); */
 
-  app.get("/api/cycles/:id", async (req, res) => {
+  /* app.get("/api/cycles/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -3783,7 +3788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.status(400).json({ 
       message: "La chiusura manuale dei cicli è stata disabilitata. I cicli vengono chiusi automaticamente tramite le operazioni di 'vendita', 'selezione per vendita' o 'cessazione'." 
     });
-  });
+  }); */
 
   // === Size routes ===
   app.get("/api/sizes", async (req, res) => {
