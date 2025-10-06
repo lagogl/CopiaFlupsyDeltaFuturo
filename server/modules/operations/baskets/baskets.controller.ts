@@ -102,6 +102,11 @@ export class BasketsController {
         console.log(`SLOW: GET /api/baskets took ${elapsedTime}ms`);
       }
 
+      // Se includeAll=true, restituisci solo l'array dei baskets (compatibilità frontend)
+      if (includeAll && result.baskets) {
+        return res.json(result.baskets);
+      }
+
       res.json(result);
     } catch (error) {
       console.error("Error fetching baskets:", error);
