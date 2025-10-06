@@ -1,7 +1,7 @@
 // File server/debug-db.ts
 // Script di diagnostica per verificare la connessione al database
 
-import { queryClient, db } from './db';
+import { pool, db } from './db';
 import { operations, flupsys, baskets } from '../shared/schema';
 import { sql } from 'drizzle-orm';
 
@@ -13,8 +13,8 @@ export async function testDatabaseConnection() {
   
   try {
     // 1. Test Connessione Base
-    console.log("Test 1: Connessione diretta con queryClient...");
-    const connectionResult = await queryClient`SELECT 1 as test`;
+    console.log("Test 1: Connessione diretta con pool...");
+    const connectionResult = await pool.query('SELECT 1 as test');
     console.log("Risultato test connessione diretta:", connectionResult);
     
     // 2. Test Query Semplice con drizzle
