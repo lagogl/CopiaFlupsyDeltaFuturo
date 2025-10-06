@@ -2623,16 +2623,22 @@ export default function Operations() {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button variant="ghost" size="icon">
-                                    <Eye className="h-5 w-5 text-primary" />
+                                    <Eye className={`h-5 w-5 ${(() => {
+                                      // Rileva lotti misti: controlla note o metadata
+                                      const hasMixedLot = op.notes?.includes('LOTTO MISTO') || 
+                                        (op.metadata && typeof op.metadata === 'string' && op.metadata.includes('"isMixed":true')) ||
+                                        (op.metadata && typeof op.metadata === 'object' && op.metadata.isMixed === true);
+                                      return hasMixedLot ? 'text-amber-500' : 'text-primary';
+                                    })()}`} />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
+                                <TooltipContent className={`${op.notes && op.notes.length > 100 ? 'max-w-2xl' : 'max-w-md'}`}>
                                   <div className="space-y-1">
                                     {op.mortalityRate != null && (
                                       <div><strong>Mortalità:</strong> {op.mortalityRate.toFixed(1)}%</div>
                                     )}
                                     {op.notes && (
-                                      <div><strong>Note:</strong> {op.notes}</div>
+                                      <div className="whitespace-pre-wrap"><strong>Note:</strong> {op.notes}</div>
                                     )}
                                     {!op.mortalityRate && !op.notes && (
                                       <div>Nessuna informazione aggiuntiva disponibile</div>
