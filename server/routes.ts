@@ -66,6 +66,8 @@ import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/oper
 import { flupsyRoutes } from "./modules/core/flupsys";
 import { cyclesRoutes } from "./modules/operations/cycles";
 import { registerScreeningRoutes } from "./modules/screening/screening.routes";
+import { registerAnalyticsRoutes } from "./modules/analytics/analytics.routes";
+import { registerIntegrationsRoutes } from "./modules/integrations/integrations.routes";
 // import { updateBasketPosition } from "./controllers/basket-position-controller";
 // import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
@@ -282,6 +284,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
+
+  // Registra il modulo ANALYTICS
+  registerAnalyticsRoutes(app);
+
+  // Registra il modulo INTEGRATIONS (Email/Telegram)
+  registerIntegrationsRoutes(app);
 
   // Method-override workaround implemented - PATCH/PUT converted to POST + header in frontend
 
@@ -8427,6 +8435,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
+  // ========================================
+  // 🔄 INTEGRATIONS MODULE - MIGRATED
+  // Le route di integrazioni Email/Telegram sono state migrate al modulo server/modules/integrations
+  // Questo blocco è commentato per rollback safety
+  // ========================================
+  /*
   // === Route per invio email (WhatsApp rimosso) ===
   // Rotta WhatsApp rimossa: app.get("/api/whatsapp/diario")
   
@@ -8461,6 +8475,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rotta WhatsApp rimossa: app.get("/api/whatsapp/config")
   
   // Rotta WhatsApp rimossa: app.post("/api/whatsapp/config")
+  */
+  // ========================================
+  // END INTEGRATIONS MODULE - MIGRATION COMPLETE
+  // ========================================
   
   // === Route per gestione notifiche ===
   app.get("/api/notifications", NotificationController.getNotifications);
@@ -8531,6 +8549,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ottiene il riepilogo dell'inventario per tutti i lotti
   app.get('/api/lot-inventory/all-summary', LotInventoryController.getAllLotsSummary);
   
+  // ========================================
+  // 🔄 ANALYTICS MODULE - MIGRATED
+  // Le route di analytics sono state migrate al modulo server/modules/analytics
+  // Questo blocco è commentato per rollback safety
+  // ========================================
+  /*
   // === Analytics Routes ===
   // Analytics completi per lotti con mortalità e performance
   app.get('/api/analytics/lots', AnalyticsController.getLotsAnalytics);
@@ -8555,6 +8579,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Tracciabilità completa di un lotto attraverso operazioni di vagliatura
   app.get('/api/analytics/lot-traceability/:lotId', AnalyticsController.getLotTraceability);
+  */
+  // ========================================
+  // END ANALYTICS MODULE - MIGRATION COMPLETE
+  // ========================================
   
   // === Eco-Impact Routes ===
   const ecoImpactController = new EcoImpactController();
