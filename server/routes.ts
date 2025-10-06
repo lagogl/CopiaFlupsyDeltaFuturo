@@ -269,6 +269,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/baskets', basketsModule.basketsRoutes);
   console.log('✅ Modulo BASKETS registrato su /api/baskets');
 
+  // Registra il modulo OPERATIONS
+  const operationsModule = await import('./modules/operations/operations');
+  app.use('/api/operations', operationsModule.operationsRoutes);
+  console.log('✅ Modulo OPERATIONS registrato su /api/operations');
+
   // Method-override workaround implemented - PATCH/PUT converted to POST + header in frontend
 
   // WORKAROUND: GET endpoint per aggiornare operazioni (metodi non-GET non funzionano)
@@ -1700,8 +1705,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Position history endpoints removed for performance optimization
 
   // === Operation routes ===
+  // 🔄 MIGRATO AL MODULO: server/modules/operations/operations
+  // Le route delle operazioni sono state modularizzate per una migliore organizzazione
+  // Mantenute commentate per riferimento durante la transizione
   
-
+  /*
   app.get("/api/operations-optimized", async (req, res) => {
     try {
       console.log("Richiesta operazioni ottimizzate con query params:", req.query);
@@ -3090,6 +3098,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  */
+  // Fine delle route delle operations migrate al modulo
 
   // === Giacenze Range API routes ===
   
