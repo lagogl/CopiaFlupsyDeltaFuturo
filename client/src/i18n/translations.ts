@@ -42,6 +42,7 @@ export interface MenuTranslations {
     stockRangeCalculation: string;
     export: string;
     aiDashboard: string;
+    aiReportGenerator: string;
     statistics: string;
     lotsAnalytics: string;
     lotLedgerStatistics: string;
@@ -103,6 +104,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       stockRangeCalculation: "Calcolo Giacenze Range",
       export: "Esportazione",
       aiDashboard: "AI Dashboard",
+      aiReportGenerator: "Generatore Report AI",
       statistics: "Statistiche",
       lotsAnalytics: "Analisi Lotti",
       lotLedgerStatistics: "Statistiche Lot Ledger",
@@ -160,6 +162,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       stockRangeCalculation: "Stock Range Calculation",
       export: "Export",
       aiDashboard: "AI Dashboard",
+      aiReportGenerator: "AI Report Generator",
       statistics: "Statistics",
       lotsAnalytics: "Lots Analytics",
       lotLedgerStatistics: "Lot Ledger Statistics",

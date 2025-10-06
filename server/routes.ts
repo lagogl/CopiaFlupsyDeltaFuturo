@@ -27,6 +27,7 @@ import {
   fattureInCloudConfig
 } from "../shared/schema";
 import { registerAIRoutes } from "./controllers/ai-controller";
+import { registerAIReportRoutes } from "./controllers/ai-report-controller";
 import { 
   getNotificationSettings, 
   updateNotificationSetting
@@ -597,6 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === AI Routes ===
   registerAIRoutes(app);
+  registerAIReportRoutes(app);
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Lot Lifecycle Management Routes ===

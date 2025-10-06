@@ -7,7 +7,7 @@ import {
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, BarChart3, Filter,
   FileJson, Download, Database, Leaf, LogOut, LayoutGrid,
-  CloudIcon, Table, Brain, CalendarDays, Globe, History
+  CloudIcon, Table, Brain, CalendarDays, Globe, History, FileSpreadsheet
 } from "lucide-react";
 import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
@@ -145,6 +145,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       color: 'text-purple-600',
       items: [
         { icon: <Brain className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.aiDashboard, path: "/ai-dashboard" },
+        { icon: <FileSpreadsheet className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.aiReportGenerator, path: "/ai-report-generator" },
         { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.statistics, path: "/statistics" },
         { icon: <BarChart2 className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.lotsAnalytics, path: "/lots-analytics" },
         { icon: <Filter className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.lotLedgerStatistics, path: "/lot-ledger-statistics" },

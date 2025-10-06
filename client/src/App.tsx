@@ -51,6 +51,7 @@ import AdvancedSales from "@/pages/AdvancedSales";
 import FattureInCloudConfig from "@/pages/FattureInCloudConfig";
 // Importazione AI Dashboard
 import AIDashboard from "@/pages/AIDashboard";
+import AIReportGenerator from "@/pages/AIReportGenerator";
 // Importazione Giacenze Range
 import GiacenzeRange from "@/pages/GiacenzeRange";
 // Importazione Storico Vagliature
@@ -122,6 +123,7 @@ function Router() {
       <ProtectedRoute path="/eco-impact" component={EcoImpact}/>
       <ProtectedRoute path="/sales-reports" component={SalesReports}/>
       <ProtectedRoute path="/ai-dashboard" component={AIDashboard}/>
+      <ProtectedRoute path="/ai-report-generator" component={AIReportGenerator}/>
       <ProtectedRoute path="/giacenze-range" component={GiacenzeRange}/>
       
       {/* Redirezione per pagine rimosse */}
