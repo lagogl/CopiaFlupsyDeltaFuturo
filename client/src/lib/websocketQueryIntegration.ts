@@ -21,6 +21,9 @@ const messageTypeToQueryKeys: Record<string, string[]> = {
   // Statistiche
   'statistics_updated': ['/api/statistics/cycles/comparison', '/api/size-predictions'],
   
+  // Selezioni/Vagliatura
+  'selection_completed': ['/api/baskets', '/api/selections', '/api/flupsys', '/api/operations', '/api/cycles', '/api/cycles/active'],
+  
   // Cestelli - Non includiamo basket_moved, basket_updated e baskets_switched qui perché li gestiamo separatamente
 };
 
@@ -123,6 +126,9 @@ export function useWebSocketQueryIntegration() {
   
   // Registra handler per 'statistics_updated'
   useWebSocketMessage('statistics_updated', createHandler('statistics_updated'));
+  
+  // Registra handler per 'selection_completed'
+  useWebSocketMessage('selection_completed', createHandler('selection_completed'));
   
   // OTTIMIZZAZIONE: basket_moved ora usa la stessa logica ottimizzata di basket_updated
   useWebSocketMessage('basket_moved', useCallback((data: any) => {

@@ -922,16 +922,42 @@ export default function VagliaturaConMappa() {
       
       // Passo 5: Completare la selezione
       updateStep('complete', 'in-progress', 4);
-      completeScreeningMutation.mutate({ selectionId });
+      
+      const completeResponse = await fetch(`/api/selections/${selectionId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ selectionId })
+      });
+      
+      if (!completeResponse.ok) {
+        const error = await completeResponse.json();
+        throw new Error(error.message || 'Errore durante il completamento della selezione');
+      }
+      
       updateStep('complete', 'completed', 4);
       
       // Imposta la vagliatura come completata con successo
       setIsScreeningCompleted(true);
       
-      // Chiudi il dialogo di progresso dopo un breve ritardo
+      toast({
+        title: "Vagliatura completata",
+        description: "La vagliatura è stata completata con successo",
+        variant: "default"
+      });
+      
+      // Invalida le query per aggiornare i dati
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/selections'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      
+      // Naviga alla dashboard dopo un breve ritardo per mostrare il successo
       setTimeout(() => {
         setIsCompletionInProgress(false);
-      }, 1500);
+        navigate('/');
+      }, 2000);
       
     } catch (error: any) {
       // In caso di errore, aggiorna lo step corrente come errore
