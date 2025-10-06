@@ -33,8 +33,8 @@ TABELLE PRINCIPALI:
 - baskets: id, physical_number, flupsy_id, cycle_code, state, current_cycle_id, row, position
 - operations: id, date, type, basket_id, cycle_id, size_id, sgr_id, lot_id, animal_count, total_weight, animals_per_kg, average_weight, dead_count, mortality_rate, notes, metadata
 - cycles: id, basket_id, lot_id, start_date, end_date, state
-- lots: id, arrival_date, supplier, supplier_lot_number, quality, animal_count, weight, notes, total_mortality
-- sizes: id, code, description, tp_number
+- lots: id, arrival_date, supplier, supplier_lot_number, quality, animal_count, weight, size_id, notes, total_mortality, state, active
+- sizes: id, code, name, size_mm, min_animals_per_kg, max_animals_per_kg, notes, color
 - basket_lot_composition: id, basket_id, cycle_id, lot_id, animal_count, percentage
 - advanced_sales: id, sale_number, sale_date, customer_name, customer_address, customer_vat, total_amount, ddt_status, ddt_number, ddt_date, notes
 - sale_bags: id, sale_id, bag_number, size_id, quantity_kg, animals_per_kg, unit_price, total_price
@@ -42,6 +42,12 @@ TABELLE PRINCIPALI:
 
 TIPI OPERAZIONE:
 prima-attivazione, pulizia, vagliatura, trattamento, misura, vendita, selezione-vendita, cessazione, peso, selezione-origine, dismissione, chiusura-ciclo-vagliatura
+
+STATI CICLO:
+active, closed
+
+STATI CESTA:
+available, active
 
 JOIN COMUNI:
 - operations JOIN baskets ON operations.basket_id = baskets.id
@@ -52,6 +58,14 @@ JOIN COMUNI:
 - basket_lot_composition JOIN lots ON basket_lot_composition.lot_id = lots.id
 - advanced_sales JOIN sale_bags ON advanced_sales.id = sale_bags.sale_id
 - sale_bags JOIN sale_allocations ON sale_bags.id = sale_allocations.bag_id
+
+NOTE IMPORTANTI:
+- I codici delle taglie seguono il formato TP-XXXX (es: TP-500, TP-3000, TP-10000)
+- Per confrontare le taglie, usa min_animals_per_kg e max_animals_per_kg (valori più bassi = animali più grandi)
+- TP-10000 ha min_animals_per_kg più basso di TP-500 (animali più grandi)
+- Per "taglia superiore o uguale a TP-3000" significa animali più grandi, quindi min_animals_per_kg più basso
+- I cicli possono essere sia 'active' che 'closed', assicurati di includerli entrambi se richiesto
+- Usa sempre TO_CHAR(date_column, 'DD/MM/YYYY') per formattare le date in formato leggibile
 `;
 
 /**
