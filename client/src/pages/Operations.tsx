@@ -267,7 +267,7 @@ function EditOperationForm({ operation, onClose }: { operation: Operation; onClo
             <div>
               <label className="text-sm font-medium">Data</label>
               <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-100 rounded">
-                {format(new Date(operation.date), 'dd/MM/yyyy', { locale: it })}
+                {safeFormatDate(operation.date, 'dd/MM/yyyy')}
               </div>
             </div>
             
@@ -2363,7 +2363,7 @@ export default function Operations() {
                     filteredOperations.map((op) => (
                       <tr key={op.id}>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                          {format(new Date(op.date), 'dd/MM/yyyy')}
+                          {safeFormatDate(op.date, 'dd/MM/yyyy')}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           {getOperationTypeBadge(op.type)}
@@ -2447,7 +2447,7 @@ export default function Operations() {
                                     <>
                                       {mainLot.arrivalDate && (
                                         <span className="text-xs block text-gray-500">
-                                          Arrivo: {format(new Date(mainLot.arrivalDate), 'dd/MM/yyyy')}
+                                          Arrivo: {safeFormatDate(mainLot.arrivalDate, 'dd/MM/yyyy')}
                                         </span>
                                       )}
                                       <span className="text-xs block text-gray-500">
@@ -2465,7 +2465,7 @@ export default function Operations() {
                                           <div className="font-medium">{lot.name}</div>
                                           {lot.arrivalDate && (
                                             <div className="text-xs text-gray-500">
-                                              Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}
+                                              Arrivo: {safeFormatDate(lot.arrivalDate, 'dd/MM/yyyy')}
                                             </div>
                                           )}
                                           <div className="text-xs text-gray-500">
@@ -2486,7 +2486,7 @@ export default function Operations() {
                                   <span className="font-medium text-indigo-600">{op.lot.name}</span>
                                   {op.lot.arrivalDate && (
                                     <span className="text-xs block text-gray-500">
-                                      Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                      Arrivo: {safeFormatDate(op.lot.arrivalDate, 'dd/MM/yyyy')}
                                     </span>
                                   )}
                                   <span className="text-xs block text-gray-500">
@@ -2510,7 +2510,7 @@ export default function Operations() {
                                     <span className="font-medium text-indigo-600">{lotById.name || `Lotto #${lotById.id}`}</span>
                                     {lotById.arrivalDate && (
                                       <span className="text-xs block text-gray-500">
-                                        Arrivo: {format(new Date(lotById.arrivalDate), 'dd/MM/yyyy')}
+                                        Arrivo: {safeFormatDate(lotById.arrivalDate, 'dd/MM/yyyy')}
                                       </span>
                                     )}
                                     <span className="text-xs block text-gray-500">
@@ -2538,7 +2538,7 @@ export default function Operations() {
                                     <span className="font-medium text-indigo-600">{firstActivationInCycle.lot.name}</span>
                                     {firstActivationInCycle.lot.arrivalDate && (
                                       <span className="text-xs block text-gray-500">
-                                        Arrivo: {format(new Date(firstActivationInCycle.lot.arrivalDate), 'dd/MM/yyyy')}
+                                        Arrivo: {safeFormatDate(firstActivationInCycle.lot.arrivalDate, 'dd/MM/yyyy')}
                                       </span>
                                     )}
                                     <span className="text-xs block text-gray-500">
@@ -2562,7 +2562,7 @@ export default function Operations() {
                                       <span className="font-medium text-indigo-600">{firstActivationLot.name || `Lotto #${firstActivationLot.id}`}</span>
                                       {firstActivationLot.arrivalDate && (
                                         <span className="text-xs block text-gray-500">
-                                          Arrivo: {format(new Date(firstActivationLot.arrivalDate), 'dd/MM/yyyy')}
+                                          Arrivo: {safeFormatDate(firstActivationLot.arrivalDate, 'dd/MM/yyyy')}
                                         </span>
                                       )}
                                       <span className="text-xs block text-gray-500">
@@ -3284,7 +3284,7 @@ export default function Operations() {
                                               <div className="font-medium">{opWithLot.lot.name}</div>
                                               {opWithLot.lot.arrivalDate && (
                                                 <div className="text-xs text-gray-500">
-                                                  Arrivo: {format(new Date(opWithLot.lot.arrivalDate), 'dd/MM/yyyy')}
+                                                  Arrivo: {safeFormatDate(opWithLot.lot.arrivalDate, 'dd/MM/yyyy')}
                                                 </div>
                                               )}
                                               {opWithLot.lot.supplier && (
@@ -3306,7 +3306,7 @@ export default function Operations() {
                                                 <div className="font-medium">{lot.name || `Lotto #${lot.id}`}</div>
                                                 {lot.arrivalDate && (
                                                   <div className="text-xs text-gray-500">
-                                                    Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}
+                                                    Arrivo: {safeFormatDate(lot.arrivalDate, 'dd/MM/yyyy')}
                                                   </div>
                                                 )}
                                                 {lot.supplier && (
@@ -3717,7 +3717,7 @@ export default function Operations() {
                                       <h4 className="text-base font-medium flex items-center">
                                         {getOperationTypeBadge(op.type)}
                                         <span className="ml-2 text-gray-600">
-                                          {format(new Date(op.date), 'dd/MM/yyyy')}
+                                          {safeFormatDate(op.date, 'dd/MM/yyyy')}
                                         </span>
                                       </h4>
                                       {daysDiff && daysDiff > 0 && (
@@ -3833,7 +3833,7 @@ export default function Operations() {
                                         {op.lot.name}
                                         {op.lot.arrivalDate && (
                                           <span className="text-xs text-gray-500 block">
-                                            Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                            Arrivo: {safeFormatDate(op.lot.arrivalDate, 'dd/MM/yyyy')}
                                           </span>
                                         )}
                                         <span className="text-xs text-gray-500 block">
