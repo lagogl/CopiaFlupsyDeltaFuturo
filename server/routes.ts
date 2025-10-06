@@ -312,6 +312,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', mortalityRatesModule.mortalityRatesRoutes);
   console.log('✅ Modulo MORTALITY-RATES registrato su /api/mortality-rates*');
 
+  // Registra il modulo NOTIFICATIONS
+  const notificationsModule = await import('./modules/system/notifications');
+  app.use('/api', notificationsModule.notificationsRoutes);
+  console.log('✅ Modulo NOTIFICATIONS registrato su /api/notifications*, /api/notification-settings*');
+
+  // Registra il modulo GIACENZE
+  const giacenzeModule = await import('./modules/core/giacenze');
+  app.use('/api', giacenzeModule.giacenzeRoutes);
+  console.log('✅ Modulo GIACENZE registrato su /api/giacenze/*');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
@@ -3152,18 +3162,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fine delle route delle operations migrate al modulo
 
   // === Giacenze Range API routes ===
-  
-  // Endpoint principale per calcolo giacenze personalizzate tra due date
+  // 🔄 MIGRATO AL MODULO: server/modules/core/giacenze
+  /*
   app.get("/api/giacenze/range", async (req, res) => {
     const { getGiacenzeRange } = await import('./controllers/giacenze-controller');
     await getGiacenzeRange(req, res);
   });
 
-  // Endpoint per riepilogo rapido giacenze
   app.get("/api/giacenze/summary", async (req, res) => {
     const { getGiacenzeSummary } = await import('./controllers/giacenze-controller');
     await getGiacenzeSummary(req, res);
   });
+  */
 
   // === Diario di Bordo API routes ===
   
@@ -8517,6 +8527,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ========================================
   
   // === Route per gestione notifiche ===
+  // 🔄 MIGRATO AL MODULO: server/modules/system/notifications
+  /*
   app.get("/api/notifications", NotificationController.getNotifications);
   app.post("/api/notifications", NotificationController.createNotification);
   app.put("/api/notifications/:id/read", NotificationController.markNotificationAsRead);
@@ -8548,6 +8560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  */
   
   // Esegui controllo manuale per cicli che hanno raggiunto TP-3000
   app.post("/api/check-growth-notifications", async (req, res) => {
