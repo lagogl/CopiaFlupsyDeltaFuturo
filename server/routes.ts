@@ -282,6 +282,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/cycles', cyclesRoutes);
   console.log('✅ Modulo CYCLES registrato su /api/cycles');
 
+  // Registra il modulo LOTS
+  const lotsModule = await import('./modules/core/lots');
+  app.use('/api/lots', lotsModule.lotsRoutes);
+  console.log('✅ Modulo LOTS registrato su /api/lots');
+
+  // Registra il modulo SIZES
+  const sizesModule = await import('./modules/core/sizes');
+  app.use('/api/sizes', sizesModule.sizesRoutes);
+  console.log('✅ Modulo SIZES registrato su /api/sizes');
+
+  // Registra il modulo SGR (Indici di Crescita)
+  const sgrModule = await import('./modules/core/sgr');
+  app.use('/api', sgrModule.sgrRoutes);
+  console.log('✅ Modulo SGR registrato su /api/sgr* e /api/sgr-giornalieri*');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
