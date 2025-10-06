@@ -264,6 +264,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/flupsys', flupsyRoutes);
   console.log('✅ Modulo FLUPSYS registrato su /api/flupsys');
 
+  // Registra il modulo BASKETS
+  const basketsModule = await import('./modules/operations/baskets');
+  app.use('/api/baskets', basketsModule.basketsRoutes);
+  console.log('✅ Modulo BASKETS registrato su /api/baskets');
+
   // Method-override workaround implemented - PATCH/PUT converted to POST + header in frontend
 
   // WORKAROUND: GET endpoint per aggiornare operazioni (metodi non-GET non funzionano)
@@ -614,7 +619,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/lot-lifecycle/stats", LotLifecycleController.getLifecycleStats);
   
   // === Basket routes ===
+  // 🔄 MIGRATO AL MODULO: server/modules/operations/baskets
+  // Le route dei cestelli sono state modularizzate per una migliore organizzazione
+  // Mantenute commentate per riferimento durante la transizione
   
+  /*
   // Nuovo endpoint per identificazione univoca cestelli (physicalNumber + currentCycleId)
   app.get("/api/baskets/find-by-nfc", async (req, res) => {
     try {
@@ -1685,6 +1694,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete basket" });
     }
   });
+  */
+  // Fine delle route dei baskets migrate al modulo
   
   // Position history endpoints removed for performance optimization
 
