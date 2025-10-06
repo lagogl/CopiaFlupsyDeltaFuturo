@@ -302,6 +302,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', selectionsModule.selectionsRoutes);
   console.log('✅ Modulo SELECTIONS registrato su /api/selections* e /api/flupsy/available-positions');
 
+  // Registra il modulo AUTH
+  const authModule = await import('./modules/system/auth');
+  app.use('/api', authModule.authRoutes);
+  console.log('✅ Modulo AUTH registrato su /api/login, /api/logout, /api/register, /api/users/current');
+
+  // Registra il modulo MORTALITY-RATES
+  const mortalityRatesModule = await import('./modules/core/mortality-rates');
+  app.use('/api', mortalityRatesModule.mortalityRatesRoutes);
+  console.log('✅ Modulo MORTALITY-RATES registrato su /api/mortality-rates*');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
@@ -516,6 +526,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log("✅ Route Fatture in Cloud registrate con successo");
   
   // === Autenticazione routes ===
+  // 🔄 MIGRATO AL MODULO: server/modules/system/auth
+  /*
   app.post("/api/login", async (req, res) => {
     try {
       let { username, password } = req.body;
@@ -643,6 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: "Non autenticato"
     });
   });
+  */
   
   // Registra la route diretta per le operazioni
   implementDirectOperationRoute(app);
@@ -4167,6 +4180,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Mortality Rate routes ===
+  // 🔄 MIGRATO AL MODULO: server/modules/core/mortality-rates
+  /*
   app.get("/api/mortality-rates", async (req, res) => {
     try {
       const mortalityRates = await storage.getMortalityRates();
@@ -4373,6 +4388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update mortality rate" });
     }
   });
+  */
 
   // === Lot routes ===
   app.get("/api/lots", async (req, res) => {
