@@ -61,6 +61,9 @@ import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
 import * as AnalyticsController from "./controllers/analytics-controller";
 import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/operations-unified-controller";
+
+// 🎯 MODULI ORGANIZZATI
+import { flupsyRoutes } from "./modules/core/flupsys";
 // import { updateBasketPosition } from "./controllers/basket-position-controller";
 // import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
@@ -257,6 +260,10 @@ async function handleBasketLotCompositionOnUpdate(operation: any, updateData: an
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // 🎯 MODULI ORGANIZZATI - Registrazione route modularizzate
+  app.use('/api/flupsys', flupsyRoutes);
+  console.log('✅ Modulo FLUPSYS registrato su /api/flupsys');
+
   // Method-override workaround implemented - PATCH/PUT converted to POST + header in frontend
 
   // WORKAROUND: GET endpoint per aggiornare operazioni (metodi non-GET non funzionano)
@@ -4929,6 +4936,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === FLUPSY routes ===
+  // 🚨 DEPRECATED: Queste route sono state migrate al modulo server/modules/core/flupsys
+  // Le route modularizzate sono già registrate all'inizio di registerRoutes()
+  // Questo blocco sarà rimosso dopo aver verificato che il modulo funziona correttamente
+  // NON verranno mai eseguite perché il modulo è registrato prima
+  /* DEPRECATO - INIZIO BLOCCO
   app.get("/api/flupsys", async (req, res) => {
     try {
       // Ottenere i FLUPSY base
@@ -5666,6 +5678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch cycles for FLUPSY" });
     }
   });
+  FINE BLOCCO DEPRECATO */
 
   // === Growth Prediction Endpoints ===
   // === Growth Prediction Endpoints ===
