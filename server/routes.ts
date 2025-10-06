@@ -297,6 +297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', sgrModule.sgrRoutes);
   console.log('✅ Modulo SGR registrato su /api/sgr* e /api/sgr-giornalieri*');
 
+  // Registra il modulo SELECTIONS
+  const selectionsModule = await import('./modules/operations/selections');
+  app.use('/api', selectionsModule.selectionsRoutes);
+  console.log('✅ Modulo SELECTIONS registrato su /api/selections* e /api/flupsy/available-positions');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
