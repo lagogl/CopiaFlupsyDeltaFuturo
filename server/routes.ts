@@ -65,6 +65,7 @@ import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/oper
 // 🎯 MODULI ORGANIZZATI
 import { flupsyRoutes } from "./modules/core/flupsys";
 import { cyclesRoutes } from "./modules/operations/cycles";
+import { registerScreeningRoutes } from "./modules/screening/screening.routes";
 // import { updateBasketPosition } from "./controllers/basket-position-controller";
 // import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
@@ -278,6 +279,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registra il modulo CYCLES
   app.use('/api/cycles', cyclesRoutes);
   console.log('✅ Modulo CYCLES registrato su /api/cycles');
+
+  // Registra il modulo SCREENING
+  registerScreeningRoutes(app);
 
   // Method-override workaround implemented - PATCH/PUT converted to POST + header in frontend
 
@@ -6826,6 +6830,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const httpServer = createServer(app);
   
+  // ========================================
+  // 🔄 SCREENING MODULE - MIGRATED
+  // Le route di screening sono state migrate al modulo server/modules/screening
+  // Questo blocco è commentato per rollback safety
+  // ========================================
+  /*
   // API routes for the screening (vagliatura) module
   app.get("/api/screening/operations", async (req, res) => {
     try {
@@ -7368,6 +7378,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create screening lot reference" });
     }
   });
+  */
+  // ========================================
+  // END SCREENING MODULE - MIGRATION COMPLETE
+  // ========================================
 
   // Endpoint per l'esportazione delle giacenze
   app.get("/api/export/giacenze", async (req, res) => {
