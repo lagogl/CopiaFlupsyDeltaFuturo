@@ -254,12 +254,15 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     console.log(`🔍 CTE PARAMS DEBUG:`, filterParams);
     const startQueryTime = Date.now();
     
-    const result = await db.execute(sql.raw(cteQuery, filterParams));
+    const queryResult = await db.execute(sql.raw(cteQuery, filterParams));
     const queryTime = Date.now() - startQueryTime;
     console.log(`🚀 CTE: Query completata in ${queryTime}ms`);
     
-    // Validate Drizzle result array
-    if (!result || !Array.isArray(result)) {
+    // Extract rows from Drizzle result
+    const result = queryResult.rows || [];
+    
+    // Validate result array
+    if (!Array.isArray(result)) {
       console.warn(`⚠️ CTE Query returned invalid result, returning empty array`);
       return {
         baskets: [],
