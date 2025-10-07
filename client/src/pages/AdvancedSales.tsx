@@ -241,7 +241,7 @@ export default function AdvancedSales() {
                 sizeCode: "", // Non disponibile in questo endpoint
                 sizeName: "",
                 totalAnimals: op.originalAnimals,
-                totalWeightKg: op.originalWeight / 1000,
+                totalWeightKg: op.originalWeight,
                 animalsPerKg: op.originalAnimalsPerKg
               };
             });
@@ -561,7 +561,7 @@ export default function AdvancedSales() {
                           <Badge variant="outline">{op.sizeCode}</Badge>
                         </TableCell>
                         <TableCell>{op.animalCount?.toLocaleString()}</TableCell>
-                        <TableCell>{op.totalWeight ? (op.totalWeight / 1000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}</TableCell>
+                        <TableCell>{op.totalWeight ? op.totalWeight.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}</TableCell>
                         <TableCell>{op.animalsPerKg?.toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge variant={op.processed ? "secondary" : "default"}>
