@@ -42,42 +42,47 @@ interface LotLedgerEntry {
 }
 
 interface LotStats {
-  success: boolean;
-  lotId: number;
   lot: any;
-  currentBalance: number;
-  stats: {
+  success?: boolean;
+  lotId?: number;
+  currentBalance?: number;
+  totalOperations?: number;
+  activeCyclesCount?: number;
+  totalMortality?: number;
+  lastMortalityDate?: string;
+  operations?: any[];
+  stats?: {
     in: number;
     transfer_out: number;
     transfer_in: number;
     sale: number;
     mortality: number;
   };
-  percentages: {
+  percentages?: {
     survival: number;
     sold: number;
     mortality: number;
     transferred: number;
   };
-  totals: {
+  totals?: {
     totalInflow: number;
     totalOutflow: number;
     netBalance: number;
   };
-  summaryByType: Array<{
+  summaryByType?: Array<{
     type: string;
     totalQuantity: number;
     movementCount: number;
     earliestDate: string;
     latestDate: string;
   }>;
-  activityPeriod: {
+  activityPeriod?: {
     firstMovement: number;
     lastMovement: number;
     daysSinceFirst: number;
   } | null;
-  recentMovements: LotLedgerEntry[];
-  metadata: {
+  recentMovements?: LotLedgerEntry[];
+  metadata?: {
     totalMovements: number;
     calculatedAt: string;
   };
@@ -586,7 +591,8 @@ export default function LotLedgerStatistics() {
                 </div>
                 )}
 
-                {/* Grafici Dettagliati */}
+                {/* Grafici Dettagliati - solo se disponibili */}
+                {lotStats.stats && lotStats.recentMovements && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader>
@@ -649,8 +655,10 @@ export default function LotLedgerStatistics() {
                     </CardContent>
                   </Card>
                 </div>
+                )}
 
-                {/* Riepilogo per Tipo */}
+                {/* Riepilogo per Tipo - solo se disponibile */}
+                {lotStats.summaryByType && lotStats.summaryByType.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Riepilogo Dettagliato per Tipo</CardTitle>
@@ -689,6 +697,7 @@ export default function LotLedgerStatistics() {
                     </div>
                   </CardContent>
                 </Card>
+                )}
               </>
             )}
 
