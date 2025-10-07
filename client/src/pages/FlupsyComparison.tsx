@@ -961,13 +961,13 @@ export default function FlupsyComparison() {
                     <div className="text-sm">
                       <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
                         {sgrs?.map((sgr) => (
-                          <React.Fragment key={sgr.id}>
+                          <div key={sgr.id} className="contents">
                             <div>{sgr.month}:</div>
                             <div>{sgr.percentage}% (giornaliero)</div>
                             <div>Mensile (~30gg):</div>
                             <div>{((Math.pow(1 + sgr.percentage/100, 30) - 1) * 100).toFixed(2)}%</div>
                             <div className="col-span-2 border-t border-gray-200 mt-1 pt-1"></div>
-                          </React.Fragment>
+                          </div>
                         ))}
                       </div>
                     </div>
