@@ -2394,7 +2394,7 @@ export class DbStorage implements IStorage {
         pesoCesteKg: externalDeliveryDetailsSync.pesoCesteKg,
         taglia: externalDeliveryDetailsSync.taglia,
         animaliPerKg: externalDeliveryDetailsSync.animaliPerKg,
-        percentualeGuscio: externalDeliveryDetailsSync.percentualeGuscio,
+        percentualeScarto: externalDeliveryDetailsSync.percentualeScarto,
         percentualeMortalita: externalDeliveryDetailsSync.percentualeMortalita,
         numeroAnimali: externalDeliveryDetailsSync.numeroAnimali,
         note: externalDeliveryDetailsSync.note,
