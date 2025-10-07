@@ -1052,9 +1052,9 @@ export default function FlupsyComparison() {
                                 Fila {row}
                               </div>
                             </div>
-                            <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-2">
+                            <div className="flex flex-wrap gap-2">
                               {basketMatrix[row].map((basket, position) => (
-                                <div key={position} className="flex items-center justify-center">
+                                <div key={position}>
                                   {currentTabId === 'data-futuro' ? 
                                     renderFutureBasket(basket) : 
                                     renderTargetSizeBasket(basket)
