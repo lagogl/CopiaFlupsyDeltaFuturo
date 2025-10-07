@@ -793,6 +793,7 @@ export const externalDeliveriesSync = pgTable("external_deliveries_sync", {
   note: text("note"), // Note
   numeroProgressivo: integer("numero_progressivo"), // Numero progressivo
   syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
+  lastModifiedExternal: timestamp("last_modified_external"), // Ultima modifica nel DB esterno
   lastSyncAt: text("last_sync_at") // Ultima sincronizzazione (come testo per compatibilità)
 });
 
