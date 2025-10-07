@@ -325,13 +325,13 @@ export default function FlupsyComparison() {
   const getBasketCardSize = () => {
     switch (zoomLevel) {
       case 1:
-        return { width: 'w-44', height: 'h-22' }; // Default (aumentato)
+        return { width: 'w-56', height: 'h-28' }; // Default
       case 2:
-        return { width: 'w-56', height: 'h-28' }; // Medio (aumentato)
+        return { width: 'w-64', height: 'h-32' }; // Medio
       case 3:
-        return { width: 'w-72', height: 'h-32' }; // Grande (aumentato ulteriormente)
+        return { width: 'w-80', height: 'h-40' }; // Grande
       default:
-        return { width: 'w-44', height: 'h-22' };
+        return { width: 'w-56', height: 'h-28' };
     }
   };
 
