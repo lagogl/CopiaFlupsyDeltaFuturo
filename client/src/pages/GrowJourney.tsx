@@ -90,7 +90,7 @@ export default function GrowJourney() {
 
   // Conversione di tipi
   const baskets = basketsData as any[] || [];
-  const cycles = cyclesData as any[] || [];
+  const cycles = (cyclesData as any)?.cycles || [];
   const operations = operationsData as any[] || [];
   const sizes = sizesData as any[] || [];
   const sgrs = sgrsData as any[] || [];
