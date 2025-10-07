@@ -290,9 +290,9 @@ export default function FlupsyComparison() {
         }
       }
       
-      // Applica la crescita giornaliera usando la formula corretta: Pf = Pi * e^(SGR*t)
-      // Contiamo l'effetto di un giorno con il tasso corrente (già in decimale)
-      simulationWeight = simulationWeight * Math.exp(dailyRate);
+      // Applica la crescita giornaliera usando la formula corretta: Pf = Pi * e^(SGR/100*t)
+      // Convertiamo il tasso da percentuale a decimale dividendo per 100
+      simulationWeight = simulationWeight * Math.exp(dailyRate / 100);
       days++;
       
       // Aggiorna la data corrente per il giorno successivo
