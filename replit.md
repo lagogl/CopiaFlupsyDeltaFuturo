@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
   - Subtotals grouped by size (taglia) following DOCUMENTAZIONE_SISTEMA_DDT.md pattern
   - Integration with Fatture in Cloud API for DDT synchronization
   - PDF report generation with landscape orientation, customer details, and bag/basket allocation tables
+  - **Sale Reversal** (October 2025): Physical deletion of advanced sales with cascading cleanup (bags, allocations, DDT, DDT lines, operation references) in atomic transaction. Restricted to sales with DDT status 'locale' or 'nessuno' - prevents deletion if DDT already sent to Fatture in Cloud. Includes ID validation to prevent 500 errors on invalid input.
 - **Dynamic Logo System** (October 2025): Automated company logo integration in all PDF reports based on Fatture in Cloud Company ID:
   - Centralized logo service (`server/services/logo-service.ts`) with Company ID → logo mapping
   - Company 1017299 (EcoTapes Società Agricola) → logo-ecotapes.png
