@@ -74,10 +74,10 @@ export async function getGiacenzeRange(req: Request, res: Response) {
 
 /**
  * Endpoint per riepilogo rapido giacenze
- * GET /api/giacenze/summary?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD
+ * GET /api/giacenze/summary?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD[&flupsyId=ID]
  */
 export async function getGiacenzeSummary(req: Request, res: Response) {
-  const { dateFrom, dateTo } = req.query;
+  const { dateFrom, dateTo, flupsyId } = req.query;
 
   // Validazione parametri
   if (!dateFrom || !dateTo) {
@@ -106,9 +106,23 @@ export async function getGiacenzeSummary(req: Request, res: Response) {
   }
 
   try {
-    console.log(`📊 RIEPILOGO GIACENZE: Range ${dateFrom} - ${dateTo}`);
+    console.log(`📊 RIEPILOGO GIACENZE: Range ${dateFrom} - ${dateTo}${flupsyId ? ` per FLUPSY ${flupsyId}` : ''}`);
     
     const startTime = Date.now();
+    
+    // Costruisci condizioni per la query
+    let whereConditions = and(
+      gte(operations.date, dateFrom as string),
+      lte(operations.date, dateTo as string)
+    );
+    
+    // Se è specificato un FLUPSY, filtra anche per quello
+    if (flupsyId) {
+      whereConditions = and(
+        whereConditions,
+        eq(baskets.flupsyId, parseInt(flupsyId as string))
+      );
+    }
     
     // Query per statistiche aggregate
     const stats = await db.select({
@@ -128,12 +142,7 @@ export async function getGiacenzeSummary(req: Request, res: Response) {
     })
     .from(operations)
     .leftJoin(baskets, eq(operations.basketId, baskets.id))
-    .where(
-      and(
-        gte(operations.date, dateFrom as string),
-        lte(operations.date, dateTo as string)
-      )
-    );
+    .where(whereConditions);
 
     const result = stats[0] || {
       totale_entrate: 0,
@@ -160,6 +169,7 @@ export async function getGiacenzeSummary(req: Request, res: Response) {
       data: {
         dateFrom,
         dateTo,
+        flupsyId: flupsyId ? parseInt(flupsyId as string) : null,
         totale_giacenza,
         totale_entrate,
         totale_uscite,

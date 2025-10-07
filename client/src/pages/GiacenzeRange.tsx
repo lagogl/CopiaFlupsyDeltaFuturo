@@ -61,6 +61,7 @@ interface GiacenzeSummaryData {
   data: {
     dateFrom: string;
     dateTo: string;
+    flupsyId: number | null;
     totale_giacenza: number;
     totale_entrate: number;
     totale_uscite: number;
@@ -107,9 +108,13 @@ export default function GiacenzeRange() {
     error: summaryError,
     refetch: refetchSummary 
   } = useQuery<GiacenzeSummaryData>({
-    queryKey: ['/api/giacenze/summary', dateFrom, dateTo],
+    queryKey: ['/api/giacenze/summary', dateFrom, dateTo, flupsyId],
     queryFn: async () => {
-      const params = new URLSearchParams({ dateFrom, dateTo });
+      const params = new URLSearchParams({
+        dateFrom,
+        dateTo,
+        ...(flupsyId && { flupsyId })
+      });
       const response = await fetch(`/api/giacenze/summary?${params}`);
       if (!response.ok) {
         throw new Error(`${response.status}: ${await response.text()}`);
