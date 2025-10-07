@@ -7,7 +7,8 @@ import fs from 'fs';
 // Mappatura Company ID → Logo
 const COMPANY_LOGOS = {
   '1017299': 'logo-ecotapes.png',     // EcoTapes Società Agricola
-  '13263': 'logo-delta-futuro.png'     // Delta Futuro Soc. Agr. srl
+  '13263': 'logo-delta-futuro.png',   // Delta Futuro Soc. Agr. srl (ID anagrafica)
+  '1052922': 'logo-delta-futuro.png'  // Delta Futuro Soc. Agr. srl (ID principale FIC)
 } as const;
 
 // Mapping alternativo per production center (fallback)
@@ -104,7 +105,7 @@ export function getCompanyInfo(companyId: string | number | null | undefined): {
     };
   }
   
-  if (id === '13263') {
+  if (id === '13263' || id === '1052922') {
     return {
       name: 'Delta Futuro Soc. Agr. srl',
       logo: getCompanyLogo(id),
