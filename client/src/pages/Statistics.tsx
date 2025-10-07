@@ -16,9 +16,11 @@ export default function Statistics() {
   const [selectedCycles, setSelectedCycles] = useState<string[]>([]);
   
   // Query cycles
-  const { data: cycles, isLoading: cyclesLoading } = useQuery({
+  const { data: cyclesData, isLoading: cyclesLoading } = useQuery({
     queryKey: ['/api/cycles'],
   });
+  
+  const cycles = (cyclesData as any)?.cycles || [];
 
   // Query sizes
   const { data: sizes, isLoading: sizesLoading } = useQuery({
