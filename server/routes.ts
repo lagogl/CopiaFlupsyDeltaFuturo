@@ -332,6 +332,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/diario', diarioModule.diarioRoutes);
   console.log('✅ Modulo DIARIO registrato su /api/diario/*');
 
+  // Registra il modulo ADVANCED-SALES
+  const advancedSalesModule = await import('./modules/sales/advanced-sales');
+  app.use('/api/advanced-sales', advancedSalesModule.advancedSalesRoutes);
+  console.log('✅ Modulo ADVANCED-SALES registrato su /api/advanced-sales/*, /api/ddt/*');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
@@ -9076,7 +9081,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ===== ROUTE VENDITE AVANZATE =====
+  // ===== ROUTE VENDITE AVANZATE ===== [MODULARIZZATO - vedere /modules/sales/advanced-sales]
+  /*
   const AdvancedSalesController = await import('./controllers/advanced-sales-controller');
   
   // Operazioni vendita disponibili
@@ -9104,11 +9110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generazione DDT e report PDF
   app.post("/api/advanced-sales/:id/generate-ddt", AdvancedSalesController.generateDDT);
   app.get("/api/advanced-sales/:id/report.pdf", AdvancedSalesController.generatePDFReport);
+  */
   
-  // Download PDF DDT
+  // Download PDF DDT - Mantenuti qui per base path diverso
+  const AdvancedSalesController = await import('./controllers/advanced-sales-controller');
   app.get("/api/ddt/:ddtId/pdf", AdvancedSalesController.generateDDTPDF);
-  
-  // Invia DDT a Fatture in Cloud
   app.post("/api/ddt/:ddtId/send-to-fic", AdvancedSalesController.sendDDTToFIC);
 
   // Route per eliminare tutti i dati relativi ai lotti
