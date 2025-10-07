@@ -322,6 +322,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', giacenzeModule.giacenzeRoutes);
   console.log('✅ Modulo GIACENZE registrato su /api/giacenze/*');
 
+  // Registra il modulo DATABASE
+  const databaseModule = await import('./modules/system/database');
+  app.use('/api/database', databaseModule.databaseRoutes);
+  console.log('✅ Modulo DATABASE registrato su /api/database/*');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
