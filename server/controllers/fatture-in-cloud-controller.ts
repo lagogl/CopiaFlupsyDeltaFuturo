@@ -28,7 +28,7 @@ const FATTURE_IN_CLOUD_API_BASE = 'https://api-v2.fattureincloud.it';
 // ===== UTILITY FUNCTIONS =====
 
 // Helper per recuperare valori di configurazione
-async function getConfigValue(chiave: string): Promise<string | null> {
+export async function getConfigValue(chiave: string): Promise<string | null> {
   try {
     const config = await db.select().from(configurazione).where(eq(configurazione.chiave, chiave)).limit(1);
     return config.length > 0 ? config[0].valore : null;
@@ -54,7 +54,7 @@ async function setConfigValue(chiave: string, valore: string, descrizione?: stri
 }
 
 // Helper per richieste autenticate a Fatture in Cloud
-async function apiRequest(method: string, endpoint: string, data?: any) {
+export async function apiRequest(method: string, endpoint: string, data?: any) {
   const accessToken = await getConfigValue('fatture_in_cloud_access_token');
   
   if (!accessToken) {

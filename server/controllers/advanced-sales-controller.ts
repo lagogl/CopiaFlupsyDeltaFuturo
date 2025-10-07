@@ -31,6 +31,55 @@ import {
   insertSaleOperationsRefSchema
 } from "../../shared/schema";
 import { format } from "date-fns";
+import { apiRequest, getConfigValue } from "./fatture-in-cloud-controller";
+
+/**
+ * Ottiene il prossimo numero DDT disponibile verificando sia il database locale che Fatture in Cloud
+ */
+async function getNextAvailableDDTNumber(): Promise<number> {
+  try {
+    // 1. Ottieni l'ultimo numero DDT locale
+    const ultimoDDTLocale = await db.select().from(ddt).orderBy(desc(ddt.numero)).limit(1);
+    const numeroLocale = ultimoDDTLocale.length > 0 ? ultimoDDTLocale[0].numero : 0;
+
+    console.log(`📋 Ultimo DDT locale: ${numeroLocale}`);
+
+    // 2. Interroga Fatture in Cloud per ottenere gli ultimi DDT
+    let numeroFIC = 0;
+    
+    try {
+      const companyId = await getConfigValue('fatture_in_cloud_company_id');
+      
+      if (companyId) {
+        // Ottieni gli ultimi DDT da FIC (tipo delivery_note)
+        const ficResponse = await apiRequest('GET', `/issued_documents?type=delivery_note&sort=-number&per_page=1`);
+        
+        if (ficResponse.data?.data && ficResponse.data.data.length > 0) {
+          numeroFIC = ficResponse.data.data[0].number || 0;
+          console.log(`📋 Ultimo DDT su Fatture in Cloud: ${numeroFIC}`);
+        }
+      } else {
+        console.log('⚠️ Company ID non configurato, uso solo numero locale');
+      }
+    } catch (ficError: any) {
+      console.error('⚠️ Errore nel recupero DDT da Fatture in Cloud:', ficError.message);
+      console.log('📋 Continuo con solo numero locale');
+    }
+
+    // 3. Usa il massimo tra locale e FIC, incrementato di 1
+    const prossimoNumero = Math.max(numeroLocale, numeroFIC) + 1;
+    
+    console.log(`✅ Prossimo numero DDT disponibile: ${prossimoNumero}`);
+    
+    return prossimoNumero;
+    
+  } catch (error) {
+    console.error('❌ Errore nel calcolo prossimo numero DDT:', error);
+    // Fallback: usa solo database locale
+    const ultimoDDT = await db.select().from(ddt).orderBy(desc(ddt.numero)).limit(1);
+    return ultimoDDT.length > 0 ? ultimoDDT[0].numero + 1 : 1;
+  }
+}
 
 /**
  * Ottiene le operazioni di vendita disponibili per creare vendite avanzate
@@ -874,9 +923,8 @@ export async function generateDDT(req: Request, res: Response) {
       });
     }
 
-    // Genera numero DDT progressivo
-    const ultimoDDT = await db.select().from(ddt).orderBy(desc(ddt.numero)).limit(1);
-    const numeroDDT = ultimoDDT.length > 0 ? ultimoDDT[0].numero + 1 : 1;
+    // Ottieni il prossimo numero DDT disponibile da FIC
+    const numeroDDT = await getNextAvailableDDTNumber();
 
     // Recupera dati fiscali azienda attiva per snapshot mittente
     const companyIdConfig = await db.select()
