@@ -381,7 +381,7 @@ export default function FlupsyComparison() {
     // Prepara i dati per il tooltip
     const tooltipContent = () => {
       const sizeName = currentSize?.name || "N/A";
-      const animalsPerKg = latestOperation?.animalsPerKg || "N/A";
+      const animalsPerKg = latestOperation?.animalsPerKg ? latestOperation.animalsPerKg.toFixed(2) : "N/A";
       return (
         <div className="p-2 max-w-xs">
           <div className="font-bold mb-1">Cestello #{basket.physicalNumber}</div>
@@ -448,7 +448,7 @@ export default function FlupsyComparison() {
                     {latestOperation?.animalsPerKg && (
                       <div>
                         <div className="text-[8px] text-gray-500">Animali/kg</div>
-                        <div className="text-[9px] font-medium">{latestOperation.animalsPerKg}</div>
+                        <div className="text-[9px] font-medium">{latestOperation.animalsPerKg.toFixed(2)}</div>
                       </div>
                     )}
                   </div>
@@ -541,10 +541,10 @@ export default function FlupsyComparison() {
             </div>
             
             <div className="text-gray-500">Animali/kg attuale:</div>
-            <div>{currentAnimalsPerKg}</div>
+            <div>{currentAnimalsPerKg.toFixed(2)}</div>
             
             <div className="text-gray-500">Animali/kg futuro:</div>
-            <div>{futureAnimalsPerKg}</div>
+            <div>{futureAnimalsPerKg.toFixed(2)}</div>
           </div>
         </div>
       );
@@ -576,18 +576,20 @@ export default function FlupsyComparison() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-center">
-                  {/* Gestione speciale per taglie TP-10000+ con sfondo nero e testo bianco */}
-                  {futureSize?.code && futureSize.code.startsWith('TP-') && parseInt(futureSize.code.replace('TP-', '')) >= 10000 ? (
-                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-black text-white whitespace-nowrap max-w-full overflow-hidden">
-                      +TP-10000
-                    </Badge>
-                  ) : (
-                    <Badge className="text-[8px] px-1.5 py-0 h-4 whitespace-nowrap max-w-full overflow-hidden">
-                      {futureSize?.code || '?'}
-                    </Badge>
-                  )}
-                </div>
+                {futureSize?.code && (
+                  <div className="flex items-center justify-center">
+                    {/* Gestione speciale per taglie TP-10000+ con sfondo nero e testo bianco */}
+                    {futureSize.code.startsWith('TP-') && parseInt(futureSize.code.replace('TP-', '')) >= 10000 ? (
+                      <Badge className="text-[8px] px-1.5 py-0 h-4 bg-black text-white whitespace-nowrap max-w-full overflow-hidden">
+                        +TP-10000
+                      </Badge>
+                    ) : (
+                      <Badge className="text-[8px] px-1.5 py-0 h-4 whitespace-nowrap max-w-full overflow-hidden">
+                        {futureSize.code}
+                      </Badge>
+                    )}
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-2 gap-1 text-center">
                   <div>
@@ -596,7 +598,7 @@ export default function FlupsyComparison() {
                   </div>
                   <div>
                     <div className="text-[8px] text-gray-500">Animali/kg</div>
-                    <div className="text-[9px] font-medium">{futureAnimalsPerKg}</div>
+                    <div className="text-[9px] font-medium">{futureAnimalsPerKg.toFixed(2)}</div>
                   </div>
                 </div>
               </div>
