@@ -6855,17 +6855,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const margin = 50;
       const tableWidth = doc.page.width - (2 * margin);
       
-      // Logo aziendale (se presente)
+      // Logo aziendale basato su Company ID
       let yPosition = margin;
-      if (companyData?.logoPath) {
-        try {
-          const logoPath = path.join(process.cwd(), 'attached_assets', 'logos', path.basename(companyData.logoPath));
-          if (fs.existsSync(logoPath)) {
+      try {
+        const companyIdConfig = await db.select()
+          .from(schema.configurazione)
+          .where(eq(schema.configurazione.chiave, 'fatture_in_cloud_company_id'))
+          .limit(1);
+        
+        if (companyIdConfig.length > 0) {
+          const { getCompanyLogo } = await import('./services/logo-service');
+          const logoPath = getCompanyLogo(companyIdConfig[0].valore);
+          const fsSync = await import('fs');
+          if (fsSync.existsSync(logoPath)) {
             doc.image(logoPath, margin, yPosition, { width: 120, height: 60, fit: [120, 60] });
           }
-        } catch (error) {
-          console.error('Errore caricamento logo:', error);
         }
+      } catch (error) {
+        console.error('Errore caricamento logo:', error);
       }
 
       // Intestazione principale a destra del logo

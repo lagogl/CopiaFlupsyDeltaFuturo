@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import path from 'path';
 import fs from 'fs/promises';
+import { getCompanyLogoBase64, getCompanyInfo } from './logo-service';
 
 interface SaleData {
   sale: {
@@ -273,9 +274,16 @@ const HTML_TEMPLATE = `
         <h1>{{sale.saleNumber}} - Vendita Avanzata</h1>
         <p class="subtitle">Sistema di gestione acquacoltura FLUPSY Delta Futuro</p>
         <div class="company-info">
-            <div><strong>Società Agricola Delta Futuro srl</strong></div>
-            <div>Via Vallazza - 44020 Goro (FE)</div>
-            <div>Email: deltafuturo.goro@gmail.com</div>
+            {{#if companyLogo}}
+            <img src="{{companyLogo}}" alt="{{companyName}}" style="max-height: 60px; max-width: 200px; margin-bottom: 10px;" />
+            {{/if}}
+            <div><strong>{{companyName}}</strong></div>
+            {{#if companyAddress}}
+            <div>{{companyAddress}}</div>
+            {{/if}}
+            {{#if companyEmail}}
+            <div>Email: {{companyEmail}}</div>
+            {{/if}}
         </div>
     </div>
 
@@ -449,19 +457,27 @@ export class PDFGeneratorService {
     }
   }
 
-  async generateSalePDF(saleData: SaleData): Promise<Buffer> {
+  async generateSalePDF(saleData: SaleData, companyId?: string | number): Promise<Buffer> {
     await this.init();
 
     // Registra helper Handlebars
     this.registerHandlebarsHelpers();
 
+    // Ottieni dati azienda e logo
+    const companyInfo = getCompanyInfo(companyId);
+    const companyLogo = getCompanyLogoBase64(companyId);
+
     // Compila il template
     const template = handlebars.compile(HTML_TEMPLATE);
     
-    // Prepara i dati per il template
+    // Prepara i dati per il template con logo e info azienda
     const templateData = {
       ...saleData,
-      currentDate: format(new Date(), 'dd/MM/yyyy HH:mm', { locale: it })
+      currentDate: format(new Date(), 'dd/MM/yyyy HH:mm', { locale: it }),
+      companyLogo,
+      companyName: companyInfo.name,
+      companyAddress: '', // TODO: Recuperare da configurazione se necessario
+      companyEmail: '' // TODO: Recuperare da configurazione se necessario
     };
 
     const html = template(templateData);

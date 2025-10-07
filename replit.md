@@ -39,6 +39,12 @@ Preferred communication style: Simple, everyday language.
   - Subtotals grouped by size (taglia) following DOCUMENTAZIONE_SISTEMA_DDT.md pattern
   - Integration with Fatture in Cloud API for DDT synchronization
   - PDF report generation with landscape orientation, customer details, and bag/basket allocation tables
+- **Dynamic Logo System** (October 2025): Automated company logo integration in all PDF reports based on Fatture in Cloud Company ID:
+  - Centralized logo service (`server/services/logo-service.ts`) with Company ID → logo mapping
+  - Company 1017299 (EcoTapes Società Agricola) → logo-ecotapes.png
+  - Company 13263 (Delta Futuro Soc. Agr. srl) → logo-delta-futuro.png
+  - Integrated in 4 PDF types: Advanced Sales (Puppeteer), Sales Report (PDFKit), DDT (PDFKit), Screening/Selection (PDFKit)
+  - Automatic logo retrieval from `configurazione` table using 'fatture_in_cloud_company_id' key
 
 ### System Design Choices
 - **Data Flow**: User input flows from React components to PostgreSQL via TanStack Query, Express API, and Drizzle ORM. Real-time updates occur via WebSocket. External data is synchronized via API.
