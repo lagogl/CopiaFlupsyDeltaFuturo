@@ -1817,3 +1817,106 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Storna (elimina) completamente una vendita avanzata
+ * SOLO se il DDT non è stato inviato a Fatture in Cloud
+ */
+export async function deleteSale(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "ID vendita richiesto"
+      });
+    }
+
+    const saleId = parseInt(id, 10);
+
+    // Validazione ID numerico
+    if (isNaN(saleId) || saleId <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "ID vendita non valido"
+      });
+    }
+
+    // Verifica che la vendita esista
+    const sale = await db.select().from(advancedSales).where(eq(advancedSales.id, saleId)).limit(1);
+
+    if (sale.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Vendita non trovata"
+      });
+    }
+
+    const saleData = sale[0];
+
+    // Se esiste un DDT, verifica che NON sia stato inviato a FIC
+    if (saleData.ddtId) {
+      const ddtResult = await db.select().from(ddt).where(eq(ddt.id, saleData.ddtId)).limit(1);
+
+      if (ddtResult.length > 0 && ddtResult[0].ddtStato === 'inviato') {
+        return res.status(400).json({
+          success: false,
+          error: "Impossibile stornare: il DDT è già stato inviato a Fatture in Cloud"
+        });
+      }
+    }
+
+    // Esegui eliminazione in cascata in una transaction
+    await db.transaction(async (tx) => {
+      // 1. Elimina righe DDT (se esistono)
+      if (saleData.ddtId) {
+        await tx.delete(ddtRighe).where(eq(ddtRighe.ddtId, saleData.ddtId));
+        console.log(`🗑️ Righe DDT eliminate per DDT ID ${saleData.ddtId}`);
+
+        // 2. Elimina DDT
+        await tx.delete(ddt).where(eq(ddt.id, saleData.ddtId));
+        console.log(`🗑️ DDT eliminato: ID ${saleData.ddtId}`);
+      }
+
+      // 3. Elimina allocazioni sacchi
+      await tx.delete(bagAllocations).where(
+        sql`${bagAllocations.saleBagId} IN (
+          SELECT id FROM ${saleBags} WHERE ${saleBags.advancedSaleId} = ${saleId}
+        )`
+      );
+      console.log(`🗑️ Allocazioni sacchi eliminate per vendita ${saleId}`);
+
+      // 4. Elimina sacchi
+      await tx.delete(saleBags).where(eq(saleBags.advancedSaleId, saleId));
+      console.log(`🗑️ Sacchi eliminati per vendita ${saleId}`);
+
+      // 5. Elimina riferimenti operazioni
+      await tx.delete(saleOperationsRef).where(eq(saleOperationsRef.advancedSaleId, saleId));
+      console.log(`🗑️ Riferimenti operazioni eliminati per vendita ${saleId}`);
+
+      // 6. Elimina vendita principale
+      await tx.delete(advancedSales).where(eq(advancedSales.id, saleId));
+      console.log(`🗑️ Vendita eliminata: ${saleData.saleNumber}`);
+    });
+
+    console.log(`✅ Storno completato con successo: Vendita ${saleData.saleNumber}`);
+
+    res.json({
+      success: true,
+      message: `Vendita ${saleData.saleNumber} stornata completamente`,
+      deletedSale: {
+        id: saleData.id,
+        saleNumber: saleData.saleNumber,
+        customerName: saleData.customerName
+      }
+    });
+
+  } catch (error: any) {
+    console.error("Errore nello storno della vendita:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Errore nello storno della vendita"
+    });
+  }
+}

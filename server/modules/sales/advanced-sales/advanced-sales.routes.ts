@@ -17,6 +17,7 @@ router.get('/', AdvancedSalesController.getAdvancedSales);
 router.get('/:id', AdvancedSalesController.getAdvancedSale);
 router.post('/', AdvancedSalesController.createAdvancedSale);
 router.patch('/:id/status', AdvancedSalesController.updateSaleStatus);
+router.delete('/:id', AdvancedSalesController.deleteSale);
 
 // Configurazione sacchi
 router.post('/:saleId/bags', AdvancedSalesController.configureBags);
