@@ -104,7 +104,7 @@ export default function FlupsyComparison() {
     queryKey: ['/api/operations'],
   });
   
-  const { data: cycles } = useQuery({
+  const { data: cyclesResponse } = useQuery({
     queryKey: ['/api/cycles'],
   });
 
@@ -113,8 +113,11 @@ export default function FlupsyComparison() {
   });
 
   const { data: sgrs } = useQuery({
-    queryKey: ['/api/sgrs'],
+    queryKey: ['/api/sgr'],
   });
+
+  // Extract cycles array from response (API now returns {cycles: [], pagination: {}})
+  const cycles = Array.isArray(cyclesResponse) ? cyclesResponse : cyclesResponse?.cycles || [];
 
   // Inizializza il FLUPSY selezionato se ce n'è solo uno disponibile
   useMemo(() => {
@@ -125,7 +128,7 @@ export default function FlupsyComparison() {
 
   // Helper function per ottenere il ciclo di un cestello
   const getCycleForBasket = (basketId: number) => {
-    if (!cycles) return null;
+    if (!cycles || cycles.length === 0) return null;
     return cycles.find(c => c.basketId === basketId && c.state === 'active') || null;
   };
   
