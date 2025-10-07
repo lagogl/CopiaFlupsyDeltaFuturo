@@ -21,17 +21,52 @@ export class LotsController {
 
   /**
    * GET /api/lots/optimized
-   * Get optimized lots with filtering
+   * Get optimized lots with filtering and pagination
    */
   async getOptimized(req: Request, res: Response) {
     try {
       const filters = {
         state: req.query.state as string | undefined,
-        supplier: req.query.supplier as string | undefined
+        supplier: req.query.supplier as string | undefined,
+        quality: req.query.quality as string | undefined,
+        dateFrom: req.query.dateFrom as string | undefined,
+        dateTo: req.query.dateTo as string | undefined,
+        sizeId: req.query.sizeId as string | undefined
       };
 
-      const lots = await lotsService.getOptimizedLots(filters);
-      res.json(lots);
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 20;
+
+      const allLots = await lotsService.getOptimizedLots(filters);
+      
+      // Calculate statistics
+      const statistics = {
+        counts: {
+          normali: allLots.filter(l => l.quality === 'normali').length,
+          teste: allLots.filter(l => l.quality === 'teste').length,
+          code: allLots.filter(l => l.quality === 'code').length,
+          totale: allLots.length
+        },
+        percentages: {
+          normali: allLots.length > 0 ? (allLots.filter(l => l.quality === 'normali').length / allLots.length * 100) : 0,
+          teste: allLots.length > 0 ? (allLots.filter(l => l.quality === 'teste').length / allLots.length * 100) : 0,
+          code: allLots.length > 0 ? (allLots.filter(l => l.quality === 'code').length / allLots.length * 100) : 0
+        }
+      };
+
+      // Pagination
+      const totalCount = allLots.length;
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedLots = allLots.slice(startIndex, endIndex);
+
+      res.json({
+        lots: paginatedLots,
+        totalPages,
+        totalCount,
+        statistics
+      });
     } catch (error) {
       console.error("Error fetching optimized lots:", error);
       res.status(500).json({ message: "Failed to fetch optimized lots" });

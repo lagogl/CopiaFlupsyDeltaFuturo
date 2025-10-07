@@ -40,7 +40,14 @@ export class LotsService {
   /**
    * Get optimized lots with filtering
    */
-  async getOptimizedLots(filters?: { state?: string; supplier?: string }) {
+  async getOptimizedLots(filters?: { 
+    state?: string; 
+    supplier?: string;
+    quality?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    sizeId?: string;
+  }) {
     const [lotsData, allSizes] = await Promise.all([
       storage.getLots(),
       storage.getSizes()
@@ -63,6 +70,19 @@ export class LotsService {
       lotsWithSizes = lotsWithSizes.filter(lot => 
         lot.supplier.toLowerCase().includes(filters.supplier!.toLowerCase())
       );
+    }
+    if (filters?.quality) {
+      lotsWithSizes = lotsWithSizes.filter(lot => lot.quality === filters.quality);
+    }
+    if (filters?.sizeId) {
+      const sizeIdNum = parseInt(filters.sizeId);
+      lotsWithSizes = lotsWithSizes.filter(lot => lot.sizeId === sizeIdNum);
+    }
+    if (filters?.dateFrom) {
+      lotsWithSizes = lotsWithSizes.filter(lot => lot.arrivalDate >= filters.dateFrom!);
+    }
+    if (filters?.dateTo) {
+      lotsWithSizes = lotsWithSizes.filter(lot => lot.arrivalDate <= filters.dateTo!);
     }
 
     return lotsWithSizes;
