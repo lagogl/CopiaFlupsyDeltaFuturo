@@ -337,6 +337,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/advanced-sales', advancedSalesModule.advancedSalesRoutes);
   console.log('✅ Modulo ADVANCED-SALES registrato su /api/advanced-sales/*, /api/ddt/*');
 
+  // Registra il modulo TARGET-SIZE-ANNOTATIONS
+  const targetSizeModule = await import('./modules/planning/target-size-annotations');
+  app.use('/api/target-size-annotations', targetSizeModule.targetSizeAnnotationsRoutes);
+  console.log('✅ Modulo TARGET-SIZE-ANNOTATIONS registrato su /api/target-size-annotations/*');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
@@ -6364,7 +6369,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // === Target Size Annotations routes ===
+  // === Target Size Annotations routes === [MODULARIZZATO - vedere /modules/planning/target-size-annotations]
+  /*
   app.get("/api/target-size-annotations", async (req, res) => {
     try {
       // Controlla se ci sono filtri
@@ -6551,6 +6557,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Errore nell'eliminazione dell'annotazione di taglia" });
     }
   });
+  */
+  // Fine route target-size-annotations - migrate al modulo
   
   // API per cestelli che raggiungono la taglia TP-3000 entro un certo periodo
   app.get("/api/tp3000-baskets", async (req, res) => {
@@ -7741,6 +7749,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Fine delle route target-size-annotations migrate al modulo (NOTE: route non commentate, gestite dal modulo registrato)
+
   // Elimina un backup
   app.delete("/api/database/backups/:backupId", (req, res) => {
     try {
