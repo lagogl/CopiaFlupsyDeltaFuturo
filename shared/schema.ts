@@ -809,7 +809,7 @@ export const externalDeliveryDetailsSync = pgTable("external_delivery_details_sy
   pesoCesteKg: decimal("peso_ceste_kg", { precision: 12, scale: 3 }).notNull(), // Peso ceste in kg
   taglia: text("taglia"), // Taglia
   animaliPerKg: decimal("animali_per_kg", { precision: 10, scale: 3 }), // Animali per kg
-  percentualeGuscio: decimal("percentuale_guscio", { precision: 5, scale: 2 }), // Percentuale guscio
+  percentualeScarto: decimal("percentuale_scarto", { precision: 5, scale: 2 }), // Percentuale scarto
   percentualeMortalita: decimal("percentuale_mortalita", { precision: 5, scale: 2 }), // Percentuale mortalità
   numeroAnimali: integer("numero_animali").notNull(), // Numero animali
   note: text("note"), // Note

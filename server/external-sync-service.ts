@@ -1076,7 +1076,7 @@ export class ExternalSyncService {
         const insertQuery = `
           INSERT INTO external_delivery_details_sync (
             external_id, report_id, misurazione_id, vasca_id, codice_sezione,
-            numero_ceste, peso_ceste_kg, taglia, animali_per_kg, percentuale_guscio,
+            numero_ceste, peso_ceste_kg, taglia, animali_per_kg, percentuale_scarto,
             percentuale_mortalita, numero_animali, note, synced_at, last_modified_external
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
           ON CONFLICT (external_id) DO UPDATE SET
@@ -1088,7 +1088,7 @@ export class ExternalSyncService {
             peso_ceste_kg = EXCLUDED.peso_ceste_kg,
             taglia = EXCLUDED.taglia,
             animali_per_kg = EXCLUDED.animali_per_kg,
-            percentuale_guscio = EXCLUDED.percentuale_guscio,
+            percentuale_scarto = EXCLUDED.percentuale_scarto,
             percentuale_mortalita = EXCLUDED.percentuale_mortalita,
             numero_animali = EXCLUDED.numero_animali,
             note = EXCLUDED.note,
@@ -1106,7 +1106,7 @@ export class ExternalSyncService {
           mappedData.lineTotal,
           mappedData.productCode,
           '50', // animali_per_kg
-          '0', // percentuale_guscio
+          '0', // percentuale_scarto
           '0', // percentuale_mortalita
           mappedData.quantity,
           mappedData.productNotes
@@ -1221,7 +1221,7 @@ export class ExternalSyncService {
           COALESCE(d.peso_ceste_kg, '0') as peso_ceste_kg,
           d.taglia,
           d.animali_per_kg,
-          NULL as percentuale_guscio,
+          d.percentuale_scarto,
           NULL as percentuale_mortalita,
           COALESCE(d.numero_animali, 0) as numero_animali,
           d.note
@@ -1236,7 +1236,7 @@ export class ExternalSyncService {
         await this.localPool.query(`
           INSERT INTO external_delivery_details_sync (
             external_id, report_id, misurazione_id, vasca_id, codice_sezione,
-            numero_ceste, peso_ceste_kg, taglia, animali_per_kg, percentuale_guscio,
+            numero_ceste, peso_ceste_kg, taglia, animali_per_kg, percentuale_scarto,
             percentuale_mortalita, numero_animali, note, synced_at, last_modified_external
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
           ON CONFLICT (external_id) DO UPDATE SET
@@ -1254,7 +1254,7 @@ export class ExternalSyncService {
           row.peso_ceste_kg,
           row.taglia,
           row.animali_per_kg,
-          row.percentuale_guscio,
+          row.percentuale_scarto,
           row.percentuale_mortalita,
           row.numero_animali,
           row.note
