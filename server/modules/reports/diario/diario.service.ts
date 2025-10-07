@@ -19,7 +19,7 @@ class DiarioService {
     
     const totaliPerTaglia: Record<string, number> = {};
     
-    for (const ciclo of cicliAttiviQuery) {
+    for (const ciclo of cicliAttiviQuery.rows) {
       const cycleId = ciclo.cycle_id;
       
       const operazioneQuery = await db.execute(sql`
@@ -33,8 +33,8 @@ class DiarioService {
         LIMIT 1
       `);
       
-      if (operazioneQuery.length > 0) {
-        const operazione = operazioneQuery[0];
+      if (operazioneQuery.rows.length > 0) {
+        const operazione = operazioneQuery.rows[0];
         const animalCount = parseInt(operazione.animal_count);
         
         let sizeCode = operazione.size_code;
@@ -51,8 +51,8 @@ class DiarioService {
             LIMIT 1
           `);
           
-          if (tagliaQuery.length > 0) {
-            sizeCode = tagliaQuery[0].code;
+          if (tagliaQuery.rows.length > 0) {
+            sizeCode = tagliaQuery.rows[0].code;
           } else {
             sizeCode = 'Non specificata';
           }
@@ -128,7 +128,7 @@ class DiarioService {
       ORDER BY ops.id
     `);
     
-    return operations;
+    return operations.rows;
   }
 
   /**
@@ -149,14 +149,14 @@ class DiarioService {
       ORDER BY s.code
     `);
     
-    return stats;
+    return stats.rows;
   }
 
   /**
    * Ottieni totali giornalieri
    */
   async getDailyTotals(date: string) {
-    const [totals] = await db.execute(sql`
+    const result = await db.execute(sql`
       SELECT
         SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
             THEN o.animal_count ELSE 0 END) AS totale_entrate,
@@ -169,7 +169,7 @@ class DiarioService {
       WHERE o.date::text = ${date}
     `);
     
-    return totals;
+    return result.rows[0];
   }
 
   /**
@@ -207,7 +207,7 @@ class DiarioService {
       ORDER BY s.code
     `);
     
-    const taglieAttiveList = taglieAttiveResult.map((row: any) => row.code).filter(Boolean);
+    const taglieAttiveList = taglieAttiveResult.rows.map((row: any) => row.code).filter(Boolean);
     
     // Crea array con tutti i giorni del mese
     const daysInMonth = eachDayOfInterval({
@@ -249,7 +249,7 @@ class DiarioService {
     
     // Organizza operazioni per data
     const operationsByDate: Record<string, any[]> = {};
-    allOperationsResult.forEach((op: any) => {
+    allOperationsResult.rows.forEach((op: any) => {
       if (!op.date) return;
       
       const dateStr = typeof op.date === 'string' 

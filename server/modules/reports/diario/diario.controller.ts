@@ -98,10 +98,22 @@ class DiarioController {
   }
 
   /**
-   * GET /api/diario/month-data - Dati mensili (disabled)
+   * GET /api/diario/month-data - Dati mensili completi
    */
-  getMonthData(req: Request, res: Response) {
-    res.status(501).json({ error: "Diario controller temporarily disabled" });
+  async getMonthData(req: Request, res: Response) {
+    try {
+      const { month } = req.query;
+
+      if (!month || !/^\d{4}-\d{2}$/.test(month as string)) {
+        return res.status(400).json({ error: 'Formato mese non valido. Utilizzare YYYY-MM' });
+      }
+
+      const result = await diarioService.getMonthData(month as string);
+      return res.json(result);
+    } catch (error) {
+      console.error('Errore nell\'API dati mensili:', error);
+      return res.status(500).json({ error: 'Errore nel recupero dei dati mensili' });
+    }
   }
 
   /**
