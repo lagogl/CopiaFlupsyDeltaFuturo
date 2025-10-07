@@ -608,7 +608,7 @@ export default function FlupsyComparison() {
               </div>
               
               {/* Indicatore di crescita */}
-              <div className="absolute top-1 right-1">
+              <div className="absolute bottom-2 right-2">
                 <Badge className={`text-xs px-2 py-1 h-6 ${growthPercentage >= 0 ? 'bg-green-600' : 'bg-red-600'} text-white rounded-full font-bold`}>
                   {growthPercentage >= 0 ? '+' : ''}{growthPercentage.toFixed(0)}%
                 </Badge>
