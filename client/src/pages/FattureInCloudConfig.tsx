@@ -59,6 +59,8 @@ const FattureInCloudConfig: React.FC = () => {
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [companyId, setCompanyId] = useState('');
+  const [apiToken, setApiToken] = useState('');
+  const [authMode, setAuthMode] = useState<'oauth' | 'token'>('token');
 
   // Gestione parametri OAuth2 di ritorno
   useEffect(() => {
@@ -357,6 +359,54 @@ const FattureInCloudConfig: React.FC = () => {
     });
   };
 
+  const handleSaveTokenAuth = async () => {
+    if (!apiToken.trim() || !companyId.trim()) {
+      toast({
+        title: "Errore",
+        description: "Token API e ID Azienda sono richiesti",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Salva il token API come access token
+      await saveConfigMutation.mutateAsync({
+        chiave: 'fatture_in_cloud_access_token',
+        valore: apiToken.trim(),
+        descrizione: 'Token API diretto per Fatture in Cloud'
+      });
+
+      // Salva l'ID azienda
+      await saveConfigMutation.mutateAsync({
+        chiave: 'fatture_in_cloud_company_id',
+        valore: companyId.trim(),
+        descrizione: 'ID Azienda selezionata in Fatture in Cloud'
+      });
+
+      // Imposta auth_mode come token
+      await saveConfigMutation.mutateAsync({
+        chiave: 'fatture_in_cloud_auth_mode',
+        valore: 'token',
+        descrizione: 'Modalità di autenticazione (token/oauth)'
+      });
+
+      toast({
+        title: "✅ Autenticazione salvata",
+        description: "Token API e ID Azienda configurati con successo"
+      });
+      
+      // Ricarica la configurazione
+      queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/config'] });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore nel salvataggio configurazione",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSaveCompanyId = async () => {
     if (!companyId.trim()) {
       toast({
@@ -420,7 +470,8 @@ const FattureInCloudConfig: React.FC = () => {
 
   const isAuthenticated = () => {
     const config = configQuery.data?.config || {};
-    return config.fatture_in_cloud_access_token === '***CONFIGURATO***';
+    return config.fatture_in_cloud_access_token === '***CONFIGURATO***' || 
+           (config.fatture_in_cloud_access_token && config.fatture_in_cloud_access_token !== '');
   };
 
   const getStatusBadge = (stato: string) => {
@@ -466,29 +517,24 @@ const FattureInCloudConfig: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              {isConfigured() ? (
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-500" />
-              )}
-              <span>Credenziali API</span>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
               {isAuthenticated() ? (
                 <CheckCircle className="w-5 h-5 text-green-500" />
               ) : (
                 <AlertCircle className="w-5 h-5 text-red-500" />
               )}
-              <span>Autenticazione OAuth2</span>
+              <span className="font-medium">
+                {isAuthenticated() ? 'Autenticato con Fatture in Cloud' : 'Non autenticato'}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => testConnectionMutation.mutate()}
-                disabled={testConnectionMutation.isPending}
+                disabled={testConnectionMutation.isPending || !isAuthenticated()}
+                data-testid="button-test-connection"
               >
                 {testConnectionMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -525,81 +571,56 @@ const FattureInCloudConfig: React.FC = () => {
         <TabsContent value="configurazione" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Credenziali API</CardTitle>
+              <CardTitle>Autenticazione Token API (Consigliata)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Alert>
                 <AlertCircle className="w-4 h-4" />
                 <AlertDescription>
-                  <strong>Come ottenere le credenziali API:</strong><br/>
+                  <strong>Come ottenere il Token API:</strong><br/>
                   1. Accedi al tuo account Fatture in Cloud<br/>
-                  2. Vai in "Impostazioni" → "API" → "Nuova applicazione"<br/>
-                  3. Crea una nuova applicazione con questi dati:<br/>
-                  - Nome: "Sistema FLUPSY"<br/>
-                  - Redirect URI: <code>{window.location.origin.replace('http:', 'https:')}/api/fatture-in-cloud/oauth/callback</code><br/>
-                  4. Copia Client ID e Client Secret qui sotto
+                  2. Vai in "Impostazioni" → "API"<br/>
+                  3. Nella sezione "Token Personale" genera un nuovo token<br/>
+                  4. L'ID Azienda si trova nell'URL: <code>https://secure.fattureincloud.it/c/<strong>[ID_AZIENDA]</strong>/</code>
                 </AlertDescription>
               </Alert>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label htmlFor="clientId">Client ID</Label>
+                  <Label htmlFor="apiToken">Token API</Label>
                   <Input
-                    id="clientId"
-                    type="text"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    placeholder="Inserisci Client ID"
+                    id="apiToken"
+                    type="password"
+                    value={apiToken}
+                    onChange={(e) => setApiToken(e.target.value)}
+                    placeholder="Inserisci il Token API"
+                    data-testid="input-api-token"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="clientSecret">Client Secret</Label>
+                  <Label htmlFor="companyIdToken">ID Azienda</Label>
                   <Input
-                    id="clientSecret"
-                    type="password"
-                    value={clientSecret}
-                    onChange={(e) => setClientSecret(e.target.value)}
-                    placeholder="Inserisci Client Secret"
+                    id="companyIdToken"
+                    type="text"
+                    value={companyId}
+                    onChange={(e) => setCompanyId(e.target.value)}
+                    placeholder="Es: 13263"
+                    data-testid="input-company-id"
                   />
                 </div>
               </div>
               
               <Button 
-                onClick={handleSaveCredentials}
+                onClick={handleSaveTokenAuth}
                 disabled={saveConfigMutation.isPending}
+                data-testid="button-save-token-auth"
               >
                 {saveConfigMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 animate-spin mr-2" />
                 ) : (
-                  <Settings className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4 mr-2" />
                 )}
-                Salva Credenziali
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Autorizzazione OAuth2</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert>
-                <AlertCircle className="w-4 h-4" />
-                <AlertDescription>
-                  Dopo aver salvato le credenziali, autorizza l'applicazione per accedere al tuo account.
-                </AlertDescription>
-              </Alert>
-              
-              <Button 
-                onClick={() => oauthMutation.mutate()}
-                disabled={oauthMutation.isPending || !isConfigured()}
-              >
-                {oauthMutation.isPending ? (
-                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                )}
-                Autorizza Applicazione
+                Salva e Connetti
               </Button>
             </CardContent>
           </Card>
