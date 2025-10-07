@@ -1440,15 +1440,10 @@ export async function generateDDTPDF(req: Request, res: Response) {
     const margin = 50;
     const tableWidth = doc.page.width - (2 * margin);
 
-    // Recupera Company ID dalla configurazione
-    const companyIdConfig = await db.select()
-      .from(configurazione)
-      .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
-      .limit(1);
-    
-    const companyId = companyIdConfig.length > 0 ? parseInt(companyIdConfig[0].valore, 10) : null;
+    // Usa il Company ID salvato nel DDT (snapshot immutabile)
+    const companyId = ddtData.companyId;
 
-    // Logo aziendale basato su Company ID
+    // Logo aziendale basato su Company ID salvato nel DDT
     let yPosition = margin;
     try {
       if (companyId) {
