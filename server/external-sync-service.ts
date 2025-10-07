@@ -1221,8 +1221,8 @@ export class ExternalSyncService {
           COALESCE(d.peso_ceste_kg, '0') as peso_ceste_kg,
           d.taglia,
           d.animali_per_kg,
-          d.percentuale_guscio,
-          d.percentuale_mortalita,
+          NULL as percentuale_guscio,
+          NULL as percentuale_mortalita,
           COALESCE(d.numero_animali, 0) as numero_animali,
           d.note
         FROM reports_consegna_dettagli d
