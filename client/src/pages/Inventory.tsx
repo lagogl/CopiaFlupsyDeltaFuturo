@@ -168,13 +168,15 @@ export default function Inventory() {
     queryFn: getQueryFn({ on401: "throw" })
   });
   
-  const { data: cycles, isLoading: loadingCycles } = useQuery({
+  const { data: cyclesData, isLoading: loadingCycles } = useQuery({
     queryKey: ['/api/cycles'],
     queryFn: getQueryFn({ on401: "throw" })
   });
   
+  const cycles = (cyclesData as any)?.cycles || [];
+  
   const { data: sgrs, isLoading: loadingSgrs } = useQuery({
-    queryKey: ['/api/sgrs'],
+    queryKey: ['/api/sgr'],
     queryFn: getQueryFn({ on401: "throw" })
   });
   
