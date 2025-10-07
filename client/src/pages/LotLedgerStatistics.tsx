@@ -494,43 +494,43 @@ export default function LotLedgerStatistics() {
             {/* Statistiche Lotto Selezionato */}
             {selectedLotId && lotStats && (
               <>
-                {/* Bilancio Attuale */}
+                {/* Informazioni Base Lotto */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Package className="w-5 h-5" />
-                      Bilancio Attuale - {lotStats.lot.supplierLotNumber}
+                      Informazioni Lotto - {lotStats.lot.supplierLotNumber}
                     </CardTitle>
                     <CardDescription>
-                      {lotStats.lot.name} • {lotStats.lot.supplier} • 
-                      Aggiornato {format(new Date(lotStats.metadata.calculatedAt), 'dd/MM/yyyy HH:mm')}
+                      {lotStats.lot.supplier} • Operazioni: {lotStats.totalOperations} • Cicli attivi: {lotStats.activeCyclesCount}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-green-600">
-                          +{formatQuantity(lotStats.totals.totalInflow)}
+                        <div className="text-3xl font-bold text-blue-600">
+                          {lotStats.totalOperations || 0}
                         </div>
-                        <p className="text-sm text-muted-foreground">Totale Ingressi</p>
+                        <p className="text-sm text-muted-foreground">Totale Operazioni</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-green-600">
+                          {lotStats.activeCyclesCount || 0}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Cicli Attivi</p>
                       </div>
                       <div className="text-center">
                         <div className="text-3xl font-bold text-red-600">
-                          -{formatQuantity(lotStats.totals.totalOutflow)}
+                          {lotStats.totalMortality || 0}
                         </div>
-                        <p className="text-sm text-muted-foreground">Totale Uscite</p>
-                      </div>
-                      <div className="text-center">
-                        <div className={`text-3xl font-bold ${lotStats.currentBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                          {lotStats.currentBalance >= 0 ? '+' : ''}{formatQuantity(lotStats.currentBalance)}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Bilancio Netto</p>
+                        <p className="text-sm text-muted-foreground">Mortalità Totale</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Metriche Performance */}
+                {/* Metriche Performance - solo se disponibili */}
+                {lotStats.percentages && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-6">
@@ -584,6 +584,7 @@ export default function LotLedgerStatistics() {
                     </CardContent>
                   </Card>
                 </div>
+                )}
 
                 {/* Grafici Dettagliati */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
