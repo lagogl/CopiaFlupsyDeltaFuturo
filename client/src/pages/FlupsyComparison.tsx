@@ -199,8 +199,9 @@ export default function FlupsyComparison() {
         }
       }
       
-      // Aggiungi il tasso SGR all'effetto cumulativo (è già in decimale)
-      totalSGREffect += dailyRate;
+      // Converti la percentuale in decimale e aggiungi all'effetto cumulativo
+      // Es: 0.8% -> 0.008
+      totalSGREffect += dailyRate / 100;
     }
     
     // Applica la formula completa: Pf = Pi * e^(SGR*t)
@@ -533,11 +534,11 @@ export default function FlupsyComparison() {
             <div>{Math.round(currentWeight)} mg</div>
             
             <div className="text-gray-500">Peso futuro:</div>
-            <div>{futureWeight} mg</div>
+            <div>{futureWeight.toFixed(2)} mg</div>
             
             <div className="text-gray-500">Crescita:</div>
             <div className={`font-medium ${growthPercentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {growthPercentage > 0 ? '+' : ''}{growthPercentage}%
+              {growthPercentage > 0 ? '+' : ''}{growthPercentage.toFixed(2)}%
             </div>
             
             <div className="text-gray-500">Animali/kg attuale:</div>
@@ -594,7 +595,7 @@ export default function FlupsyComparison() {
                 <div className="grid grid-cols-2 gap-1 text-center">
                   <div>
                     <div className="text-[8px] text-gray-500">Peso</div>
-                    <div className="text-[9px] font-medium">{futureWeight} mg</div>
+                    <div className="text-[9px] font-medium">{futureWeight.toFixed(2)} mg</div>
                   </div>
                   <div>
                     <div className="text-[8px] text-gray-500">Animali/kg</div>
@@ -606,7 +607,7 @@ export default function FlupsyComparison() {
               {/* Indicatore di crescita */}
               <div className="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3">
                 <Badge className={`text-[8px] px-1 py-0 h-4 ${growthPercentage >= 0 ? 'bg-green-500' : 'bg-red-500'} text-white rounded-full`}>
-                  {growthPercentage >= 0 ? '+' : ''}{growthPercentage}%
+                  {growthPercentage >= 0 ? '+' : ''}{growthPercentage.toFixed(2)}%
                 </Badge>
               </div>
             </div>
