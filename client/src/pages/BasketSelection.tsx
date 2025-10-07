@@ -233,9 +233,11 @@ export default function BasketSelection() {
     queryKey: ['/api/operations'],
   });
   
-  const { data: cycles, isLoading: cyclesLoading } = useQuery<Cycle[]>({
+  const { data: cyclesData, isLoading: cyclesLoading } = useQuery({
     queryKey: ['/api/cycles'],
   });
+  
+  const cycles = (cyclesData as any)?.cycles || [];
   
   const { data: sizes, isLoading: sizesLoading } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
