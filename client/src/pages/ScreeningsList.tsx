@@ -17,7 +17,6 @@ interface ScreeningListItem {
   date: string;
   purpose: string | null;
   status: string;
-  referenceSize: { code: string } | null;
   sourceCount: number;
   destinationCount: number;
   totalSourceAnimals: number;

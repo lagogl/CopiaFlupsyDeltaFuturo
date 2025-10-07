@@ -49,6 +49,7 @@ Preferred communication style: Simple, everyday language.
 - **PWA Implementation**: Full Progressive Web App configuration enabling smartphone installation while maintaining desktop compatibility, including service worker for offline capabilities and web manifest.
 - **Deployment Strategy**: Node.js 20 on Replit with PostgreSQL 16 for development; Vite/esbuild for production build with autoscale deployment. PWA assets automatically served for mobile installation.
 - **Branding**: MITO SRL logo integrated consistently after page titles using a reusable `PageHeader` component.
+- **Query Optimization Pattern** (October 2025): Critical pattern for Drizzle ORM queries - avoid complex SQL subqueries with `sql<number>` templates containing `${table.column}` references. Instead: (1) Use simple separate queries, (2) Aggregate data application-side with `reduce()`, (3) Use `Promise.all()` for parallel enrichment. This pattern is proven in production apps and prevents SQL syntax errors in complex aggregations.
 
 ## External Dependencies
 
