@@ -814,6 +814,7 @@ export const externalDeliveryDetailsSync = pgTable("external_delivery_details_sy
   numeroAnimali: integer("numero_animali").notNull(), // Numero animali
   note: text("note"), // Note
   syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
+  lastModifiedExternal: timestamp("last_modified_external"), // Ultima modifica nel DB esterno
   lastSyncAt: text("last_sync_at") // Ultima sincronizzazione (come testo per compatibilità)
 });
 
