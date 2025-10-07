@@ -325,27 +325,28 @@ export default function FlupsyComparison() {
   const getBasketCardSize = () => {
     switch (zoomLevel) {
       case 1:
-        return { width: 'w-80', height: 'h-40' }; // Default
+        return { width: '20rem', height: '10rem' }; // Default
       case 2:
-        return { width: 'w-96', height: 'h-48' }; // Medio
+        return { width: '24rem', height: '12rem' }; // Medio
       case 3:
-        return { width: 'w-[28rem]', height: 'h-56' }; // Grande
+        return { width: '28rem', height: '14rem' }; // Grande
       default:
-        return { width: 'w-80', height: 'h-40' };
+        return { width: '20rem', height: '10rem' };
     }
   };
 
   // Renderizza un cestello per la visualizzazione attuale
   const renderCurrentBasket = (basket) => {
     const cardSize = getBasketCardSize();
-    const width = cardSize.width;
-    const height = cardSize.height;
     
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={`basket-card p-2 rounded border-2 border-dashed border-gray-300 ${height} ${width} flex items-center justify-center text-gray-400 text-xs cursor-pointer`}>
+            <div 
+              className="basket-card p-2 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs cursor-pointer"
+              style={{ width: cardSize.width, height: cardSize.height }}
+            >
               Vuoto
             </div>
           </TooltipTrigger>
@@ -415,7 +416,8 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-3 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer overflow-hidden`}
+              className={`basket-card p-3 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer overflow-hidden`}
+              style={{ width: cardSize.width, height: cardSize.height }}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -556,7 +558,8 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-3 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
+              className={`basket-card p-3 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
+              style={{ width: cardSize.width, height: cardSize.height }}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -754,7 +757,8 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-3 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
+              className={`basket-card p-3 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
+              style={{ width: cardSize.width, height: cardSize.height }}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
