@@ -84,7 +84,7 @@ export default function GrowJourney() {
   });
 
   const { data: sgrsData, isLoading: sgrsLoading } = useQuery({
-    queryKey: ['/api/sgrs'],
+    queryKey: ['/api/sgr'],
     refetchOnWindowFocus: false,
   });
 
