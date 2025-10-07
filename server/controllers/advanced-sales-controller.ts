@@ -1100,11 +1100,24 @@ export async function generatePDFReport(req: Request, res: Response) {
       res.send(pdfBuffer);
     });
 
-    // Recupera dati fiscali dalla configurazione attiva
-    const companiesResult = await db.select()
-      .from(fattureInCloudConfig)
-      .where(eq(fattureInCloudConfig.attivo, true))
+    // Recupera Company ID dalla configurazione
+    const companyIdConfig = await db.select()
+      .from(configurazione)
+      .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
       .limit(1);
+    
+    const companyId = companyIdConfig.length > 0 ? parseInt(companyIdConfig[0].valore, 10) : null;
+    
+    // Recupera dati fiscali basati sul Company ID
+    const companiesResult = companyId 
+      ? await db.select()
+          .from(fattureInCloudConfig)
+          .where(eq(fattureInCloudConfig.companyId, companyId))
+          .limit(1)
+      : await db.select()
+          .from(fattureInCloudConfig)
+          .where(eq(fattureInCloudConfig.attivo, true))
+          .limit(1);
     const companyData = companiesResult.length > 0 ? companiesResult[0] : null;
 
     const margin = 50;
@@ -1113,14 +1126,9 @@ export async function generatePDFReport(req: Request, res: Response) {
     // Logo aziendale basato su Company ID
     let yPosition = margin;
     try {
-      const companyIdConfig = await db.select()
-        .from(configurazione)
-        .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
-        .limit(1);
-      
-      if (companyIdConfig.length > 0) {
+      if (companyId) {
         const { getCompanyLogo } = await import('../services/logo-service');
-        const logoPath = getCompanyLogo(companyIdConfig[0].valore);
+        const logoPath = getCompanyLogo(companyId);
         const fsSync = await import('fs');
         if (fsSync.existsSync(logoPath)) {
           doc.image(logoPath, margin, yPosition, { width: 150, height: 75, fit: [150, 75] });
@@ -1384,17 +1392,20 @@ export async function generateDDTPDF(req: Request, res: Response) {
     const margin = 50;
     const tableWidth = doc.page.width - (2 * margin);
 
+    // Recupera Company ID dalla configurazione
+    const companyIdConfig = await db.select()
+      .from(configurazione)
+      .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
+      .limit(1);
+    
+    const companyId = companyIdConfig.length > 0 ? parseInt(companyIdConfig[0].valore, 10) : null;
+
     // Logo aziendale basato su Company ID
     let yPosition = margin;
     try {
-      const companyIdConfig = await db.select()
-        .from(configurazione)
-        .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
-        .limit(1);
-      
-      if (companyIdConfig.length > 0) {
+      if (companyId) {
         const { getCompanyLogo } = await import('../services/logo-service');
-        const logoPath = getCompanyLogo(companyIdConfig[0].valore);
+        const logoPath = getCompanyLogo(companyId);
         const fsSync = await import('fs');
         if (fsSync.existsSync(logoPath)) {
           doc.image(logoPath, margin, yPosition, { width: 150, height: 75, fit: [150, 75] });

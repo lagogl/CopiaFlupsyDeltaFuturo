@@ -87,7 +87,7 @@ export function hasCompanyLogo(companyId: string | number | null | undefined): b
 /**
  * Ottiene informazioni sull'azienda in base al Company ID
  * @param companyId - ID dell'azienda
- * @returns Oggetto con info azienda
+ * @returns Oggetto con info azienda (DEPRECATO - usa getCompanyFiscalData per dati completi)
  */
 export function getCompanyInfo(companyId: string | number | null | undefined): {
   name: string;
@@ -118,4 +118,37 @@ export function getCompanyInfo(companyId: string | number | null | undefined): {
     logo: getCompanyLogo(null),
     productionCenter: 'Ecotapes Italia'
   };
+}
+
+/**
+ * Ottiene i dati fiscali completi dell'azienda dal database
+ * @param companyId - ID dell'azienda
+ * @returns Dati fiscali completi o null se non trovati
+ */
+export async function getCompanyFiscalData(companyId: string | number | null | undefined) {
+  if (!companyId) {
+    return null;
+  }
+
+  try {
+    const { db } = await import('../db');
+    const { eq } = await import('drizzle-orm');
+    const schema = await import('../../shared/schema');
+    
+    const numericCompanyId = typeof companyId === 'string' ? parseInt(companyId, 10) : companyId;
+    
+    const result = await db.select()
+      .from(schema.fattureInCloudConfig)
+      .where(eq(schema.fattureInCloudConfig.companyId, numericCompanyId))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return result[0];
+  } catch (error) {
+    console.error('❌ Errore recupero dati fiscali azienda:', error);
+    return null;
+  }
 }

@@ -281,8 +281,14 @@ const HTML_TEMPLATE = `
             {{#if companyAddress}}
             <div>{{companyAddress}}</div>
             {{/if}}
+            {{#if companyVat}}
+            <div>P.IVA: {{companyVat}}{{#if companyFiscalCode}}{{#unless (eq companyVat companyFiscalCode)}} - C.F.: {{companyFiscalCode}}{{/unless}}{{/if}}</div>
+            {{/if}}
             {{#if companyEmail}}
             <div>Email: {{companyEmail}}</div>
+            {{/if}}
+            {{#if companyPhone}}
+            <div>Tel: {{companyPhone}}</div>
             {{/if}}
         </div>
     </div>
@@ -466,18 +472,25 @@ export class PDFGeneratorService {
     // Ottieni dati azienda e logo
     const companyInfo = getCompanyInfo(companyId);
     const companyLogo = getCompanyLogoBase64(companyId);
+    
+    // Ottieni dati fiscali completi dal database
+    const { getCompanyFiscalData } = await import('./logo-service');
+    const fiscalData = await getCompanyFiscalData(companyId);
 
     // Compila il template
     const template = handlebars.compile(HTML_TEMPLATE);
     
-    // Prepara i dati per il template con logo e info azienda
+    // Prepara i dati per il template con logo e info azienda completa
     const templateData = {
       ...saleData,
       currentDate: format(new Date(), 'dd/MM/yyyy HH:mm', { locale: it }),
       companyLogo,
-      companyName: companyInfo.name,
-      companyAddress: '', // TODO: Recuperare da configurazione se necessario
-      companyEmail: '' // TODO: Recuperare da configurazione se necessario
+      companyName: fiscalData?.ragioneSociale || companyInfo.name,
+      companyAddress: fiscalData ? `${fiscalData.indirizzo}, ${fiscalData.cap} ${fiscalData.citta} (${fiscalData.provincia})` : '',
+      companyEmail: fiscalData?.email || '',
+      companyPhone: fiscalData?.telefono || '',
+      companyVat: fiscalData?.partitaIva || '',
+      companyFiscalCode: fiscalData?.codiceFiscale || ''
     };
 
     const html = template(templateData);
@@ -535,6 +548,11 @@ export class PDFGeneratorService {
         'completed': 'Completata'
       };
       return statusMap[status] || status;
+    });
+
+    // Helper per comparare valori
+    handlebars.registerHelper('eq', (a: any, b: any) => {
+      return a === b;
     });
   }
 

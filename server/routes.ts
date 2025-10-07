@@ -6832,11 +6832,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mortality = totalSourceAnimals - totalDestAnimals;
       const mortalityPct = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0.00';
       
-      // Recupera dati fiscali dalla configurazione attiva
-      const companiesResult = await db.select()
-        .from(fattureInCloudConfig)
-        .where(eq(fattureInCloudConfig.attivo, true))
+      // Recupera Company ID dalla configurazione
+      const companyIdConfig = await db.select()
+        .from(schema.configurazione)
+        .where(eq(schema.configurazione.chiave, 'fatture_in_cloud_company_id'))
         .limit(1);
+      
+      const companyId = companyIdConfig.length > 0 ? parseInt(companyIdConfig[0].valore, 10) : null;
+      
+      // Recupera dati fiscali basati sul Company ID
+      const companiesResult = companyId 
+        ? await db.select()
+            .from(fattureInCloudConfig)
+            .where(eq(fattureInCloudConfig.companyId, companyId))
+            .limit(1)
+        : await db.select()
+            .from(fattureInCloudConfig)
+            .where(eq(fattureInCloudConfig.attivo, true))
+            .limit(1);
       const companyData = companiesResult.length > 0 ? companiesResult[0] : null;
 
       // Genera PDF con PDFKit in formato orizzontale
@@ -6858,14 +6871,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Logo aziendale basato su Company ID
       let yPosition = margin;
       try {
-        const companyIdConfig = await db.select()
-          .from(schema.configurazione)
-          .where(eq(schema.configurazione.chiave, 'fatture_in_cloud_company_id'))
-          .limit(1);
-        
-        if (companyIdConfig.length > 0) {
+        if (companyId) {
           const { getCompanyLogo } = await import('./services/logo-service');
-          const logoPath = getCompanyLogo(companyIdConfig[0].valore);
+          const logoPath = getCompanyLogo(companyId);
           const fsSync = await import('fs');
           if (fsSync.existsSync(logoPath)) {
             doc.image(logoPath, margin, yPosition, { width: 120, height: 60, fit: [120, 60] });
@@ -6886,7 +6894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Box informazioni con dati azienda
       if (companyData) {
-        doc.rect(margin, yPosition, tableWidth * 0.45, 55).stroke();
+        doc.rect(margin, yPosition, tableWidth * 0.45, 80).stroke();
         let boxY = yPosition + 8;
         doc.fontSize(10).fillColor('#1e40af').font('Helvetica-Bold')
            .text('AZIENDA', margin + 10, boxY);
@@ -6895,17 +6903,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.text(companyData.ragioneSociale || '', margin + 10, boxY, { width: tableWidth * 0.42 });
         boxY += 12;
         if (companyData.indirizzo) {
-          doc.text(`${companyData.indirizzo} - ${companyData.cap} ${companyData.citta}`, margin + 10, boxY, { width: tableWidth * 0.42 });
+          doc.text(`${companyData.indirizzo}, ${companyData.cap} ${companyData.citta} (${companyData.provincia || ''})`, margin + 10, boxY, { width: tableWidth * 0.42 });
           boxY += 12;
         }
         if (companyData.partitaIva) {
           doc.text(`P.IVA: ${companyData.partitaIva}`, margin + 10, boxY);
+          boxY += 11;
+        }
+        if (companyData.codiceFiscale && companyData.codiceFiscale !== companyData.partitaIva) {
+          doc.text(`C.F.: ${companyData.codiceFiscale}`, margin + 10, boxY);
+          boxY += 11;
+        }
+        if (companyData.email) {
+          doc.fontSize(8).text(`Email: ${companyData.email}`, margin + 10, boxY, { width: tableWidth * 0.42 });
+          boxY += 10;
+        }
+        if (companyData.telefono) {
+          doc.fontSize(8).text(`Tel: ${companyData.telefono}`, margin + 10, boxY);
         }
       }
 
       // Box informazioni vagliatura
       const boxRightX = margin + (tableWidth * 0.45) + 20;
-      doc.rect(boxRightX, yPosition, tableWidth * 0.52, 55).stroke();
+      doc.rect(boxRightX, yPosition, tableWidth * 0.52, 80).stroke();
       let infoY = yPosition + 8;
       doc.fontSize(10).fillColor('#1e40af').font('Helvetica-Bold')
          .text('INFORMAZIONI VAGLIATURA', boxRightX + 10, infoY);
@@ -6917,7 +6937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       infoY += 12;
       doc.text(`Cestelli Origine: ${sourceBaskets.length} | Destinazione: ${destBaskets.length}`, boxRightX + 10, infoY);
 
-      yPosition += 70;
+      yPosition += 95;
 
       // Riepilogo statistiche con box
       doc.rect(margin, yPosition, tableWidth, 45).fill('#f1f5f9');
