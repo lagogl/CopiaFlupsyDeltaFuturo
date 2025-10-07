@@ -327,6 +327,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/database', databaseModule.databaseRoutes);
   console.log('✅ Modulo DATABASE registrato su /api/database/*');
 
+  // Registra il modulo DIARIO
+  const diarioModule = await import('./modules/reports/diario');
+  app.use('/api/diario', diarioModule.diarioRoutes);
+  console.log('✅ Modulo DIARIO registrato su /api/diario/*');
+
   // Registra il modulo SCREENING
   registerScreeningRoutes(app);
 
@@ -3180,8 +3185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   */
 
-  // === Diario di Bordo API routes ===
-  
+  // === Diario di Bordo API routes === [MODULARIZZATO - vedere /modules/reports/diario]
+  /*
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
   app.get("/api/diario/month-data", async (req, res) => {
     res.status(501).json({ error: "Diario controller temporarily disabled" });
@@ -3671,6 +3676,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: 'Errore nel recupero dei totali giornalieri' });
     }
   });
+  */
+  // Fine delle route del diario migrate al modulo
 
   // === Cycle routes === [MODULARIZZATO - vedere /modules/operations/cycles]
   /* app.get("/api/cycles", async (req, res) => {
