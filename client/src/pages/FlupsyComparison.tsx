@@ -13,9 +13,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format, addDays, differenceInWeeks } from 'date-fns';
-import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, RefreshCw, Fan } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, RefreshCw, Fan, Download } from 'lucide-react';
 import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
+import * as XLSX from 'xlsx';
 
 // Componente personalizzato per il tooltip che garantisce alta leggibilità
 const HighContrastTooltip = ({ children, className = "" }) => (
@@ -807,6 +808,116 @@ export default function FlupsyComparison() {
     );
   };
 
+  // Funzione per generare e scaricare il report Excel
+  const generateExcelReport = () => {
+    if (!fluspyBaskets || fluspyBaskets.length === 0 || !selectedFlupsy) {
+      return;
+    }
+
+    // Prepara i dati per il foglio "Data Futura"
+    const futureData = fluspyBaskets.map(basket => {
+      const latestOperation = getLatestOperationForBasket(basket.id);
+      const cycle = getCycleForBasket(basket.id);
+      
+      if (!latestOperation || !latestOperation.animalsPerKg) {
+        return {
+          'Cestello': basket.physicalNumber,
+          'Riga': basket.row || 'N/A',
+          'Posizione': basket.position || 'N/A',
+          'Ciclo': cycle?.id || 'N/A',
+          'Stato': 'Nessun dato disponibile'
+        };
+      }
+
+      const currentWeight = 1000000 / latestOperation.animalsPerKg;
+      const currentSize = getTargetSizeForWeight(currentWeight, sizes);
+      const futureWeight = calculateFutureWeight(basket.id, daysInFuture);
+      const futureSize = futureWeight ? getTargetSizeForWeight(futureWeight, sizes) : null;
+      const futureAnimalsPerKg = futureWeight ? Math.round(1000000 / futureWeight) : null;
+      const growthPercentage = futureWeight && currentWeight > 0 
+        ? Math.round((futureWeight / currentWeight - 1) * 100) 
+        : 0;
+
+      return {
+        'Cestello': basket.physicalNumber,
+        'Riga': basket.row || 'N/A',
+        'Posizione': basket.position || 'N/A',
+        'Ciclo': cycle?.id || 'N/A',
+        'Taglia Attuale': currentSize?.code || 'N/A',
+        'Peso Attuale (mg)': Math.round(currentWeight),
+        'Animali/kg Attuali': latestOperation.animalsPerKg.toFixed(2),
+        'N° Animali': latestOperation.animalCount?.toLocaleString('it-IT') || 'N/A',
+        'Taglia Futura': futureSize?.code || 'N/A',
+        'Peso Futuro (mg)': futureWeight ? futureWeight.toFixed(2) : 'N/A',
+        'Animali/kg Futuri': futureAnimalsPerKg ? futureAnimalsPerKg.toFixed(2) : 'N/A',
+        'Crescita %': `${growthPercentage >= 0 ? '+' : ''}${growthPercentage}%`,
+        'Data Previsione': format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')
+      };
+    });
+
+    // Prepara i dati per il foglio "Taglia Target"
+    const targetData = fluspyBaskets.map(basket => {
+      const latestOperation = getLatestOperationForBasket(basket.id);
+      const cycle = getCycleForBasket(basket.id);
+      
+      if (!latestOperation || !latestOperation.animalsPerKg) {
+        return {
+          'Cestello': basket.physicalNumber,
+          'Riga': basket.row || 'N/A',
+          'Posizione': basket.position || 'N/A',
+          'Ciclo': cycle?.id || 'N/A',
+          'Stato': 'Nessun dato disponibile'
+        };
+      }
+
+      const currentWeight = 1000000 / latestOperation.animalsPerKg;
+      const currentSize = getTargetSizeForWeight(currentWeight, sizes);
+      const daysToTarget = getDaysToReachTargetSize(basket.id, targetSizeCode);
+      const targetSize = sizes?.find(s => s.code === targetSizeCode);
+      
+      let stato = '';
+      let dataRaggiungimento = '';
+      
+      if (currentSize?.code === targetSizeCode) {
+        stato = 'Taglia già raggiunta';
+      } else if (daysToTarget === null) {
+        stato = 'Non raggiungibile entro 365 giorni';
+      } else {
+        stato = `${daysToTarget} giorni`;
+        dataRaggiungimento = format(addDays(new Date(), daysToTarget), 'dd/MM/yyyy');
+      }
+
+      return {
+        'Cestello': basket.physicalNumber,
+        'Riga': basket.row || 'N/A',
+        'Posizione': basket.position || 'N/A',
+        'Ciclo': cycle?.id || 'N/A',
+        'Taglia Attuale': currentSize?.code || 'N/A',
+        'Peso Attuale (mg)': Math.round(currentWeight),
+        'Animali/kg': latestOperation.animalsPerKg.toFixed(2),
+        'Taglia Target': targetSizeCode,
+        'Nome Taglia Target': targetSize?.name || 'N/A',
+        'Giorni Necessari': stato,
+        'Data Raggiungimento': dataRaggiungimento || 'N/A'
+      };
+    });
+
+    // Crea il workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Crea il foglio "Data Futura"
+    const wsFuture = XLSX.utils.json_to_sheet(futureData);
+    XLSX.utils.book_append_sheet(wb, wsFuture, `Previsione ${daysInFuture} giorni`);
+    
+    // Crea il foglio "Taglia Target"
+    const wsTarget = XLSX.utils.json_to_sheet(targetData);
+    XLSX.utils.book_append_sheet(wb, wsTarget, `Taglia ${targetSizeCode}`);
+
+    // Genera il file e scaricalo
+    const fileName = `Report_${selectedFlupsy.name}_${format(new Date(), 'dd-MM-yyyy')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   // Render principale del componente
   return (
     <div className="container mx-auto py-6">
@@ -857,6 +968,17 @@ export default function FlupsyComparison() {
                 }}
               >
                 <RefreshCw className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                className="h-7 px-3"
+                onClick={generateExcelReport}
+                disabled={!selectedFlupsyId || !fluspyBaskets || fluspyBaskets.length === 0}
+                data-testid="button-download-excel-report"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Excel
               </Button>
             </div>
           </CardTitle>
