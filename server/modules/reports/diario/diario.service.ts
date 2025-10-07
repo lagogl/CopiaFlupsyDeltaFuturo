@@ -94,7 +94,7 @@ class DiarioService {
       WITH ops AS (
         SELECT 
           o.id, o.date, o.type, o.notes, o.basket_id, o.cycle_id, o.size_id, 
-          o.animal_count, o.animals_per_kg,
+          o.animal_count, o.animals_per_kg, o.created_at,
           b.physical_number AS basket_number, b.flupsy_id,
           f.name AS flupsy_name,
           CASE 
@@ -236,7 +236,7 @@ class DiarioService {
     // Step 2: Recupera operazioni del mese
     const allOperationsResult = await db.execute(sql`
       SELECT 
-        o.id, o.date, o.type, o.basket_id, o.animal_count,
+        o.id, o.date, o.type, o.basket_id, o.animal_count, o.created_at,
         b.physical_number as basket_physical_number,
         f.name as flupsy_name,
         s.code as size_code
