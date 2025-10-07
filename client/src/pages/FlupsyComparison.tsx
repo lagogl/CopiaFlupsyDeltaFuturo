@@ -325,13 +325,13 @@ export default function FlupsyComparison() {
   const getBasketCardSize = () => {
     switch (zoomLevel) {
       case 1:
-        return { width: '26rem', height: '10rem' }; // Default
+        return { width: '28rem', height: '12rem' }; // Default - più grande
       case 2:
-        return { width: '32rem', height: '12rem' }; // Medio
+        return { width: '34rem', height: '14rem' }; // Medio
       case 3:
-        return { width: '38rem', height: '14rem' }; // Grande
+        return { width: '40rem', height: '16rem' }; // Grande
       default:
-        return { width: '26rem', height: '10rem' };
+        return { width: '28rem', height: '12rem' };
     }
   };
 
@@ -344,7 +344,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className="basket-card p-2 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs cursor-pointer"
+              className="basket-card p-3 rounded border-2 border-dashed border-gray-500 flex items-center justify-center text-gray-600 text-base font-medium cursor-pointer bg-gray-50"
               style={{ width: cardSize.width, height: cardSize.height }}
             >
               Vuoto
@@ -416,42 +416,42 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-3 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer overflow-hidden`}
+              className={`basket-card p-4 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer overflow-hidden`}
               style={{ width: cardSize.width, height: cardSize.height }}
             >
               <div className="flex justify-between items-start w-full">
-                <span className="font-bold text-xs">#{basket.physicalNumber}</span>
+                <span className="font-bold text-base"># {basket.physicalNumber}</span>
                 {cycle && (
-                  <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
+                  <Badge variant="outline" className="text-xs px-2 py-0.5 h-5">
                     C#{cycle.id}
                   </Badge>
                 )}
               </div>
               
               {currentSize && (
-                <div className="flex flex-col w-full space-y-1 mt-1">
+                <div className="flex flex-col w-full space-y-2 mt-2">
                   <div className="flex items-center justify-center">
                     {/* Gestione speciale per taglie TP-10000+ con sfondo nero e testo bianco */}
                     {currentSize.code.startsWith('TP-') && parseInt(currentSize.code.replace('TP-', '')) >= 10000 ? (
-                      <Badge className="text-[8px] px-1.5 py-0 h-4 bg-black text-white whitespace-nowrap max-w-full overflow-hidden">
+                      <Badge className="text-sm px-3 py-1 h-6 bg-black text-white whitespace-nowrap max-w-full overflow-hidden font-bold">
                         +TP-10000
                       </Badge>
                     ) : (
-                      <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white whitespace-nowrap max-w-full overflow-hidden">
+                      <Badge className="text-sm px-3 py-1 h-6 bg-blue-600 text-white whitespace-nowrap max-w-full overflow-hidden font-bold">
                         {currentSize.code}
                       </Badge>
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-1 text-center">
+                  <div className="grid grid-cols-2 gap-2 text-center">
                     <div>
-                      <div className="text-[8px] text-gray-500">Peso</div>
-                      <div className="text-[9px] font-medium">{currentWeight} mg</div>
+                      <div className="text-xs font-medium text-gray-600">Peso</div>
+                      <div className="text-sm font-bold">{currentWeight} mg</div>
                     </div>
                     {latestOperation?.animalsPerKg && (
                       <div>
-                        <div className="text-[8px] text-gray-500">Animali/kg</div>
-                        <div className="text-[9px] font-medium">{latestOperation.animalsPerKg.toFixed(2)}</div>
+                        <div className="text-xs font-medium text-gray-600">Animali/kg</div>
+                        <div className="text-sm font-bold">{latestOperation.animalsPerKg.toFixed(2)}</div>
                       </div>
                     )}
                   </div>
@@ -558,23 +558,23 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-3 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
+              className={`basket-card p-4 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
               style={{ width: cardSize.width, height: cardSize.height }}
             >
               <div className="flex justify-between items-start w-full">
-                <span className="font-bold text-xs">#{basket.physicalNumber}</span>
+                <span className="font-bold text-base"># {basket.physicalNumber}</span>
                 {cycle && (
-                  <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
+                  <Badge variant="outline" className="text-xs px-2 py-0.5 h-5">
                     C#{cycle.id}
                   </Badge>
                 )}
               </div>
               
-              <div className="flex flex-col w-full space-y-1 mt-1">
+              <div className="flex flex-col w-full space-y-2 mt-2">
                 {/* Numero totale di animali in formato europeo */}
                 {latestOperation?.animalCount && (
                   <div className="flex items-center justify-center mb-1">
-                    <div className="text-[10px] font-medium">
+                    <div className="text-sm font-bold">
                       {latestOperation.animalCount.toLocaleString('it-IT')}
                     </div>
                   </div>
@@ -584,33 +584,33 @@ export default function FlupsyComparison() {
                   <div className="flex items-center justify-center">
                     {/* Gestione speciale per taglie TP-10000+ con sfondo nero e testo bianco */}
                     {futureSize.code.startsWith('TP-') && parseInt(futureSize.code.replace('TP-', '')) >= 10000 ? (
-                      <Badge className="text-[8px] px-1.5 py-0 h-4 bg-black text-white whitespace-nowrap max-w-full overflow-hidden">
+                      <Badge className="text-sm px-3 py-1 h-6 bg-black text-white whitespace-nowrap max-w-full overflow-hidden font-bold">
                         +TP-10000
                       </Badge>
                     ) : (
-                      <Badge className="text-[8px] px-1.5 py-0 h-4 whitespace-nowrap max-w-full overflow-hidden">
+                      <Badge className="text-sm px-3 py-1 h-6 bg-blue-600 text-white whitespace-nowrap max-w-full overflow-hidden font-bold">
                         {futureSize.code}
                       </Badge>
                     )}
                   </div>
                 )}
                 
-                <div className="grid grid-cols-2 gap-1 text-center">
+                <div className="grid grid-cols-2 gap-2 text-center">
                   <div>
-                    <div className="text-[8px] text-gray-500">Peso</div>
-                    <div className="text-[9px] font-medium">{futureWeight.toFixed(2)} mg</div>
+                    <div className="text-xs font-medium text-gray-600">Peso</div>
+                    <div className="text-sm font-bold">{futureWeight.toFixed(2)} mg</div>
                   </div>
                   <div>
-                    <div className="text-[8px] text-gray-500">Animali/kg</div>
-                    <div className="text-[9px] font-medium">{futureAnimalsPerKg.toFixed(2)}</div>
+                    <div className="text-xs font-medium text-gray-600">Animali/kg</div>
+                    <div className="text-sm font-bold">{futureAnimalsPerKg.toFixed(2)}</div>
                   </div>
                 </div>
               </div>
               
               {/* Indicatore di crescita */}
-              <div className="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3">
-                <Badge className={`text-[8px] px-1 py-0 h-4 ${growthPercentage >= 0 ? 'bg-green-500' : 'bg-red-500'} text-white rounded-full`}>
-                  {growthPercentage >= 0 ? '+' : ''}{growthPercentage.toFixed(2)}%
+              <div className="absolute top-1 right-1">
+                <Badge className={`text-xs px-2 py-1 h-6 ${growthPercentage >= 0 ? 'bg-green-600' : 'bg-red-600'} text-white rounded-full font-bold`}>
+                  {growthPercentage >= 0 ? '+' : ''}{growthPercentage.toFixed(0)}%
                 </Badge>
               </div>
             </div>
@@ -757,41 +757,41 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-3 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
+              className={`basket-card p-4 rounded border-2 ${colorClass} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
               style={{ width: cardSize.width, height: cardSize.height }}
             >
               <div className="flex justify-between items-start w-full">
-                <span className="font-bold text-xs">#{basket.physicalNumber}</span>
+                <span className="font-bold text-base"># {basket.physicalNumber}</span>
                 {cycle && (
-                  <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
+                  <Badge variant="outline" className="text-xs px-2 py-0.5 h-5">
                     C#{cycle.id}
                   </Badge>
                 )}
               </div>
               
-              <div className="flex flex-col w-full items-center justify-center space-y-1">
+              <div className="flex flex-col w-full items-center justify-center space-y-2">
                 {currentSize?.code === targetSizeCode ? (
-                  <div className="flex items-center justify-center text-[10px] font-medium text-green-600">
+                  <div className="flex items-center justify-center text-sm font-bold text-green-600">
                     Taglia raggiunta
                   </div>
                 ) : daysToTarget === null ? (
-                  <div className="flex items-center justify-center text-[10px] font-medium text-red-600">
+                  <div className="flex items-center justify-center text-sm font-bold text-red-600">
                     Non raggiungibile
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center text-[10px]">
-                      <Clock className="h-3 w-3 mr-1" />
+                    <div className="flex items-center text-base font-bold">
+                      <Clock className="h-4 w-4 mr-1" />
                       {daysToTarget} giorni
                     </div>
-                    <div className="flex items-center text-[9px] text-gray-500 whitespace-nowrap max-w-full overflow-hidden">
+                    <div className="flex items-center text-sm font-medium text-gray-700 whitespace-nowrap max-w-full overflow-hidden">
                       {/* Gestione speciale per taglie TP-10000+ con visualizzazione speciale */}
                       {currentSize?.code && currentSize.code.startsWith('TP-') && parseInt(currentSize.code.replace('TP-', '')) >= 10000 ? (
                         <>+TP-10000</>
                       ) : (
                         <>{currentSize?.code || '?'}</>
                       )}
-                      <ArrowRight className="h-3 w-3 mx-0.5 flex-shrink-0" /> 
+                      <ArrowRight className="h-4 w-4 mx-1 flex-shrink-0" /> 
                       {targetSizeCode}
                     </div>
                   </>
