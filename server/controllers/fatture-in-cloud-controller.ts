@@ -285,6 +285,15 @@ router.post('/config', async (req: Request, res: Response) => {
     
     await setConfigValue(chiave, valore || '', descrizione);
     
+    // Se stiamo salvando le credenziali API, carica automaticamente il Company ID dai segreti Replit
+    if (chiave === 'fatture_in_cloud_client_secret') {
+      const companyIdFromEnv = process.env.FATTURE_IN_CLOUD_COMPANY_ID;
+      if (companyIdFromEnv) {
+        await setConfigValue('fatture_in_cloud_company_id', companyIdFromEnv, 'ID Azienda da segreti Replit');
+        console.log('✅ Company ID caricato automaticamente dai segreti Replit:', companyIdFromEnv);
+      }
+    }
+    
     res.json({ 
       success: true, 
       message: `Configurazione ${chiave} aggiornata con successo` 
