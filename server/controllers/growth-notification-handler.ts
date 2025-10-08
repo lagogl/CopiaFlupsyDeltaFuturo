@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { sql } from "drizzle-orm";
 import { isNotificationTypeEnabled, getConfiguredTargetSizes } from "./notification-settings-controller";
+import { NotificationsCache } from "./notification-controller";
 
 /**
  * Converte un tasso di crescita mensile in tasso giornaliero equivalente
@@ -190,6 +191,9 @@ async function createTargetSizeNotification(
         ${JSON.stringify({ cycleId, basketId, targetSizeId: targetSize.id, targetSizeName: targetSize.name, projectedAnimalsPerKg })}
       )
     `);
+
+    // Invalida la cache delle notifiche per mostrare immediatamente la nuova notifica
+    NotificationsCache.clear();
 
     return Number(result.rows[0].id);
   } catch (error) {
