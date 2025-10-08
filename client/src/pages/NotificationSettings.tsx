@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -6,34 +6,57 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 
 interface NotificationSetting {
   id?: number;
   notificationType: string;
   isEnabled: boolean;
+  targetSizeIds?: number[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+interface Size {
+  id: number;
+  name: string;
+  code: string;
 }
 
 export default function NotificationSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isTesting, setIsTesting] = useState(false);
+  const [selectedSizeIds, setSelectedSizeIds] = useState<number[]>([]);
 
   // Ottieni tutte le impostazioni di notifica
   const { data: settingsData, isLoading } = useQuery<{ success: boolean; settings: NotificationSetting[] }>({
     queryKey: ['/api/notification-settings'],
-    queryFn: () => apiRequest({ url: '/api/notification-settings' }),
   });
+
+  // Ottieni tutte le taglie disponibili
+  const { data: sizesData } = useQuery<Size[]>({
+    queryKey: ['/api/sizes'],
+  });
+
+  // Inizializza le taglie selezionate quando arrivano i dati
+  useEffect(() => {
+    if (settingsData?.settings) {
+      const accrescimentoSetting = settingsData.settings.find(s => s.notificationType === 'accrescimento');
+      if (accrescimentoSetting?.targetSizeIds && accrescimentoSetting.targetSizeIds.length > 0) {
+        setSelectedSizeIds(accrescimentoSetting.targetSizeIds);
+      }
+    }
+  }, [settingsData]);
 
   // Mutazione per aggiornare un'impostazione
   const updateMutation = useMutation({
-    mutationFn: ({ type, isEnabled }: { type: string; isEnabled: boolean }) =>
+    mutationFn: ({ type, isEnabled, targetSizeIds }: { type: string; isEnabled: boolean; targetSizeIds?: number[] }) =>
       apiRequest({
         url: `/api/notification-settings/${type}`,
         method: 'PUT',
-        body: { isEnabled }
+        body: { isEnabled, targetSizeIds }
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notification-settings'] });
@@ -82,7 +105,37 @@ export default function NotificationSettings() {
 
   // Gestisci il cambio di un'impostazione
   const handleToggle = (type: string, currentValue: boolean) => {
-    updateMutation.mutate({ type, isEnabled: !currentValue });
+    // Se è la notifica di accrescimento, includi anche le taglie selezionate
+    if (type === 'accrescimento') {
+      updateMutation.mutate({ 
+        type, 
+        isEnabled: !currentValue,
+        targetSizeIds: selectedSizeIds.length > 0 ? selectedSizeIds : undefined
+      });
+    } else {
+      updateMutation.mutate({ type, isEnabled: !currentValue });
+    }
+  };
+
+  // Gestisci la selezione/deselezione di una taglia
+  const handleSizeToggle = (sizeId: number) => {
+    setSelectedSizeIds(prev => {
+      const newSelection = prev.includes(sizeId)
+        ? prev.filter(id => id !== sizeId)
+        : [...prev, sizeId];
+      
+      // Aggiorna anche sul server se la notifica è già abilitata
+      const accrescimentoSetting = mergedSettings.find(s => s.notificationType === 'accrescimento');
+      if (accrescimentoSetting?.isEnabled) {
+        updateMutation.mutate({
+          type: 'accrescimento',
+          isEnabled: true,
+          targetSizeIds: newSelection.length > 0 ? newSelection : undefined
+        });
+      }
+      
+      return newSelection;
+    });
   };
 
   // Avvia il test di controllo notifiche
@@ -99,7 +152,7 @@ export default function NotificationSettings() {
     },
     'accrescimento': {
       title: 'Notifiche di accrescimento',
-      description: 'Ricevi notifiche quando un ciclo raggiunge la taglia TP-3000'
+      description: 'Ricevi notifiche quando un ciclo raggiunge una taglia configurata'
     }
   };
 
@@ -135,26 +188,66 @@ export default function NotificationSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               {mergedSettings.map((setting) => (
-                <div key={setting.notificationType} className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium">
-                      {notificationTypeDescriptions[setting.notificationType]?.title || setting.notificationType}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {notificationTypeDescriptions[setting.notificationType]?.description || 'Nessuna descrizione disponibile'}
-                    </p>
+                <div key={setting.notificationType} className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium">
+                        {notificationTypeDescriptions[setting.notificationType]?.title || setting.notificationType}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {notificationTypeDescriptions[setting.notificationType]?.description || 'Nessuna descrizione disponibile'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`toggle-${setting.notificationType}`} className="sr-only">
+                        Abilita {notificationTypeDescriptions[setting.notificationType]?.title || setting.notificationType}
+                      </Label>
+                      <Switch
+                        id={`toggle-${setting.notificationType}`}
+                        checked={setting.isEnabled}
+                        onCheckedChange={() => handleToggle(setting.notificationType, setting.isEnabled)}
+                        disabled={updateMutation.isPending}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor={`toggle-${setting.notificationType}`} className="sr-only">
-                      Abilita {notificationTypeDescriptions[setting.notificationType]?.title || setting.notificationType}
-                    </Label>
-                    <Switch
-                      id={`toggle-${setting.notificationType}`}
-                      checked={setting.isEnabled}
-                      onCheckedChange={() => handleToggle(setting.notificationType, setting.isEnabled)}
-                      disabled={updateMutation.isPending}
-                    />
-                  </div>
+                  
+                  {/* Mostra selezione taglie solo per notifiche di accrescimento */}
+                  {setting.notificationType === 'accrescimento' && setting.isEnabled && sizesData && (
+                    <div className="ml-4 pl-4 border-l-2 border-gray-200 space-y-2">
+                      <h4 className="text-sm font-medium text-gray-700">Taglie da monitorare:</h4>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Seleziona una o più taglie per ricevere notifiche quando i cestelli le raggiungono
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {sizesData.map((size) => (
+                          <div key={size.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`size-${size.id}`}
+                              checked={selectedSizeIds.includes(size.id)}
+                              onCheckedChange={() => handleSizeToggle(size.id)}
+                              disabled={updateMutation.isPending}
+                            />
+                            <label
+                              htmlFor={`size-${size.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {size.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      {selectedSizeIds.length === 0 && (
+                        <p className="text-xs text-orange-600 mt-2">
+                          ⚠️ Nessuna taglia selezionata. Verrà usata TP-3000 come default.
+                        </p>
+                      )}
+                      {selectedSizeIds.length > 0 && (
+                        <p className="text-xs text-green-600 mt-2">
+                          ✓ {selectedSizeIds.length} taglia{selectedSizeIds.length > 1 ? 'e' : ''} selezionata{selectedSizeIds.length > 1 ? 'e' : ''}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>
@@ -171,7 +264,7 @@ export default function NotificationSettings() {
               <div className="flex flex-col gap-2">
                 <h3 className="text-lg font-medium">Test notifiche accrescimento</h3>
                 <p className="text-sm text-gray-500">
-                  Esegui manualmente il controllo per identificare i cicli che hanno raggiunto la taglia TP-3000
+                  Esegui manualmente il controllo per identificare i cicli che hanno raggiunto le taglie configurate
                 </p>
                 <div className="flex justify-start mt-2">
                   <Button 
@@ -185,7 +278,7 @@ export default function NotificationSettings() {
                         Controllo in corso...
                       </>
                     ) : (
-                      'Esegui controllo TP-3000'
+                      'Esegui controllo taglie'
                     )}
                   </Button>
                 </div>

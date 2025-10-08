@@ -639,6 +639,7 @@ export const notificationSettings = pgTable("notification_settings", {
   id: serial("id").primaryKey(),
   notificationType: text("notification_type").notNull(), // 'vendita', 'accrescimento', etc.
   isEnabled: boolean("is_enabled").notNull().default(true),
+  targetSizeIds: jsonb("target_size_ids"), // Array di ID taglie per notifiche di accrescimento (es. [17, 18, 19])
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
 });
