@@ -40,30 +40,17 @@ export default function NotificationSettings() {
     queryKey: ['/api/sizes'],
   });
 
-  // Sincronizza le taglie selezionate con i dati dal server
+  // Carica le taglie selezionate dal server (solo quando cambiano i dati dal server)
   useEffect(() => {
     if (settingsData?.settings) {
       const accrescimentoSetting = settingsData.settings.find(s => s.notificationType === 'accrescimento');
-      if (accrescimentoSetting?.targetSizeIds) {
-        const sizeIds = Array.isArray(accrescimentoSetting.targetSizeIds) 
-          ? accrescimentoSetting.targetSizeIds 
-          : [];
-        
-        // Aggiorna solo se i valori sono diversi (evita loop infiniti)
-        const currentIds = JSON.stringify([...selectedSizeIds].sort());
-        const newIds = JSON.stringify([...sizeIds].sort());
-        
-        if (currentIds !== newIds) {
-          setSelectedSizeIds(sizeIds);
-          console.log('Taglie sincronizzate dal server:', sizeIds);
-        }
-      } else if (selectedSizeIds.length > 0 && !accrescimentoSetting?.targetSizeIds) {
-        // Se il server non ha taglie ma lo stato locale sì, resetta
-        setSelectedSizeIds([]);
-        console.log('Taglie resettate (nessuna taglia nel server)');
-      }
+      const serverSizeIds = accrescimentoSetting?.targetSizeIds || [];
+      
+      setSelectedSizeIds(serverSizeIds);
+      console.log('Taglie caricate dal server:', serverSizeIds);
     }
-  }, [settingsData, selectedSizeIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsData]);
 
   // Mutazione per aggiornare un'impostazione
   const updateMutation = useMutation({
