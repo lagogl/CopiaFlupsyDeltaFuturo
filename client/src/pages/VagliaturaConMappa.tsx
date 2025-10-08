@@ -166,8 +166,8 @@ export default function VagliaturaConMappa() {
       if (mode === 'source') {
         return b.currentCycleId !== null; // Solo cestelli con ciclo attivo
       } else {
-        // In destination: mostra tutti i cestelli (sia disponibili che con ciclo attivo)
-        return true;
+        // In destination: mostra solo cestelli disponibili (senza ciclo attivo)
+        return b.currentCycleId === null && b.state === 'available';
       }
     });
     
