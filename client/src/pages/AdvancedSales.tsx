@@ -285,12 +285,22 @@ export default function AdvancedSales() {
       return;
     }
 
+    if (!selectedCompanyId) {
+      toast({
+        title: "Errore",
+        description: "Seleziona l'azienda per questa vendita",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const customerData = useManualCustomer 
       ? { name: manualCustomer.name, details: manualCustomer.details }
       : selectedCustomer;
 
     createSaleMutation.mutate({
       operationIds: selectedOperations,
+      companyId: selectedCompanyId,
       customerData,
       saleDate,
       notes

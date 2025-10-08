@@ -144,6 +144,7 @@ export async function createAdvancedSale(req: Request, res: Response) {
   try {
     const {
       operationIds,
+      companyId,
       customerData,
       saleDate,
       notes
@@ -187,6 +188,7 @@ export async function createAdvancedSale(req: Request, res: Response) {
       // Crea vendita master
       const [newSale] = await tx.insert(advancedSales).values({
         saleNumber,
+        companyId: companyId || null,
         customerId: customerData?.id || null,
         customerName: customerData?.name || null,
         customerDetails: customerData ? JSON.stringify(customerData) : null,
