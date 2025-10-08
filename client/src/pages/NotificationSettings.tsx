@@ -44,8 +44,16 @@ export default function NotificationSettings() {
   useEffect(() => {
     if (settingsData?.settings) {
       const accrescimentoSetting = settingsData.settings.find(s => s.notificationType === 'accrescimento');
-      if (accrescimentoSetting?.targetSizeIds && accrescimentoSetting.targetSizeIds.length > 0) {
-        setSelectedSizeIds(accrescimentoSetting.targetSizeIds);
+      if (accrescimentoSetting?.targetSizeIds) {
+        // Assicurati che sia un array valido, anche se vuoto
+        const sizeIds = Array.isArray(accrescimentoSetting.targetSizeIds) 
+          ? accrescimentoSetting.targetSizeIds 
+          : [];
+        setSelectedSizeIds(sizeIds);
+        console.log('Taglie caricate dal server:', sizeIds);
+      } else {
+        // Se non ci sono taglie configurate, inizializza con array vuoto
+        setSelectedSizeIds([]);
       }
     }
   }, [settingsData]);
@@ -83,10 +91,23 @@ export default function NotificationSettings() {
         method: 'POST',
       }),
     onSuccess: (data) => {
-      toast({
-        title: "Test completato",
-        description: data.message || "Il test di controllo notifiche di crescita è stato completato",
-      });
+      const accrescimentoSetting = mergedSettings.find(s => s.notificationType === 'accrescimento');
+      const isEnabled = accrescimentoSetting?.isEnabled || false;
+      
+      // Se le notifiche sono disabilitate, avvisa l'utente
+      if (!isEnabled && data.message?.includes('create 0 notifiche')) {
+        toast({
+          title: "Test completato",
+          description: "Le notifiche di accrescimento sono disabilitate. Attivale per ricevere notifiche.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Test completato",
+          description: data.message || "Il test di controllo notifiche di crescita è stato completato",
+        });
+      }
+      
       setIsTesting(false);
       
       // Invalida anche le notifiche per ricaricarle
@@ -124,15 +145,13 @@ export default function NotificationSettings() {
         ? prev.filter(id => id !== sizeId)
         : [...prev, sizeId];
       
-      // Aggiorna anche sul server se la notifica è già abilitata
+      // Aggiorna sempre sul server, indipendentemente dallo stato delle notifiche
       const accrescimentoSetting = mergedSettings.find(s => s.notificationType === 'accrescimento');
-      if (accrescimentoSetting?.isEnabled) {
-        updateMutation.mutate({
-          type: 'accrescimento',
-          isEnabled: true,
-          targetSizeIds: newSelection.length > 0 ? newSelection : undefined
-        });
-      }
+      updateMutation.mutate({
+        type: 'accrescimento',
+        isEnabled: accrescimentoSetting?.isEnabled || false,
+        targetSizeIds: newSelection.length > 0 ? newSelection : undefined
+      });
       
       return newSelection;
     });
