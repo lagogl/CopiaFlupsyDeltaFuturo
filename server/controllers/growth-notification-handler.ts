@@ -62,33 +62,41 @@ async function checkSizeMatch(animalsPerKg: number, sizeId: number): Promise<{ i
 }
 
 /**
- * Ottiene il mese corrente (1-12) da una data
- * @param date Data da cui estrarre il mese
- * @returns Numero del mese (1-12)
+ * Mappa il numero del mese (1-12) al nome italiano
  */
-function getMonthFromDate(date: Date): number {
-  return date.getMonth() + 1; // getMonth() restituisce 0-11
+const MONTH_NAMES_IT = [
+  'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+  'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+];
+
+/**
+ * Ottiene il nome del mese in italiano da una data
+ * @param date Data da cui estrarre il mese
+ * @returns Nome del mese in italiano
+ */
+function getMonthNameFromDate(date: Date): string {
+  return MONTH_NAMES_IT[date.getMonth()]; // getMonth() restituisce 0-11
 }
 
 /**
- * Ottiene il tasso di crescita mensile dal database per il mese specificato
- * @param month Mese per cui ottenere il tasso (1-12)
- * @returns Promise con il tasso di crescita mensile o null se non trovato
+ * Ottiene il tasso di crescita giornaliero dal database per il mese specificato
+ * @param monthName Nome del mese in italiano (es. "gennaio", "ottobre")
+ * @returns Promise con il tasso di crescita giornaliero percentuale o null se non trovato
  */
-async function getMonthlyGrowthRate(month: number): Promise<number | null> {
+async function getDailyGrowthRate(monthName: string): Promise<number | null> {
   try {
     const sgrData = await db.execute(sql`
-      SELECT percentage_value FROM sgr_monthly
-      WHERE month_number = ${month}
+      SELECT percentage FROM sgr
+      WHERE month = ${monthName}
     `);
 
     if (!sgrData.rows || sgrData.rows.length === 0) {
       return null;
     }
 
-    return Number(sgrData.rows[0].percentage_value);
+    return Number(sgrData.rows[0].percentage);
   } catch (error) {
-    console.error(`Errore nel recupero del tasso SGR per il mese ${month}:`, error);
+    console.error(`Errore nel recupero del tasso SGR per il mese ${monthName}:`, error);
     return null;
   }
 }
@@ -199,14 +207,15 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
     }
 
     const currentDate = new Date();
-    const currentMonth = getMonthFromDate(currentDate);
+    const currentMonthName = getMonthNameFromDate(currentDate);
     
-    // Ottieni il tasso di crescita mensile per il mese corrente (opzionale)
-    const monthlyGrowthRate = await getMonthlyGrowthRate(currentMonth);
-    const dailyGrowthRate = monthlyGrowthRate ? monthlyToDaily(monthlyGrowthRate) : null;
+    // Ottieni il tasso di crescita giornaliero percentuale per il mese corrente (opzionale)
+    const dailyGrowthRate = await getDailyGrowthRate(currentMonthName);
     
     if (dailyGrowthRate === null) {
-      console.log(`Nessun tasso di crescita trovato per il mese ${currentMonth}, controllo solo valori attuali`);
+      console.log(`Nessun tasso di crescita trovato per il mese ${currentMonthName}, controllo solo valori attuali`);
+    } else {
+      console.log(`Tasso di crescita giornaliero per ${currentMonthName}: ${dailyGrowthRate}%`);
     }
     
     // Ottieni tutti i cicli attivi con l'ultima operazione di peso o prima-attivazione
