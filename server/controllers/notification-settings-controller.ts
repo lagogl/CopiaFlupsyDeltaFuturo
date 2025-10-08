@@ -38,6 +38,9 @@ export async function updateNotificationSetting(req: Request, res: Response) {
   const { type } = req.params;
   const { isEnabled, targetSizeIds } = req.body;
 
+  // Log per debugging
+  console.log(`📝 UPDATE NOTIFICATION - type: ${type}, isEnabled: ${isEnabled}, targetSizeIds:`, targetSizeIds);
+
   if (typeof isEnabled !== 'boolean') {
     return res.status(400).json({
       success: false,
