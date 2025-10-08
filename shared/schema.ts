@@ -876,6 +876,7 @@ export const advancedSales = pgTable("advanced_sales", {
   pdfPath: text("pdf_path"), // Percorso file PDF generato
   ddtId: integer("ddt_id"), // Riferimento DDT creato
   ddtStatus: text("ddt_status", { enum: ["nessuno", "locale", "inviato"] }).notNull().default("nessuno"), // Stato DDT
+  companyId: integer("company_id"), // ID Azienda Fatture in Cloud per questa vendita
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
 });
