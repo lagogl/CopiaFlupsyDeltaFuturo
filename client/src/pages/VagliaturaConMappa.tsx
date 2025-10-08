@@ -523,6 +523,7 @@ export default function VagliaturaConMappa() {
     physicalNumber: 0,
     flupsyId: 0,
     position: '',
+    row: '',
     destinationType: 'placed' as 'placed' | 'sold',
     sampleWeight: 1, // grammi
     sampleCount: 100, // numero di animali vivi nel campione
@@ -2341,6 +2342,7 @@ export default function VagliaturaConMappa() {
             physicalNumber: measurementData.physicalNumber,
             flupsyId: measurementData.flupsyId,
             position: measurementData.position,
+            row: measurementData.row,
             destinationType: 'placed',
             animalCount: data.animalCount,
             deadCount: data.deadCount,
