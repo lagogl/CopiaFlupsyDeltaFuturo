@@ -201,17 +201,15 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
     const currentDate = new Date();
     const currentMonth = getMonthFromDate(currentDate);
     
-    // Ottieni il tasso di crescita mensile per il mese corrente
+    // Ottieni il tasso di crescita mensile per il mese corrente (opzionale)
     const monthlyGrowthRate = await getMonthlyGrowthRate(currentMonth);
-    if (monthlyGrowthRate === null) {
-      console.log(`Nessun tasso di crescita trovato per il mese ${currentMonth}`);
-      return 0;
+    const dailyGrowthRate = monthlyGrowthRate ? monthlyToDaily(monthlyGrowthRate) : null;
+    
+    if (dailyGrowthRate === null) {
+      console.log(`Nessun tasso di crescita trovato per il mese ${currentMonth}, controllo solo valori attuali`);
     }
     
-    // Converti in tasso giornaliero
-    const dailyGrowthRate = monthlyToDaily(monthlyGrowthRate);
-    
-    // Ottieni tutti i cicli attivi con l'ultima operazione di peso
+    // Ottieni tutti i cicli attivi con l'ultima operazione di peso o prima-attivazione
     const activeCyclesWithLastWeightOp = await db.execute(sql`
       WITH last_weight_operations AS (
         SELECT 
@@ -225,7 +223,7 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
           ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) as rn
         FROM operations o
         JOIN cycles c ON o.cycle_id = c.id
-        WHERE o.type = 'peso' AND c.state = 'active' AND o.total_weight IS NOT NULL AND o.animal_count IS NOT NULL
+        WHERE o.type IN ('peso', 'prima-attivazione') AND c.state = 'active' AND o.total_weight IS NOT NULL AND o.animal_count IS NOT NULL
       )
       SELECT 
         lwo.cycle_id,
@@ -255,22 +253,26 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
     for (const cycle of activeCyclesWithLastWeightOp.rows) {
       const cycleData = cycle as any;
       
-      // Calcola i giorni trascorsi dall'ultima operazione di peso
-      const lastWeightDate = new Date(cycleData.date);
-      const daysSinceLastWeight = Math.floor((currentDate.getTime() - lastWeightDate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Calcola il peso proiettato basato sul tasso di crescita
+      // Calcola il valore attuale di animali per kg
       const currentAnimalsPerKg = Number(cycleData.animals_per_kg);
       
-      // Simula la crescita per proiettare il nuovo valore di animali/kg
-      // Nota: all'aumentare del peso, diminuisce il numero di animali per kg
-      // per cui usiamo la formula inversa
-      const weightIncreaseRatio = simulateGrowthWithDailySGR(1, dailyGrowthRate, daysSinceLastWeight);
-      const projectedAnimalsPerKg = currentAnimalsPerKg / weightIncreaseRatio;
+      // Se abbiamo il tasso di crescita, calcoliamo la proiezione
+      let valueToCheck = currentAnimalsPerKg;
+      
+      if (dailyGrowthRate !== null) {
+        // Calcola i giorni trascorsi dall'ultima operazione di peso
+        const lastWeightDate = new Date(cycleData.date);
+        const daysSinceLastWeight = Math.floor((currentDate.getTime() - lastWeightDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Simula la crescita per proiettare il nuovo valore di animali/kg
+        // Nota: all'aumentare del peso, diminuisce il numero di animali per kg
+        const weightIncreaseRatio = simulateGrowthWithDailySGR(1, dailyGrowthRate, daysSinceLastWeight);
+        valueToCheck = currentAnimalsPerKg / weightIncreaseRatio;
+      }
       
       // Verifica per ogni taglia configurata
       for (const sizeId of targetSizeIds) {
-        const matchedSize = await checkSizeMatch(projectedAnimalsPerKg, sizeId);
+        const matchedSize = await checkSizeMatch(valueToCheck, sizeId);
         
         if (matchedSize) {
           // Crea una notifica
@@ -278,7 +280,7 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
             cycleData.cycle_id,
             cycleData.basket_id,
             cycleData.basket_number,
-            projectedAnimalsPerKg,
+            valueToCheck,
             matchedSize
           );
           
