@@ -659,13 +659,8 @@ export async function generateSalePDF(req: Request, res: Response) {
       operations: operationsRefs
     };
 
-    // Recupera Company ID dalla configurazione
-    const companyIdConfig = await db.select()
-      .from(configurazione)
-      .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
-      .limit(1);
-    
-    const companyId = companyIdConfig.length > 0 ? companyIdConfig[0].valore : undefined;
+    // Usa Company ID dalla vendita (se specificato)
+    const companyId = sale[0].companyId?.toString();
 
     // Genera PDF con logo aziendale
     const pdfBuffer = await pdfGenerator.generateSalePDF(saleData, companyId);
@@ -928,18 +923,11 @@ export async function generateDDT(req: Request, res: Response) {
     // Ottieni il prossimo numero DDT disponibile da FIC
     const numeroDDT = await getNextAvailableDDTNumber();
 
-    // Recupera dati fiscali azienda attiva per snapshot mittente
-    const companyIdConfig = await db.select()
-      .from(configurazione)
-      .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
-      .limit(1);
-    
-    let companyId: number | null = null;
+    // Usa Company ID dalla vendita (se specificato) per snapshot mittente
+    let companyId: number | null = saleData.companyId || null;
     let fiscalData: any = null;
     
-    if (companyIdConfig.length > 0 && companyIdConfig[0].valore) {
-      companyId = parseInt(companyIdConfig[0].valore);
-      
+    if (companyId) {
       // Recupera dati fiscali dell'azienda
       const fiscalDataResult = await db.select()
         .from(fattureInCloudConfig)
@@ -1150,24 +1138,16 @@ export async function generatePDFReport(req: Request, res: Response) {
       res.send(pdfBuffer);
     });
 
-    // Recupera Company ID dalla configurazione
-    const companyIdConfig = await db.select()
-      .from(configurazione)
-      .where(eq(configurazione.chiave, 'fatture_in_cloud_company_id'))
-      .limit(1);
+    // Usa Company ID dalla vendita (se specificato)
+    const companyId = saleData.companyId;
     
-    const companyId = companyIdConfig.length > 0 ? parseInt(companyIdConfig[0].valore, 10) : null;
-    
-    // Recupera dati fiscali basati sul Company ID
+    // Recupera dati fiscali basati sul Company ID dalla vendita
     const companiesResult = companyId 
       ? await db.select()
           .from(fattureInCloudConfig)
           .where(eq(fattureInCloudConfig.companyId, companyId))
           .limit(1)
-      : await db.select()
-          .from(fattureInCloudConfig)
-          .where(eq(fattureInCloudConfig.attivo, true))
-          .limit(1);
+      : [];
     const companyData = companiesResult.length > 0 ? companiesResult[0] : null;
 
     const margin = 50;
