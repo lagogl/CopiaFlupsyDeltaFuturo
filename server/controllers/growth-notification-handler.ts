@@ -147,27 +147,27 @@ async function createTargetSizeNotification(
   targetSize: { id: number; name: string; code: string }
 ): Promise<number | null> {
   try {
-    // Verifica se esiste già una notifica per questo ciclo/cestello/taglia
+    // Verifica se esiste già una notifica per questo cestello/taglia
     const existingNotifications = await db.execute(sql`
       SELECT id FROM target_size_annotations
-      WHERE cycle_id = ${cycleId} AND basket_id = ${basketId} AND target_size = ${targetSize.name}
+      WHERE basket_id = ${basketId} AND target_size_id = ${targetSize.id}
     `);
 
     if (existingNotifications.rows && existingNotifications.rows.length > 0) {
       // Aggiorna la notifica esistente
       await db.execute(sql`
         UPDATE target_size_annotations
-        SET projected_value = ${projectedAnimalsPerKg}, status = 'unread', created_at = NOW()
-        WHERE cycle_id = ${cycleId} AND basket_id = ${basketId} AND target_size = ${targetSize.name}
+        SET status = 'pending', updated_at = NOW()
+        WHERE basket_id = ${basketId} AND target_size_id = ${targetSize.id}
       `);
       return Number(existingNotifications.rows[0].id);
     }
 
-    // Crea una nuova notifica
+    // Crea una nuova notifica nella tabella target_size_annotations
     const result = await db.execute(sql`
       INSERT INTO target_size_annotations
-      (cycle_id, basket_id, target_size, projected_value, status, created_at)
-      VALUES (${cycleId}, ${basketId}, ${targetSize.name}, ${projectedAnimalsPerKg}, 'unread', NOW())
+      (basket_id, target_size_id, predicted_date, status, created_at)
+      VALUES (${basketId}, ${targetSize.id}, CURRENT_DATE, 'pending', NOW())
       RETURNING id
     `);
 
@@ -187,7 +187,7 @@ async function createTargetSizeNotification(
         NOW(),
         'basket',
         ${basketId},
-        ${JSON.stringify({ cycleId, basketId, targetSize: targetSize.name, projectedAnimalsPerKg })}
+        ${JSON.stringify({ cycleId, basketId, targetSizeId: targetSize.id, targetSizeName: targetSize.name, projectedAnimalsPerKg })}
       )
     `);
 
