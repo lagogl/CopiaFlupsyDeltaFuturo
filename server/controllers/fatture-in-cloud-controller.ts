@@ -1247,4 +1247,39 @@ router.get('/ddt/:id/pdf', async (req: Request, res: Response) => {
   }
 });
 
+// Endpoint pubblico per ottenere la lista aziende dal database locale
+// Accessibile a tutti gli utenti (non richiede autenticazione FIC)
+router.get('/companies/local', async (req: Request, res: Response) => {
+  try {
+    console.log('📋 Richiesta lista aziende locali...');
+    
+    // Recupera aziende dal database locale
+    const companies = await db.select({
+      companyId: fattureInCloudConfig.companyId,
+      ragioneSociale: fattureInCloudConfig.ragioneSociale
+    })
+    .from(fattureInCloudConfig)
+    .orderBy(fattureInCloudConfig.ragioneSociale);
+    
+    // Rimuovi duplicati (stesso company_id può apparire più volte)
+    const uniqueCompanies = Array.from(
+      new Map(companies.map(c => [c.companyId, c])).values()
+    );
+    
+    console.log(`✅ Trovate ${uniqueCompanies.length} aziende uniche`);
+    
+    res.json({
+      success: true,
+      companies: uniqueCompanies
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Errore nel recupero aziende locali:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || "Errore nel recupero lista aziende"
+    });
+  }
+});
+
 export default router;
