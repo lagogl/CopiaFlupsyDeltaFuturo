@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -29,6 +29,7 @@ export default function NotificationSettings() {
   const queryClient = useQueryClient();
   const [isTesting, setIsTesting] = useState(false);
   const [selectedSizeIds, setSelectedSizeIds] = useState<number[]>([]);
+  const isInitializedRef = useRef(false);
 
   // Ottieni tutte le impostazioni di notifica
   const { data: settingsData, isLoading } = useQuery<{ success: boolean; settings: NotificationSetting[] }>({
@@ -40,9 +41,9 @@ export default function NotificationSettings() {
     queryKey: ['/api/sizes'],
   });
 
-  // Inizializza le taglie selezionate quando arrivano i dati
+  // Inizializza le taglie selezionate quando arrivano i dati (solo al primo caricamento)
   useEffect(() => {
-    if (settingsData?.settings) {
+    if (settingsData?.settings && !isInitializedRef.current) {
       const accrescimentoSetting = settingsData.settings.find(s => s.notificationType === 'accrescimento');
       if (accrescimentoSetting?.targetSizeIds) {
         // Assicurati che sia un array valido, anche se vuoto
@@ -51,10 +52,8 @@ export default function NotificationSettings() {
           : [];
         setSelectedSizeIds(sizeIds);
         console.log('Taglie caricate dal server:', sizeIds);
-      } else {
-        // Se non ci sono taglie configurate, inizializza con array vuoto
-        setSelectedSizeIds([]);
       }
+      isInitializedRef.current = true;
     }
   }, [settingsData]);
 
@@ -126,12 +125,16 @@ export default function NotificationSettings() {
 
   // Gestisci il cambio di un'impostazione
   const handleToggle = (type: string, currentValue: boolean) => {
-    // Se è la notifica di accrescimento, includi anche le taglie selezionate
+    // Se è la notifica di accrescimento, mantieni le taglie correnti
     if (type === 'accrescimento') {
+      const accrescimentoSetting = mergedSettings.find(s => s.notificationType === 'accrescimento');
+      const currentTargetSizeIds = accrescimentoSetting?.targetSizeIds || [];
+      
       updateMutation.mutate({ 
         type, 
         isEnabled: !currentValue,
-        targetSizeIds: selectedSizeIds.length > 0 ? selectedSizeIds : undefined
+        // Mantieni sempre le taglie correnti, non sovrascriverle
+        targetSizeIds: currentTargetSizeIds.length > 0 ? currentTargetSizeIds : undefined
       });
     } else {
       updateMutation.mutate({ type, isEnabled: !currentValue });
