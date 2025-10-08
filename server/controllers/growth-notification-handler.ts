@@ -233,7 +233,7 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
         lwo.animal_count,
         lwo.date,
         lwo.operation_id,
-        CAST(lwo.animal_count::float / lwo.total_weight * 1000000 AS numeric) as animals_per_kg,
+        CAST(lwo.animal_count::float / lwo.total_weight AS numeric) as animals_per_kg,
         c.start_date,
         s.name as size_name
       FROM last_weight_operations lwo
