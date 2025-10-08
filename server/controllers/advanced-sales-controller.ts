@@ -35,8 +35,9 @@ import { apiRequest, getConfigValue } from "./fatture-in-cloud-controller";
 
 /**
  * Ottiene il prossimo numero DDT disponibile verificando sia il database locale che Fatture in Cloud
+ * @param companyId - ID dell'azienda per cui generare il numero DDT (opzionale)
  */
-async function getNextAvailableDDTNumber(): Promise<number> {
+async function getNextAvailableDDTNumber(companyId?: number | null): Promise<number> {
   try {
     // 1. Ottieni l'ultimo numero DDT locale
     const ultimoDDTLocale = await db.select().from(ddt).orderBy(desc(ddt.numero)).limit(1);
@@ -48,18 +49,16 @@ async function getNextAvailableDDTNumber(): Promise<number> {
     let numeroFIC = 0;
     
     try {
-      const companyId = await getConfigValue('fatture_in_cloud_company_id');
-      
       if (companyId) {
-        // Ottieni gli ultimi DDT da FIC (tipo delivery_note)
+        // Ottieni gli ultimi DDT da FIC per questa azienda (tipo delivery_note)
         const ficResponse = await apiRequest('GET', `/issued_documents?type=delivery_note&sort=-number&per_page=1`);
         
         if (ficResponse.data?.data && ficResponse.data.data.length > 0) {
           numeroFIC = ficResponse.data.data[0].number || 0;
-          console.log(`📋 Ultimo DDT su Fatture in Cloud: ${numeroFIC}`);
+          console.log(`📋 Ultimo DDT su Fatture in Cloud per azienda ${companyId}: ${numeroFIC}`);
         }
       } else {
-        console.log('⚠️ Company ID non configurato, uso solo numero locale');
+        console.log('⚠️ Company ID non specificato, uso solo numero locale');
       }
     } catch (ficError: any) {
       console.error('⚠️ Errore nel recupero DDT da Fatture in Cloud:', ficError.message);
@@ -920,11 +919,11 @@ export async function generateDDT(req: Request, res: Response) {
       });
     }
 
-    // Ottieni il prossimo numero DDT disponibile da FIC
-    const numeroDDT = await getNextAvailableDDTNumber();
+    // Usa Company ID dalla vendita (se specificato)
+    const companyId: number | null = saleData.companyId || null;
 
-    // Usa Company ID dalla vendita (se specificato) per snapshot mittente
-    let companyId: number | null = saleData.companyId || null;
+    // Ottieni il prossimo numero DDT disponibile da FIC per questa azienda
+    const numeroDDT = await getNextAvailableDDTNumber(companyId);
     let fiscalData: any = null;
     
     if (companyId) {
