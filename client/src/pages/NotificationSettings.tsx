@@ -11,11 +11,11 @@ import { Loader2 } from "lucide-react";
 
 interface NotificationSetting {
   id?: number;
-  notificationType: string;
-  isEnabled: boolean;
-  targetSizeIds?: number[];
-  createdAt?: string;
-  updatedAt?: string;
+  notification_type: string;
+  is_enabled: boolean;
+  target_size_ids?: number[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Size {
@@ -43,11 +43,10 @@ export default function NotificationSettings() {
   // Carica le taglie selezionate dal server (solo quando cambiano i dati dal server)
   useEffect(() => {
     if (settingsData?.settings) {
-      const accrescimentoSetting = settingsData.settings.find(s => s.notificationType === 'accrescimento');
-      const serverSizeIds = accrescimentoSetting?.targetSizeIds || [];
+      const accrescimentoSetting = settingsData.settings.find(s => s.notification_type === 'accrescimento');
+      const serverSizeIds = accrescimentoSetting?.target_size_ids || [];
       
       setSelectedSizeIds(serverSizeIds);
-      console.log('Taglie caricate dal server:', serverSizeIds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsData]);
@@ -85,8 +84,8 @@ export default function NotificationSettings() {
         method: 'POST',
       }),
     onSuccess: (data) => {
-      const accrescimentoSetting = mergedSettings.find(s => s.notificationType === 'accrescimento');
-      const isEnabled = accrescimentoSetting?.isEnabled || false;
+      const accrescimentoSetting = mergedSettings.find(s => s.notification_type === 'accrescimento');
+      const isEnabled = accrescimentoSetting?.is_enabled || false;
       
       // Se le notifiche sono disabilitate, avvisa l'utente
       if (!isEnabled && data.message?.includes('create 0 notifiche')) {
@@ -141,10 +140,10 @@ export default function NotificationSettings() {
         : [...prev, sizeId];
       
       // Aggiorna sempre sul server, indipendentemente dallo stato delle notifiche
-      const accrescimentoSetting = mergedSettings.find(s => s.notificationType === 'accrescimento');
+      const accrescimentoSetting = mergedSettings.find(s => s.notification_type === 'accrescimento');
       updateMutation.mutate({
         type: 'accrescimento',
-        isEnabled: accrescimentoSetting?.isEnabled || false,
+        isEnabled: accrescimentoSetting?.is_enabled || false,
         targetSizeIds: newSelection.length > 0 ? newSelection : undefined
       });
       
@@ -172,14 +171,14 @@ export default function NotificationSettings() {
 
   // Crea un array di tipi di notifica predefiniti se non abbiamo dati dal backend
   const defaultSettings: NotificationSetting[] = [
-    { notificationType: 'vendita', isEnabled: true },
-    { notificationType: 'accrescimento', isEnabled: true }
+    { notification_type: 'vendita', is_enabled: true },
+    { notification_type: 'accrescimento', is_enabled: true }
   ];
 
   // Combina le impostazioni dal server con quelle predefinite
   const settings = settingsData?.settings || [];
   const mergedSettings = [...defaultSettings].map(defaultSetting => {
-    const serverSetting = settings.find(s => s.notificationType === defaultSetting.notificationType);
+    const serverSetting = settings.find(s => s.notification_type === defaultSetting.notification_type);
     return serverSetting || defaultSetting;
   });
 
@@ -202,31 +201,31 @@ export default function NotificationSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               {mergedSettings.map((setting) => (
-                <div key={setting.notificationType} className="space-y-4">
+                <div key={setting.notification_type} className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-medium">
-                        {notificationTypeDescriptions[setting.notificationType]?.title || setting.notificationType}
+                        {notificationTypeDescriptions[setting.notification_type]?.title || setting.notification_type}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {notificationTypeDescriptions[setting.notificationType]?.description || 'Nessuna descrizione disponibile'}
+                        {notificationTypeDescriptions[setting.notification_type]?.description || 'Nessuna descrizione disponibile'}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Label htmlFor={`toggle-${setting.notificationType}`} className="sr-only">
-                        Abilita {notificationTypeDescriptions[setting.notificationType]?.title || setting.notificationType}
+                      <Label htmlFor={`toggle-${setting.notification_type}`} className="sr-only">
+                        Abilita {notificationTypeDescriptions[setting.notification_type]?.title || setting.notification_type}
                       </Label>
                       <Switch
-                        id={`toggle-${setting.notificationType}`}
-                        checked={setting.isEnabled}
-                        onCheckedChange={() => handleToggle(setting.notificationType, setting.isEnabled)}
+                        id={`toggle-${setting.notification_type}`}
+                        checked={setting.is_enabled}
+                        onCheckedChange={() => handleToggle(setting.notification_type, setting.is_enabled)}
                         disabled={updateMutation.isPending}
                       />
                     </div>
                   </div>
                   
                   {/* Mostra selezione taglie solo per notifiche di accrescimento */}
-                  {setting.notificationType === 'accrescimento' && setting.isEnabled && sizesData && (
+                  {setting.notification_type === 'accrescimento' && setting.is_enabled && sizesData && (
                     <div className="ml-4 pl-4 border-l-2 border-gray-200 space-y-2">
                       <h4 className="text-sm font-medium text-gray-700">Taglie da monitorare:</h4>
                       <p className="text-xs text-gray-500 mb-3">
