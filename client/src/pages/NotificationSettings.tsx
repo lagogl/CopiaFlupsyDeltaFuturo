@@ -29,7 +29,6 @@ export default function NotificationSettings() {
   const queryClient = useQueryClient();
   const [isTesting, setIsTesting] = useState(false);
   const [selectedSizeIds, setSelectedSizeIds] = useState<number[]>([]);
-  const isInitializedRef = useRef(false);
 
   // Ottieni tutte le impostazioni di notifica
   const { data: settingsData, isLoading } = useQuery<{ success: boolean; settings: NotificationSetting[] }>({
@@ -41,21 +40,30 @@ export default function NotificationSettings() {
     queryKey: ['/api/sizes'],
   });
 
-  // Inizializza le taglie selezionate quando arrivano i dati (solo al primo caricamento)
+  // Sincronizza le taglie selezionate con i dati dal server
   useEffect(() => {
-    if (settingsData?.settings && !isInitializedRef.current) {
+    if (settingsData?.settings) {
       const accrescimentoSetting = settingsData.settings.find(s => s.notificationType === 'accrescimento');
       if (accrescimentoSetting?.targetSizeIds) {
-        // Assicurati che sia un array valido, anche se vuoto
         const sizeIds = Array.isArray(accrescimentoSetting.targetSizeIds) 
           ? accrescimentoSetting.targetSizeIds 
           : [];
-        setSelectedSizeIds(sizeIds);
-        console.log('Taglie caricate dal server:', sizeIds);
+        
+        // Aggiorna solo se i valori sono diversi (evita loop infiniti)
+        const currentIds = JSON.stringify([...selectedSizeIds].sort());
+        const newIds = JSON.stringify([...sizeIds].sort());
+        
+        if (currentIds !== newIds) {
+          setSelectedSizeIds(sizeIds);
+          console.log('Taglie sincronizzate dal server:', sizeIds);
+        }
+      } else if (selectedSizeIds.length > 0 && !accrescimentoSetting?.targetSizeIds) {
+        // Se il server non ha taglie ma lo stato locale sì, resetta
+        setSelectedSizeIds([]);
+        console.log('Taglie resettate (nessuna taglia nel server)');
       }
-      isInitializedRef.current = true;
     }
-  }, [settingsData]);
+  }, [settingsData, selectedSizeIds]);
 
   // Mutazione per aggiornare un'impostazione
   const updateMutation = useMutation({
@@ -125,16 +133,13 @@ export default function NotificationSettings() {
 
   // Gestisci il cambio di un'impostazione
   const handleToggle = (type: string, currentValue: boolean) => {
-    // Se è la notifica di accrescimento, mantieni le taglie correnti
+    // Se è la notifica di accrescimento, mantieni le taglie selezionate nello stato locale
     if (type === 'accrescimento') {
-      const accrescimentoSetting = mergedSettings.find(s => s.notificationType === 'accrescimento');
-      const currentTargetSizeIds = accrescimentoSetting?.targetSizeIds || [];
-      
       updateMutation.mutate({ 
         type, 
         isEnabled: !currentValue,
-        // Mantieni sempre le taglie correnti, non sovrascriverle
-        targetSizeIds: currentTargetSizeIds.length > 0 ? currentTargetSizeIds : undefined
+        // Usa sempre lo stato locale delle taglie selezionate
+        targetSizeIds: selectedSizeIds.length > 0 ? selectedSizeIds : undefined
       });
     } else {
       updateMutation.mutate({ type, isEnabled: !currentValue });
