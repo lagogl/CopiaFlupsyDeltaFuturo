@@ -18,7 +18,7 @@ export async function getNotificationSettings(req: Request, res: Response) {
 
     return res.status(200).json({
       success: true,
-      settings: settings
+      settings: settings.rows || []
     });
   } catch (error) {
     console.error("Errore durante il recupero delle impostazioni notifiche:", error);
@@ -52,7 +52,7 @@ export async function updateNotificationSetting(req: Request, res: Response) {
       WHERE notification_type = ${type}
     `);
 
-    if (existingSettings.length === 0) {
+    if (!existingSettings.rows || existingSettings.rows.length === 0) {
       // Se non esiste, crea una nuova impostazione
       await db.execute(sql`
         INSERT INTO notification_settings (notification_type, is_enabled)
@@ -93,11 +93,11 @@ export async function isNotificationTypeEnabled(notificationType: string): Promi
     `);
 
     // Se non esiste un'impostazione, assume che sia abilitata per default
-    if (settings.length === 0) {
+    if (!settings.rows || settings.rows.length === 0) {
       return true;
     }
 
-    return settings[0].is_enabled === true;
+    return settings.rows[0].is_enabled === true;
   } catch (error) {
     console.error(`Errore durante la verifica dell'abilitazione della notifica ${notificationType}:`, error);
     // In caso di errore, assume che le notifiche siano abilitate di default
