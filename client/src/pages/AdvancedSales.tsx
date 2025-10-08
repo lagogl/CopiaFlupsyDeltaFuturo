@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Package, FileText, Download, Eye, CheckCircle, Check, ChevronsUpDown, Calculator, Truck, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
@@ -87,6 +88,7 @@ export default function AdvancedSales() {
   const [sendingDDTId, setSendingDDTId] = useState<number | null>(null);
   const [baseSupplyByBasket, setBaseSupplyByBasket] = useState<Record<number, BasketSupply>>({});
   const [openCustomerCombobox, setOpenCustomerCombobox] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -122,6 +124,12 @@ export default function AdvancedSales() {
   const { data: customers, isLoading: loadingCustomers } = useQuery({
     queryKey: ['/api/advanced-sales/customers'],
     queryFn: () => apiRequest('/api/advanced-sales/customers')
+  });
+
+  // Query per aziende disponibili
+  const { data: companies } = useQuery({
+    queryKey: ['/api/fatture-in-cloud/companies/local'],
+    queryFn: () => apiRequest('/api/fatture-in-cloud/companies/local')
   });
 
   // Query per vendite avanzate esistenti
@@ -664,6 +672,29 @@ export default function AdvancedSales() {
                     </PopoverContent>
                   </Popover>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company">Azienda</Label>
+                <Select
+                  value={selectedCompanyId?.toString() || ""}
+                  onValueChange={(value) => setSelectedCompanyId(parseInt(value))}
+                >
+                  <SelectTrigger id="company" data-testid="select-company">
+                    <SelectValue placeholder="Seleziona l'azienda per questa vendita" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies?.companies?.map((company: any) => (
+                      <SelectItem 
+                        key={company.companyId} 
+                        value={company.companyId.toString()}
+                        data-testid={`item-company-${company.companyId}`}
+                      >
+                        {company.ragioneSociale}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
