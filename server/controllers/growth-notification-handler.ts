@@ -102,6 +102,35 @@ async function getDailyGrowthRate(monthName: string): Promise<number | null> {
 }
 
 /**
+ * Calcola il fattore di incremento del peso considerando i tassi di crescita
+ * giornalieri specifici per ogni mese attraversato dal periodo
+ * @param startDate Data di partenza (ultima operazione)
+ * @param endDate Data di fine (controllo corrente)
+ * @returns Promise con il fattore di incremento totale (es. 1.15 = +15% di peso)
+ */
+async function calculateGrowthFactorAcrossMonths(startDate: Date, endDate: Date): Promise<number> {
+  let currentDate = new Date(startDate);
+  currentDate.setDate(currentDate.getDate() + 1); // Inizia dal giorno dopo l'operazione
+  
+  let totalGrowthFactor = 1.0; // Fattore di crescita cumulativo
+  
+  while (currentDate <= endDate) {
+    const monthName = getMonthNameFromDate(currentDate);
+    const dailyRate = await getDailyGrowthRate(monthName);
+    
+    if (dailyRate !== null) {
+      // Applica l'incremento percentuale giornaliero: peso * (1 + rate/100)
+      totalGrowthFactor *= (1 + dailyRate / 100);
+    }
+    
+    // Passa al giorno successivo
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return totalGrowthFactor;
+}
+
+/**
  * Crea una notifica per un ciclo che ha raggiunto una taglia target
  * @param cycleId ID del ciclo
  * @param basketId ID del cestello
@@ -207,16 +236,6 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
     }
 
     const currentDate = new Date();
-    const currentMonthName = getMonthNameFromDate(currentDate);
-    
-    // Ottieni il tasso di crescita giornaliero percentuale per il mese corrente (opzionale)
-    const dailyGrowthRate = await getDailyGrowthRate(currentMonthName);
-    
-    if (dailyGrowthRate === null) {
-      console.log(`Nessun tasso di crescita trovato per il mese ${currentMonthName}, controllo solo valori attuali`);
-    } else {
-      console.log(`Tasso di crescita giornaliero per ${currentMonthName}: ${dailyGrowthRate}%`);
-    }
     
     // Ottieni tutti i cicli attivi con l'ultima operazione di peso o prima-attivazione
     const activeCyclesWithLastWeightOp = await db.execute(sql`
@@ -265,18 +284,22 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
       // Calcola il valore attuale di animali per kg
       const currentAnimalsPerKg = Number(cycleData.animals_per_kg);
       
-      // Se abbiamo il tasso di crescita, calcoliamo la proiezione
+      // Calcola la crescita dall'ultima operazione considerando i tassi specifici per mese
+      const lastWeightDate = new Date(cycleData.date);
+      const daysSinceLastWeight = Math.floor((currentDate.getTime() - lastWeightDate.getTime()) / (1000 * 60 * 60 * 24));
+      
       let valueToCheck = currentAnimalsPerKg;
       
-      if (dailyGrowthRate !== null) {
-        // Calcola i giorni trascorsi dall'ultima operazione di peso
-        const lastWeightDate = new Date(cycleData.date);
-        const daysSinceLastWeight = Math.floor((currentDate.getTime() - lastWeightDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceLastWeight > 0) {
+        // Calcola il fattore di crescita considerando i tassi giornalieri di ogni mese
+        const growthFactor = await calculateGrowthFactorAcrossMonths(lastWeightDate, currentDate);
         
-        // Simula la crescita per proiettare il nuovo valore di animali/kg
-        // Nota: all'aumentare del peso, diminuisce il numero di animali per kg
-        const weightIncreaseRatio = simulateGrowthWithDailySGR(1, dailyGrowthRate, daysSinceLastWeight);
-        valueToCheck = currentAnimalsPerKg / weightIncreaseRatio;
+        // All'aumentare del peso, diminuisce il numero di animali per kg
+        valueToCheck = currentAnimalsPerKg / growthFactor;
+        
+        console.log(`Cestello #${cycleData.basket_number}: ${currentAnimalsPerKg} → ${Math.round(valueToCheck)} animali/kg (crescita ${daysSinceLastWeight} giorni, fattore ${growthFactor.toFixed(3)})`);
+      } else {
+        console.log(`Cestello #${cycleData.basket_number}: ${currentAnimalsPerKg} animali/kg (nessuna crescita, operazione oggi)`);
       }
       
       // Verifica per ogni taglia configurata
@@ -295,7 +318,7 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
           
           if (notificationId !== null) {
             notificationsCreated++;
-            console.log(`Notifica creata: Cestello #${cycleData.basket_number} ha raggiunto ${matchedSize.name}`);
+            console.log(`✅ Notifica creata: Cestello #${cycleData.basket_number} ha raggiunto ${matchedSize.name}`);
           }
         }
       }
