@@ -243,6 +243,22 @@ export async function createAdvancedSale(req: Request, res: Response) {
       return { newSale, operationsData, totals };
     });
 
+    // Crea notifica per la vendita avanzata
+    if ((req as any).app?.locals?.createAdvancedSaleNotification) {
+      try {
+        console.log(`📢 Creazione notifica per vendita avanzata ${result.newSale.id}...`);
+        (req as any).app.locals.createAdvancedSaleNotification(result.newSale.id)
+          .then((notification: any) => {
+            if (notification) {
+              console.log(`✅ Notifica vendita avanzata creata con successo: ${notification.id}`);
+            }
+          })
+          .catch((err: any) => console.error('Errore creazione notifica vendita avanzata:', err));
+      } catch (err) {
+        console.error('Errore durante chiamata createAdvancedSaleNotification:', err);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: "Vendita avanzata creata con successo",
