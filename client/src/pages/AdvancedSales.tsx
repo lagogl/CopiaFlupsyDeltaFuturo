@@ -294,6 +294,35 @@ export default function AdvancedSales() {
       return;
     }
 
+    if (!saleDate) {
+      toast({
+        title: "Errore",
+        description: "Seleziona la data della vendita",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (useManualCustomer) {
+      if (!manualCustomer.name || manualCustomer.name.trim() === '') {
+        toast({
+          title: "Errore",
+          description: "Inserisci il nome del cliente",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      if (!selectedCustomer) {
+        toast({
+          title: "Errore",
+          description: "Seleziona un cliente dalla lista",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     const customerData = useManualCustomer 
       ? { name: manualCustomer.name, details: manualCustomer.details }
       : selectedCustomer;
