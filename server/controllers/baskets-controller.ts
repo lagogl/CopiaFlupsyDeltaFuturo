@@ -240,9 +240,10 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
         NULL as op_animal_count, NULL as op_total_weight, NULL as op_animals_per_kg,
         NULL as op_average_weight, NULL as op_dead_count, NULL as op_mortality_rate,
         NULL as op_notes, NULL as op_metadata,
-        NULL as cycle_lot_id, NULL as cycle_start_date, NULL as cycle_end_date, NULL as cycle_state
+        c.lot_id as cycle_lot_id, c.start_date as cycle_start_date, c.end_date as cycle_end_date, c.state as cycle_state
       FROM baskets b
       LEFT JOIN flupsys f ON b.flupsy_id = f.id
+      LEFT JOIN cycles c ON b.current_cycle_id = c.id
       ${whereClause}
       ${orderByClause}
       ${limitClause}
