@@ -1712,7 +1712,9 @@ export async function sendDDTToFIC(req: Request, res: Response) {
 
     // Recupera configurazione OAuth2 dalla tabella configurazione
     const accessToken = await getConfigValue('fatture_in_cloud_access_token');
-    const companyId = await getConfigValue('fatture_in_cloud_company_id');
+    
+    // USA IL COMPANY ID DAL DDT (non dalla configurazione globale!)
+    const companyId = ddtData.companyId;
     
     if (!accessToken) {
       return res.status(400).json({
@@ -1724,9 +1726,11 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     if (!companyId) {
       return res.status(400).json({
         success: false,
-        error: "ID azienda Fatture in Cloud mancante."
+        error: "ID azienda mancante nel DDT. Il DDT deve avere un company_id associato."
       });
     }
+
+    console.log(`📤 Invio DDT a Fatture in Cloud - Company ID: ${companyId} (${companyId === 1017299 ? 'Ecotapes' : companyId === 13263 ? 'Delta Futuro' : 'Altro'})`);
 
     // Recupera righe DDT
     const righe = await db.select().from(ddtRighe).where(eq(ddtRighe.ddtId, parseInt(ddtId))).orderBy(ddtRighe.id);
