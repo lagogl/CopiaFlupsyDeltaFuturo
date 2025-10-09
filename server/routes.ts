@@ -168,13 +168,14 @@ async function handleBasketLotCompositionOnDelete(operation: any) {
   try {
     console.log(`🎯 Verifica impatto eliminazione operazione ${operation.id} su lotti misti del cestello ${operation.basketId}`);
     
-    const { queryClient } = await import("./db");
+    const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
     
     // Verifica se il cestello ha una composizione mista
-    const composition = await queryClient`
+    const composition = await db.execute(sql`
       SELECT COUNT(*) as count FROM basket_lot_composition 
       WHERE basket_id = ${operation.basketId}
-    `;
+    `);
     
     if (composition[0]?.count > 1) {
       console.log(`🎯 Cestello ${operation.basketId} ha composizione mista (${composition[0].count} lotti)`);
@@ -186,18 +187,18 @@ async function handleBasketLotCompositionOnDelete(operation: any) {
           console.log(`🎯 Operazione critica per lotti misti - ricalcolo composizione`);
           
           // Verifica se ci sono altre operazioni che mantengono il lotto misto
-          const otherMixedOps = await queryClient`
+          const otherMixedOps = await db.execute(sql`
             SELECT COUNT(*) as count FROM operations o
             WHERE o.basket_id = ${operation.basketId} 
             AND o.id != ${operation.id}
             AND (o.metadata::text LIKE '%mixed_lot%' OR o.metadata::text LIKE '%screening%')
-          `;
+          `);
           
           if (otherMixedOps[0]?.count === 0) {
             console.log(`🎯 Nessun'altra operazione mantiene il lotto misto - eliminazione composizione`);
-            await queryClient`
+            await db.execute(sql`
               DELETE FROM basket_lot_composition WHERE basket_id = ${operation.basketId}
-            `;
+            `);
           }
         }
       }
@@ -213,13 +214,14 @@ async function handleBasketLotCompositionOnUpdate(operation: any, updateData: an
     
     // Se cambia il lotto o il conteggio animali, potrebbe influire sulla composizione
     if (updateData.lotId || updateData.animalCount) {
-      const { queryClient } = await import("./db");
+      const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
       
       // Verifica se il cestello ha una composizione mista
-      const composition = await queryClient`
+      const composition = await db.execute(sql`
         SELECT COUNT(*) as count FROM basket_lot_composition 
         WHERE basket_id = ${operation.basketId}
-      `;
+      `);
       
       if (composition[0]?.count > 1) {
         console.log(`🎯 Cestello ${operation.basketId} ha composizione mista - aggiornamento necessario`);
@@ -229,13 +231,13 @@ async function handleBasketLotCompositionOnUpdate(operation: any, updateData: an
           console.log(`🎯 Cambio lotto da ${operation.lotId} a ${updateData.lotId} - ricalcolo composizione`);
           
           // Aggiorna il lotto dominante nella composizione
-          await queryClient`
+          await db.execute(sql`
             UPDATE basket_lot_composition 
             SET lot_id = ${updateData.lotId}
             WHERE basket_id = ${operation.basketId} 
             AND lot_id = ${operation.lotId}
             AND percentage = (SELECT MAX(percentage) FROM basket_lot_composition WHERE basket_id = ${operation.basketId})
-          `;
+          `);
         }
         
         // Se cambia il conteggio animali, ricalcola le percentuali
@@ -243,17 +245,17 @@ async function handleBasketLotCompositionOnUpdate(operation: any, updateData: an
           console.log(`🎯 Cambio conteggio animali - ricalcolo percentuali composizione`);
           
           // Ricalcola tutte le percentuali basandosi sui nuovi totali
-          const totalAnimals = await queryClient`
+          const totalAnimals = await db.execute(sql`
             SELECT SUM(animal_count) as total FROM basket_lot_composition 
             WHERE basket_id = ${operation.basketId}
-          `;
+          `);
           
           if (totalAnimals[0]?.total > 0) {
-            await queryClient`
+            await db.execute(sql`
               UPDATE basket_lot_composition 
               SET percentage = ROUND((animal_count::decimal / ${totalAnimals[0].total}) * 100, 1)
               WHERE basket_id = ${operation.basketId}
-            `;
+            `);
           }
         }
       }
@@ -2566,12 +2568,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Importa queryClient per transazione atomica
-        const { queryClient } = await import("./db");
+        const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
         
         // Formatta i dati per la transazione
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear().toString().substring(2);
-        const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
+        const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`);
         const formattedDate = format(date, 'yyyy-MM-dd');
         
         console.log("🔍 STEP 4: Avvio transazione atomica per prima-attivazione");
@@ -2586,7 +2589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             INSERT INTO cycles (basket_id, start_date, end_date, state)
             VALUES (${basketId}, ${formattedDate}, NULL, 'active')
             RETURNING *
-          `;
+          `);
           console.log("🔍 STEP 7 COMPLETATO: Nuovo ciclo creato:", newCycle);
           
           console.log("🔍 STEP 8: [TRANSAZIONE] Aggiornamento cestello...");
@@ -2594,7 +2597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             UPDATE baskets 
             SET state = 'active', current_cycle_id = ${newCycle.id}, cycle_code = ${cycleCode}
             WHERE id = ${basketId}
-          `;
+          `);
           console.log("🔍 STEP 8 COMPLETATO: Stato cestello aggiornato");
           
           console.log("🔍 STEP 9: [TRANSAZIONE] Creazione operazione...");
@@ -2613,7 +2616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ${newCycle.id}, ${operationData.lotId}, ${operationData.animalCount},
               ${operationData.totalWeight}, ${operationData.animalsPerKg}, ${operationData.notes}
             ) RETURNING *
-          `;
+          `);
           console.log("🔍 STEP 9 COMPLETATO: Operazione creata con successo, ID:", newOperation.id);
           
           // Restituisci sia operazione che ciclo per successiva gestione
@@ -2782,7 +2785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .join(' ');
           
           // Messaggio di errore dettagliato per operazioni nella stessa data
-          let message = `Per ogni cesta è consentita una sola operazione al giorno. Per la data selezionata esiste già un'operazione registrata.`;
+          let message = `Per ogni cesta è consentita una sola operazione al giorno. Per la data selezionata esiste già un'operazione registrata.`);
           
           return res.status(400).json({ message });
         }
@@ -4331,7 +4334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ success: false, message: "FLUPSY non trovato" });
       }
 
-      const startMessage = `🚀 INIZIO POPOLAMENTO FLUPSY "${flupsy.name}" - Creazione automatica cestelli`;
+      const startMessage = `🚀 INIZIO POPOLAMENTO FLUPSY "${flupsy.name}" - Creazione automatica cestelli`);
       console.log(startMessage);
       broadcastMessage("flupsy_populate_progress", { message: startMessage, step: "start", flupsyName: flupsy.name });
 
@@ -4423,7 +4426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const analyzeMessage = `📋 Analisi posizioni: ${totalFreePositions} posizioni libere trovate (${freePositions['DX'].length} DX, ${freePositions['SX'].length} SX)`;
+      const analyzeMessage = `📋 Analisi posizioni: ${totalFreePositions} posizioni libere trovate (${freePositions['DX'].length} DX, ${freePositions['SX'].length} SX)`);
       console.log(analyzeMessage);
       broadcastMessage("flupsy_populate_progress", { message: analyzeMessage, step: "analyze", totalPositions: totalFreePositions });
 
@@ -4432,7 +4435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const basketData of basketsToCreate) {
         createdCount++;
         
-        const progressMessage = `🔧 Creazione cestello ${createdCount}/${basketsToCreate.length} - Posizione ${basketData.row}-${basketData.position}`;
+        const progressMessage = `🔧 Creazione cestello ${createdCount}/${basketsToCreate.length} - Posizione ${basketData.row}-${basketData.position}`);
         console.log(progressMessage);
         broadcastMessage("flupsy_populate_progress", { 
           message: progressMessage, 
@@ -4456,7 +4459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newBaskets.push(newBasket);
       }
       
-      const completeMessage = `✅ POPOLAMENTO COMPLETATO - ${newBaskets.length} nuovi cestelli creati nel FLUPSY "${flupsy.name}"`;
+      const completeMessage = `✅ POPOLAMENTO COMPLETATO - ${newBaskets.length} nuovi cestelli creati nel FLUPSY "${flupsy.name}"`);
       console.log(completeMessage);
       broadcastMessage("flupsy_populate_progress", { 
         message: completeMessage, 
@@ -4703,14 +4706,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db");
+      // Importiamo db dal modulo db
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
       
       // Importa la funzione di broadcast WebSocket
       const { broadcastMessage } = await import("./websocket");
       
-      // Usiamo il metodo corretto per le transazioni
-      await queryClient.begin(async sql => {
+      // Usiamo il metodo corretto per le transazioni con Drizzle
+      await db.transaction(async (tx) => {
         try {
           const startMessage = "🗑️ INIZIO AZZERAMENTO DATABASE - Eliminazione di tutte le tabelle operative";
           console.log(startMessage);
@@ -4720,16 +4724,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step1 = "💰 Eliminazione vendite avanzate e dati sincronizzazione...";
           console.log(step1);
           broadcastMessage("database_reset_progress", { message: step1, step: 1 });
-          await sql`DELETE FROM sale_bags`;
-          await sql`DELETE FROM advanced_sales`;
+          await tx.execute(sql`DELETE FROM sale_bags`);
+          await tx.execute(sql`DELETE FROM advanced_sales`);
           
           // Elimina anche i dati di sincronizzazione esterni (con gestione errori)
           try {
-            await sql`DELETE FROM external_sales_sync`;
-            await sql`DELETE FROM external_deliveries_sync`;
-            await sql`DELETE FROM external_customers_sync`;
-            await sql`DELETE FROM external_delivery_details_sync`;
-            await sql`UPDATE sync_status SET last_sync_at = NULL, record_count = 0`;
+            await tx.execute(sql`DELETE FROM external_sales_sync`);
+            await tx.execute(sql`DELETE FROM external_deliveries_sync`);
+            await tx.execute(sql`DELETE FROM external_customers_sync`);
+            await tx.execute(sql`DELETE FROM external_delivery_details_sync`);
+            await tx.execute(sql`UPDATE sync_status SET last_sync_at = NULL, record_count = 0`);
             console.log("✅ Dati di sincronizzazione esterni eliminati");
           } catch (syncError) {
             console.log("⚠️ Errore nell'eliminazione dati sincronizzazione, continuo con il reset:", syncError.message);
@@ -4741,45 +4745,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step2 = "📦 Eliminazione transazioni inventario lotti...";
           console.log(step2);
           broadcastMessage("database_reset_progress", { message: step2, step: 2 });
-          await sql`DELETE FROM lot_inventory_transactions`;
+          await tx.execute(sql`DELETE FROM lot_inventory_transactions`);
           
           // 3. Elimina le misurazioni (collegate ai cestelli)
           const step3 = "📏 Eliminazione misurazioni cestelli...";
           console.log(step3);
           broadcastMessage("database_reset_progress", { message: step3, step: 3 });
-          await sql`DELETE FROM measurements`;
+          await tx.execute(sql`DELETE FROM measurements`);
           
           // 4. Elimina le annotazioni taglie target (collegate ai cestelli)
           const step4 = "🏷️ Eliminazione annotazioni taglie target...";
           console.log(step4);
           broadcastMessage("database_reset_progress", { message: step4, step: 4 });
-          await sql`DELETE FROM target_size_annotations`;
+          await tx.execute(sql`DELETE FROM target_size_annotations`);
           
           // 5. Elimina gli impatti sui cicli
           const step5 = "📊 Eliminazione impatti sui cicli...";
           console.log(step5);
           broadcastMessage("database_reset_progress", { message: step5, step: 5 });
-          await sql`DELETE FROM cycle_impacts`;
+          await tx.execute(sql`DELETE FROM cycle_impacts`);
           
           // 6. Elimina i dati delle operazioni di vagliatura
           const step6 = "🔍 Eliminazione dati operazioni di vagliatura...";
           console.log(step6);
           broadcastMessage("database_reset_progress", { message: step6, step: 6 });
-          await sql`DELETE FROM screening_lot_references`;
-          await sql`DELETE FROM screening_basket_history`;
-          await sql`DELETE FROM screening_destination_baskets`;
-          await sql`DELETE FROM screening_source_baskets`;
-          await sql`DELETE FROM screening_operations`;
+          await tx.execute(sql`DELETE FROM screening_lot_references`);
+          await tx.execute(sql`DELETE FROM screening_basket_history`);
+          await tx.execute(sql`DELETE FROM screening_destination_baskets`);
+          await tx.execute(sql`DELETE FROM screening_source_baskets`);
+          await tx.execute(sql`DELETE FROM screening_operations`);
           
           // 7. Elimina i dati delle operazioni di selezione
           const step7 = "✅ Eliminazione dati operazioni di selezione...";
           console.log(step7);
           broadcastMessage("database_reset_progress", { message: step7, step: 7 });
-          await sql`DELETE FROM selection_lot_references`;
-          await sql`DELETE FROM selection_basket_history`;
-          await sql`DELETE FROM selection_destination_baskets`;
-          await sql`DELETE FROM selection_source_baskets`;
-          await sql`DELETE FROM selections`;
+          await tx.execute(sql`DELETE FROM selection_lot_references`);
+          await tx.execute(sql`DELETE FROM selection_basket_history`);
+          await tx.execute(sql`DELETE FROM selection_destination_baskets`);
+          await tx.execute(sql`DELETE FROM selection_source_baskets`);
+          await tx.execute(sql`DELETE FROM selections`);
           
           // 8. (RIMOSSO) Sistema cronologia posizioni rimosso per performance
           // La cronologia delle posizioni è ora gestita direttamente nei campi basket.row/position
@@ -4788,76 +4792,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step9 = "⚙️ Eliminazione operazioni...";
           console.log(step9);
           broadcastMessage("database_reset_progress", { message: step9, step: 9 });
-          await sql`DELETE FROM operations`;
+          await tx.execute(sql`DELETE FROM operations`);
           
           // 10. Elimina i cicli
           const step10 = "🔄 Eliminazione cicli produttivi...";
           console.log(step10);
           broadcastMessage("database_reset_progress", { message: step10, step: 10 });
-          await sql`DELETE FROM cycles`;
+          await tx.execute(sql`DELETE FROM cycles`);
           
           // 11. Elimina composizione lotti cestelli (per lotti misti)
           const step11 = "🎯 Eliminazione composizioni lotti misti...";
           console.log(step11);
           broadcastMessage("database_reset_progress", { message: step11, step: 11 });
-          await sql`DELETE FROM basket_lot_composition`;
+          await tx.execute(sql`DELETE FROM basket_lot_composition`);
           
           // 12. Elimina i cestelli
           const step12 = "🗑️ Eliminazione cestelli...";
           console.log(step12);
           broadcastMessage("database_reset_progress", { message: step12, step: 12 });
-          await sql`DELETE FROM baskets`;
+          await tx.execute(sql`DELETE FROM baskets`);
           
           // 13. Elimina tutte le notifiche
           const step13 = "🔔 Eliminazione notifiche...";
           console.log(step13);
           broadcastMessage("database_reset_progress", { message: step13, step: 13 });
-          await sql`DELETE FROM notifications`;
+          await tx.execute(sql`DELETE FROM notifications`);
           
           // 14. Elimina mortalità e SGR 
           const step14 = "📊 Eliminazione dati mortalità e SGR...";
           console.log(step14);
           broadcastMessage("database_reset_progress", { message: step14, step: 14 });
-          await sql`DELETE FROM lot_mortality_records`;
-          await sql`DELETE FROM mortality_rates`;
-          await sql`DELETE FROM sgr_giornalieri`;
+          await tx.execute(sql`DELETE FROM lot_mortality_records`);
+          await tx.execute(sql`DELETE FROM mortality_rates`);
+          await tx.execute(sql`DELETE FROM sgr_giornalieri`);
           
           // 15. Elimina impatti e sostenibilità
           const step15 = "🌱 Eliminazione dati impatti e sostenibilità...";
           console.log(step15);
           broadcastMessage("database_reset_progress", { message: step15, step: 15 });
-          await sql`DELETE FROM operation_impacts`;
-          await sql`DELETE FROM flupsy_impacts`;
-          await sql`DELETE FROM sustainability_reports`;
+          await tx.execute(sql`DELETE FROM operation_impacts`);
+          await tx.execute(sql`DELETE FROM flupsy_impacts`);
+          await tx.execute(sql`DELETE FROM sustainability_reports`);
           
           // 16. Elimina report e documenti
           const step16 = "📋 Eliminazione report e documenti...";
           console.log(step16);
           broadcastMessage("database_reset_progress", { message: step16, step: 16 });
-          await sql`DELETE FROM delivery_reports`;
-          await sql`DELETE FROM sales_reports`;
-          await sql`DELETE FROM reports`;
-          await sql`DELETE FROM documents`;
+          await tx.execute(sql`DELETE FROM delivery_reports`);
+          await tx.execute(sql`DELETE FROM sales_reports`);
+          await tx.execute(sql`DELETE FROM reports`);
+          await tx.execute(sql`DELETE FROM documents`);
           
           // 17. Elimina ordini e pagamenti
           const step17 = "💳 Eliminazione ordini e pagamenti...";
           console.log(step17);
           broadcastMessage("database_reset_progress", { message: step17, step: 17 });
-          await sql`DELETE FROM order_items`;
-          await sql`DELETE FROM orders`;
-          await sql`DELETE FROM payments`;
-          await sql`DELETE FROM bag_allocations`;
-          await sql`DELETE FROM sale_operations_ref`;
+          await tx.execute(sql`DELETE FROM order_items`);
+          await tx.execute(sql`DELETE FROM orders`);
+          await tx.execute(sql`DELETE FROM payments`);
+          await tx.execute(sql`DELETE FROM bag_allocations`);
+          await tx.execute(sql`DELETE FROM sale_operations_ref`);
           
           // 18. Elimina dati Fatture in Cloud (ricaricabili con sincronizzazione)
           const step18 = "📄 Eliminazione dati Fatture in Cloud...";
           console.log(step18);
           broadcastMessage("database_reset_progress", { message: step18, step: 18 });
           // Prima elimina DDT (che hanno FK verso clienti), poi i clienti
-          await sql`DELETE FROM ddt`;
-          await sql`DELETE FROM clienti`;
-          await sql`DELETE FROM clients`;
-          await sql`DELETE FROM sync_log_fatture_in_cloud`;
+          await tx.execute(sql`DELETE FROM ddt`);
+          await tx.execute(sql`DELETE FROM clienti`);
+          await tx.execute(sql`DELETE FROM clients`);
+          await tx.execute(sql`DELETE FROM sync_log_fatture_in_cloud`);
           
           // 19. Resettiamo le sequenze degli ID di tutte le tabelle
           const step19 = "🔢 Reset contatori ID di tutte le tabelle...";
@@ -4865,55 +4869,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
           broadcastMessage("database_reset_progress", { message: step19, step: 19 });
           
           // Reset sequenze vendite avanzate e sincronizzazione
-          await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS sale_bags_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS external_sales_sync_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS external_deliveries_sync_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS external_customers_sync_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS external_delivery_details_sync_id_seq RESTART WITH 1`;
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sale_bags_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS external_sales_sync_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS external_deliveries_sync_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS external_customers_sync_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS external_delivery_details_sync_id_seq RESTART WITH 1`);
           console.log("✅ Sequenze vendite avanzate e sincronizzazione resettate");
           
           // Reset sequenze core operative
-          await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS cycle_impacts_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selections_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_source_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_destination_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_basket_history_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS cycle_impacts_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selections_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_source_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_destination_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_basket_history_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`);
           // basket_position_history_id_seq rimossa (sistema cronologia eliminato per performance)
-          await sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`);
           
           // Reset sequenze nuove tabelle aggiunte
-          await sql`ALTER SEQUENCE IF EXISTS notifications_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS mortality_rates_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS sgr_giornalieri_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS operation_impacts_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS flupsy_impacts_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS sustainability_reports_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS delivery_reports_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS sales_reports_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS reports_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS documents_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS order_items_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS orders_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS payments_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS bag_allocations_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS sale_operations_ref_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS clienti_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS clients_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS ddt_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS sync_log_fatture_in_cloud_id_seq RESTART WITH 1`;
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS notifications_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS mortality_rates_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sgr_giornalieri_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS operation_impacts_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS flupsy_impacts_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sustainability_reports_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS delivery_reports_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sales_reports_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS reports_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS documents_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS order_items_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS orders_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS payments_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS bag_allocations_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sale_operations_ref_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS clienti_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS clients_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS ddt_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sync_log_fatture_in_cloud_id_seq RESTART WITH 1`);
           
           console.log("✅ Tutte le sequenze ID resettate a 1");
           
@@ -4975,36 +4979,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db");
+      const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
       
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
         try {
           // 1. Elimina i riferimenti ai lotti per le ceste di destinazione
-          await sql`DELETE FROM screening_lot_references`;
+          await tx.execute(sql`DELETE FROM screening_lot_references`);
           
           // 2. Elimina lo storico delle relazioni tra ceste di origine e destinazione
-          await sql`DELETE FROM screening_basket_history`;
+          await tx.execute(sql`DELETE FROM screening_basket_history`);
           
           // 3. Elimina le ceste di destinazione
-          await sql`DELETE FROM screening_destination_baskets`;
+          await tx.execute(sql`DELETE FROM screening_destination_baskets`);
           
           // 4. Elimina le ceste di origine
-          await sql`DELETE FROM screening_source_baskets`;
+          await tx.execute(sql`DELETE FROM screening_source_baskets`);
           
           // 5. Elimina le composizioni lotti misti creati dalle vagliature
-          await sql`DELETE FROM basket_lot_composition`;
+          await tx.execute(sql`DELETE FROM basket_lot_composition`);
           
           // 6. Elimina le operazioni di vagliatura
-          await sql`DELETE FROM screening_operations`;
+          await tx.execute(sql`DELETE FROM screening_operations`);
           
           // 7. Resettiamo le sequenze degli ID
-          await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS basket_lot_composition_id_seq RESTART WITH 1`;
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS basket_lot_composition_id_seq RESTART WITH 1`);
           
           return true; // Successo - commit implicito
         } catch (error) {
@@ -5041,7 +5046,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db");
+      const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
       
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
@@ -5049,31 +5055,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("Avvio azzeramento dati selezioni...");
           
           // 1. Elimina i riferimenti ai lotti per le ceste di destinazione
-          await sql`DELETE FROM selection_lot_references`;
+          await tx.execute(sql`DELETE FROM selection_lot_references`);
           console.log("Eliminati riferimenti ai lotti");
           
           // 2. Elimina lo storico delle relazioni tra ceste
-          await sql`DELETE FROM selection_basket_history`;
+          await tx.execute(sql`DELETE FROM selection_basket_history`);
           console.log("Eliminato storico delle relazioni tra ceste");
           
           // 3. Elimina le ceste di destinazione
-          await sql`DELETE FROM selection_destination_baskets`;
+          await tx.execute(sql`DELETE FROM selection_destination_baskets`);
           console.log("Eliminate ceste di destinazione");
           
           // 4. Elimina le ceste di origine
-          await sql`DELETE FROM selection_source_baskets`;
+          await tx.execute(sql`DELETE FROM selection_source_baskets`);
           console.log("Eliminate ceste di origine");
           
           // 5. Elimina le selezioni
-          await sql`DELETE FROM selections`;
+          await tx.execute(sql`DELETE FROM selections`);
           console.log("Eliminate selezioni");
           
           // 6. Resettiamo le sequenze degli ID
-          await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_basket_history_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_destination_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_source_baskets_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selections_id_seq RESTART WITH 1`;
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_basket_history_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_destination_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_source_baskets_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selections_id_seq RESTART WITH 1`);
           console.log("Reset delle sequenze ID completato");
           
           return true; // Successo - commit implicito
@@ -7724,14 +7730,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db");
+      // Importiamo db dal modulo db
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
       
       // Importa la funzione di broadcast WebSocket
       const { broadcastMessage } = await import("./websocket");
       
-      // Usiamo il metodo corretto per le transazioni
-      await queryClient.begin(async sql => {
+      // Usiamo il metodo corretto per le transazioni con Drizzle
+      await db.transaction(async (tx) => {
         try {
           const startMessage = "🗑️ INIZIO ELIMINAZIONE DATI LOTTI - Cancellazione di tutti i dati relativi ai lotti";
           console.log(startMessage);
@@ -7741,55 +7748,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step1 = "🎯 Eliminazione composizioni lotti misti...";
           console.log(step1);
           broadcastMessage("database_reset_progress", { message: step1, step: 1 });
-          await sql`DELETE FROM basket_lot_composition`;
+          await tx.execute(sql`DELETE FROM basket_lot_composition`);
           
           // 2. Elimina le transazioni dell'inventario lotti
           const step2 = "📦 Eliminazione transazioni inventario lotti...";
           console.log(step2);
           broadcastMessage("database_reset_progress", { message: step2, step: 2 });
-          await sql`DELETE FROM lot_inventory_transactions`;
+          await tx.execute(sql`DELETE FROM lot_inventory_transactions`);
           
           // 3. Elimina i record di mortalità dei lotti
           const step3 = "☠️ Eliminazione record mortalità lotti...";
           console.log(step3);
           broadcastMessage("database_reset_progress", { message: step3, step: 3 });
-          await sql`DELETE FROM lot_mortality_records`;
+          await tx.execute(sql`DELETE FROM lot_mortality_records`);
           
           // 4. Elimina il registro movimenti lotti (Lot Ledger)
           const step4 = "📋 Eliminazione registro movimenti lotti (Lot Ledger)...";
           console.log(step4);
           broadcastMessage("database_reset_progress", { message: step4, step: 4 });
-          await sql`DELETE FROM lot_ledger`;
+          await tx.execute(sql`DELETE FROM lot_ledger`);
           
           // 5. Elimina i riferimenti ai lotti nelle operazioni di screening
           const step5 = "🔍 Eliminazione riferimenti lotti in screening...";
           console.log(step5);
           broadcastMessage("database_reset_progress", { message: step5, step: 5 });
-          await sql`DELETE FROM screening_lot_references`;
+          await tx.execute(sql`DELETE FROM screening_lot_references`);
           
           // 6. Elimina i riferimenti ai lotti nelle operazioni di selezione
           const step6 = "✅ Eliminazione riferimenti lotti in selezioni...";
           console.log(step6);
           broadcastMessage("database_reset_progress", { message: step6, step: 6 });
-          await sql`DELETE FROM selection_lot_references`;
+          await tx.execute(sql`DELETE FROM selection_lot_references`);
           
           // 7. Elimina i lotti principali
           const step7 = "📋 Eliminazione lotti principali...";
           console.log(step7);
           broadcastMessage("database_reset_progress", { message: step7, step: 7 });
-          await sql`DELETE FROM lots`;
+          await tx.execute(sql`DELETE FROM lots`);
           
           // 8. Reset delle sequenze ID relative ai lotti
           const step8 = "🔢 Reset contatori ID lotti...";
           console.log(step8);
           broadcastMessage("database_reset_progress", { message: step8, step: 8 });
-          await sql`ALTER SEQUENCE IF EXISTS lots_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS lot_ledger_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS basket_lot_composition_id_seq RESTART WITH 1`;
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS lots_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_ledger_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS basket_lot_composition_id_seq RESTART WITH 1`);
           
           console.log("✅ Tutte le sequenze ID lotti resettate a 1");
           
