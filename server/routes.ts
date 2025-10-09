@@ -4751,7 +4751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step3 = "📏 Eliminazione misurazioni cestelli...";
           console.log(step3);
           broadcastMessage("database_reset_progress", { message: step3, step: 3 });
-          await tx.execute(sql`DELETE FROM measurements`);
+          // Tabella measurements rimossa dallo schema - skip
           
           // 4. Elimina le annotazioni taglie target (collegate ai cestelli)
           const step4 = "🏷️ Eliminazione annotazioni taglie target...";
@@ -4879,7 +4879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Reset sequenze core operative
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`);
+          // measurements_id_seq rimossa - tabella non più esistente
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS cycle_impacts_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`);
@@ -4978,12 +4978,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Importiamo il queryClient dal modulo db
+      // Importiamo il db dal modulo db
       const { db } = await import("./db");
-    const { sql } = await import("drizzle-orm");
+      const { sql } = await import("drizzle-orm");
       
       // Usiamo il metodo corretto per le transazioni
-      await queryClient.begin(async sql => {
+      await db.transaction(async (tx) => {
         try {
           // 1. Elimina i riferimenti ai lotti per le ceste di destinazione
           await tx.execute(sql`DELETE FROM screening_lot_references`);
@@ -5045,12 +5045,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Importiamo il queryClient dal modulo db
+      // Importiamo il db dal modulo db
       const { db } = await import("./db");
-    const { sql } = await import("drizzle-orm");
+      const { sql } = await import("drizzle-orm");
       
       // Usiamo il metodo corretto per le transazioni
-      await queryClient.begin(async sql => {
+      await db.transaction(async (tx) => {
         try {
           console.log("Avvio azzeramento dati selezioni...");
           
