@@ -4763,7 +4763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step5 = "📊 Eliminazione impatti sui cicli...";
           console.log(step5);
           broadcastMessage("database_reset_progress", { message: step5, step: 5 });
-          await tx.execute(sql`DELETE FROM cycle_impacts`);
+          // Tabella cycle_impacts rimossa dallo schema - skip
           
           // 6. Elimina i dati delle operazioni di vagliatura
           const step6 = "🔍 Eliminazione dati operazioni di vagliatura...";
@@ -4830,26 +4830,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step15 = "🌱 Eliminazione dati impatti e sostenibilità...";
           console.log(step15);
           broadcastMessage("database_reset_progress", { message: step15, step: 15 });
-          await tx.execute(sql`DELETE FROM operation_impacts`);
-          await tx.execute(sql`DELETE FROM flupsy_impacts`);
-          await tx.execute(sql`DELETE FROM sustainability_reports`);
+          // Tabelle operation_impacts, flupsy_impacts, sustainability_reports rimosse dallo schema - skip
           
           // 16. Elimina report e documenti
           const step16 = "📋 Eliminazione report e documenti...";
           console.log(step16);
           broadcastMessage("database_reset_progress", { message: step16, step: 16 });
-          await tx.execute(sql`DELETE FROM delivery_reports`);
-          await tx.execute(sql`DELETE FROM sales_reports`);
-          await tx.execute(sql`DELETE FROM reports`);
-          await tx.execute(sql`DELETE FROM documents`);
+          // Tabelle delivery_reports, sales_reports, reports, documents rimosse dallo schema - skip
           
           // 17. Elimina ordini e pagamenti
           const step17 = "💳 Eliminazione ordini e pagamenti...";
           console.log(step17);
           broadcastMessage("database_reset_progress", { message: step17, step: 17 });
-          await tx.execute(sql`DELETE FROM order_items`);
-          await tx.execute(sql`DELETE FROM orders`);
-          await tx.execute(sql`DELETE FROM payments`);
+          // Tabelle order_items, orders, payments rimosse dallo schema - skip
           await tx.execute(sql`DELETE FROM bag_allocations`);
           await tx.execute(sql`DELETE FROM sale_operations_ref`);
           
@@ -4860,8 +4853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Prima elimina DDT (che hanno FK verso clienti), poi i clienti
           await tx.execute(sql`DELETE FROM ddt`);
           await tx.execute(sql`DELETE FROM clienti`);
-          await tx.execute(sql`DELETE FROM clients`);
-          await tx.execute(sql`DELETE FROM sync_log_fatture_in_cloud`);
+          // Tabella clients non esiste (usa clienti), sync_log_fatture_in_cloud rimossa - skip
           
           // 19. Resettiamo le sequenze degli ID di tutte le tabelle
           const step19 = "🔢 Reset contatori ID di tutte le tabelle...";
@@ -4881,7 +4873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`);
           // measurements_id_seq rimossa - tabella non più esistente
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS cycle_impacts_id_seq RESTART WITH 1`);
+          // cycle_impacts_id_seq rimossa - tabella non più esistente
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`);
@@ -4902,22 +4894,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS mortality_rates_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS sgr_giornalieri_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS operation_impacts_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS flupsy_impacts_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sustainability_reports_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS delivery_reports_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sales_reports_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS reports_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS documents_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS order_items_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS orders_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS payments_id_seq RESTART WITH 1`);
+          // Sequenze tabelle rimosse dallo schema - skip:
+          // operation_impacts, flupsy_impacts, sustainability_reports
+          // delivery_reports, sales_reports, reports, documents
+          // order_items, orders, payments, clients, sync_log_fatture_in_cloud
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS bag_allocations_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS sale_operations_ref_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS clienti_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS clients_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS ddt_id_seq RESTART WITH 1`);
-          await tx.execute(sql`ALTER SEQUENCE IF EXISTS sync_log_fatture_in_cloud_id_seq RESTART WITH 1`);
           
           console.log("✅ Tutte le sequenze ID resettate a 1");
           
