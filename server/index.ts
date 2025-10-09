@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { createSaleNotification } from "./sales-notification-handler";
+import { createSaleNotification, createAdvancedSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
 import { setupPerformanceOptimizations } from "./index-setup";
@@ -123,8 +123,9 @@ secureLogger.info('Logging middleware: Secure API logger initialized with PII pr
   
   const server = await registerRoutes(app);
   
-  // Registra il servizio di creazione notifiche per operazioni di vendita
+  // Registra i servizi di creazione notifiche per operazioni di vendita
   app.locals.createSaleNotification = createSaleNotification;
+  app.locals.createAdvancedSaleNotification = createAdvancedSaleNotification;
   
   // Registra l'handler per le notifiche di vagliatura
   registerScreeningNotificationHandler(app);

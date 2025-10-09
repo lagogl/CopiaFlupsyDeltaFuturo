@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { notifications, type InsertNotification, operations, baskets, cycles } from "@shared/schema";
+import { notifications, type InsertNotification, operations, baskets, cycles, advancedSales } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { createSystemNotification } from "./controllers/notification-controller";
 
@@ -102,14 +102,82 @@ export async function hasUnreadSaleNotifications(): Promise<boolean> {
 }
 
 /**
+ * Crea una notifica quando viene creata una vendita avanzata
+ * @param saleId - ID della vendita avanzata
+ */
+export async function createAdvancedSaleNotification(saleId: number) {
+  try {
+    // Ottieni i dettagli della vendita
+    const [sale] = await db.select()
+      .from(advancedSales)
+      .where(eq(advancedSales.id, saleId));
+    
+    if (!sale) {
+      console.log("Vendita avanzata non trovata");
+      return null;
+    }
+    
+    // Formatta data in modo leggibile
+    const formattedDate = new Date(sale.saleDate).toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    
+    // Determina nome azienda
+    const companyName = sale.companyId === 1017299 ? 'Ecotapes' : 
+                       sale.companyId === 13263 ? 'Delta Futuro' : 
+                       'Azienda';
+    
+    // Crea titolo e messaggio della notifica
+    const title = `Nuova vendita avanzata - ${sale.saleNumber}`;
+    const message = `È stata creata una vendita avanzata ${sale.saleNumber} per ${companyName} in data ${formattedDate}. Cliente: ${sale.customerName || 'Non specificato'}. Totale: ${sale.totalAnimals?.toLocaleString('it-IT') || 'N/A'} animali.`;
+    
+    // Crea la notifica
+    const notification = await createSystemNotification(
+      'vendita',
+      title,
+      message,
+      'advanced_sale',
+      sale.id,
+      {
+        saleNumber: sale.saleNumber,
+        companyId: sale.companyId,
+        companyName,
+        customerId: sale.customerId,
+        customerName: sale.customerName,
+        saleDate: sale.saleDate,
+        totalAnimals: sale.totalAnimals,
+        totalWeight: sale.totalWeight,
+        status: sale.status
+      }
+    );
+    
+    // Invia la notifica tramite WebSocket se disponibile
+    if (global.app?.locals?.websocket) {
+      global.app.locals.websocket.broadcast('notification', {
+        type: 'new_notification',
+        notification
+      });
+    }
+    
+    return notification;
+  } catch (error) {
+    console.error("Errore durante la creazione della notifica di vendita avanzata:", error);
+    return null;
+  }
+}
+
+/**
  * Integra la creazione di notifiche nei punti del codice dove vengono create operazioni di vendita
  */
 export function integrateNotificationsWithOperations() {
   console.log("Integrazione del sistema di notifiche con le operazioni...");
   
-  // Aggiungi la funzione createSaleNotification all'oggetto globale app
+  // Aggiungi le funzioni di notifica all'oggetto globale app
   if (global.app) {
     global.app.locals.createSaleNotification = createSaleNotification;
+    global.app.locals.createAdvancedSaleNotification = createAdvancedSaleNotification;
   }
   
   console.log("Sistema di notifiche integrato con successo");
