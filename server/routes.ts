@@ -4316,6 +4316,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Endpoint specifico per invalidare la cache dei cestelli
+  app.post("/api/baskets/refresh-cache", async (req, res) => {
+    try {
+      console.log("🔄 Forzando aggiornamento cache cestelli...");
+      
+      // Invalida cache CESTELLI
+      const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller");
+      if (typeof invalidateBasketsCache === 'function') {
+        invalidateBasketsCache();
+        console.log("✅ Cache cestelli invalidata con successo");
+      } else {
+        console.log("⚠️ Funzione invalidateCache non trovata");
+      }
+
+      // Forza WebSocket broadcast per refresh frontend
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('baskets_cache_invalidated', {
+          type: 'baskets',
+          message: 'Cache cestelli aggiornata'
+        });
+        console.log("✅ Notifica WebSocket inviata per refresh cache cestelli");
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Cache cestelli aggiornata con successo" 
+      });
+    } catch (error) {
+      console.error("Errore durante l'aggiornamento cache cestelli:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Errore durante l'aggiornamento della cache" 
+      });
+    }
+  });
   
   // Endpoint per popolare automaticamente un FLUPSY con ceste in tutte le posizioni libere
   app.post("/api/flupsys/:id/populate", async (req, res) => {
