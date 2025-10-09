@@ -248,11 +248,14 @@ function configureSocketHandlers() {
         });
       } else if (data.type === 'flupsy_populate_progress') {
         // Mostra toast per i progressi del popolamento FLUPSY
+        const progressInfo = data.data?.progress;
+        const stepDisplay = progressInfo ? `${progressInfo.created}/${progressInfo.total}` : '';
+        
         toast({
           title: data.data?.step === 'start' ? 'Popolamento FLUPSY' : 
                  data.data?.step === 'analyze' ? 'Analisi Posizioni' :
                  data.data?.step === 'complete' ? 'Popolamento Completato' : 
-                 `Popolamento FLUPSY - ${data.data?.step}/${data.data?.total}`,
+                 stepDisplay ? `Popolamento FLUPSY - ${stepDisplay}` : 'Popolamento FLUPSY',
           description: data.data?.message || data.message,
           variant: data.data?.step === 'complete' ? 'default' : 'default',
           duration: data.data?.step === 'complete' ? 4000 : 1500,
