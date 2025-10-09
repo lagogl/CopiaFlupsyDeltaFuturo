@@ -94,17 +94,19 @@ export async function resetSequence(req: Request, res: Response) {
       SELECT pg_get_serial_sequence('${table}', 'id') as sequence_name
     `));
 
-    // Verifica che ci sia un risultato e che abbia la proprietà sequence_name
-    if (!sequenceQueryResult || !sequenceQueryResult[0]) {
+    // Verifica che ci sia un risultato - il result può essere array di rows o oggetto con rows
+    const rows = Array.isArray(sequenceQueryResult) ? sequenceQueryResult : sequenceQueryResult.rows;
+    
+    if (!rows || rows.length === 0 || !rows[0]) {
       return res.status(404).json({
         success: false,
         message: `Sequenza per la tabella '${table}' non trovata`
       });
     }
     
-    const sequenceName = String(sequenceQueryResult[0].sequence_name);
+    const sequenceName = String(rows[0].sequence_name);
     
-    if (!sequenceName) {
+    if (!sequenceName || sequenceName === 'null' || sequenceName === 'undefined') {
       return res.status(404).json({
         success: false,
         message: `Sequenza per la tabella '${table}' non trovata`
