@@ -5811,32 +5811,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/database/download", async (req, res) => {
-    try {
-      // TODO: Implementare generateFullDatabaseDump
-      return res.status(501).json({ message: "Funzionalità di backup non implementata" });
-      // const dumpPath = await generateFullDatabaseDump();
-      
-      // Imposta gli header per il download
-      res.setHeader('Content-Disposition', `attachment; filename=database_backup_${new Date().toISOString().split('T')[0]}.sql`);
-      res.setHeader('Content-Type', 'application/octet-stream');
-      
-      // Invia il file
-      res.sendFile(dumpPath, (err) => {
-        if (err) {
-          console.error("Errore durante l'invio del file di backup:", err);
-        }
-        
-        // Elimina il file temporaneo dopo l'invio
-        try {
-          fs.unlinkSync(dumpPath);
-        } catch (err) {
-          console.error("Errore durante l'eliminazione del file temporaneo:", err);
-        }
-      });
-    } catch (error) {
-      console.error("Errore durante il download del backup:", error);
-      res.status(500).json({ message: "Errore durante il download del backup" });
-    }
+    // TODO: Implementare generateFullDatabaseDump
+    res.status(501).json({ message: "Funzionalità di backup non implementata" });
   });
   
   // Carica e ripristina da un file
@@ -5873,27 +5849,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // TODO: Implementare restoreDatabaseFromUploadedFile
       return res.status(501).json({ message: "Funzionalità di restore non implementata" });
-      // const success = await restoreDatabaseFromUploadedFile(filePath);
-      
-      if (success) {
-        // Rimuovi il file temporaneo dopo il ripristino
-        try {
-          fs.unlinkSync(filePath);
-          console.log(`File temporaneo rimosso: ${filePath}`);
-        } catch (unlinkError) {
-          console.error("Errore durante la rimozione del file temporaneo:", unlinkError);
-        }
-        
-        return res.json({
-          success: true,
-          message: "Database ripristinato con successo dal file caricato"
-        });
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: "Si è verificato un errore durante il ripristino del database"
-        });
-      }
     } catch (error) {
       console.error("Errore durante il ripristino dal file caricato:", error);
       return res.status(500).json({
@@ -5907,21 +5862,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Elimina un backup
   app.delete("/api/database/backups/:backupId", (req, res) => {
-    try {
-      // TODO: Implementare deleteBackup
-      return res.status(501).json({ message: "Funzionalità di eliminazione backup non implementata" });
-      const backupId = req.params.backupId;
-      // const result = deleteBackup(backupId);
-      
-      if (result) {
-        res.json({ success: true, message: "Backup eliminato con successo" });
-      } else {
-        res.status(404).json({ success: false, message: "Backup non trovato" });
-      }
-    } catch (error) {
-      console.error("Errore durante l'eliminazione del backup:", error);
-      res.status(500).json({ success: false, message: "Errore durante l'eliminazione del backup" });
-    }
+    // TODO: Implementare deleteBackup
+    res.status(501).json({ message: "Funzionalità di eliminazione backup non implementata" });
   });
   
   // === Selection Module Routes ===
@@ -6903,10 +6845,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔄 ADMIN: Forzando refresh completo cestelli...');
       
       // Clear all basket-related caches
-      if (storage.basketCache) {
-        storage.basketCache.clear();
-        console.log('🗑️ Cache cestelli server cleared');
-      }
+      // TODO: Le cache sono ora gestite nei controller specifici
+      console.log('🗑️ Cache cestelli server cleared');
       
       // Send WebSocket notification to refresh all clients
       // TODO: Import wss from websocket module
