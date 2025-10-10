@@ -36,6 +36,13 @@ export async function apiRequest<T = any>(
     else if (methodOrOptions && typeof methodOrOptions === 'object') {
       options = methodOrOptions;
       method = options.method || 'GET';
+      // Se c'è un body nelle options, assicurati che ci sia il Content-Type
+      if (options.body) {
+        options.headers = {
+          ...options.headers,
+          'Content-Type': 'application/json'
+        };
+      }
     }
     // Pattern 3: apiRequest(url) - 1 parametro
     else {
