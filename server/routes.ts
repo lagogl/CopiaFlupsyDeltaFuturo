@@ -5812,8 +5812,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/database/download", async (req, res) => {
     try {
-      // Genera un nuovo dump completo del database
-      const dumpPath = await generateFullDatabaseDump();
+      // TODO: Implementare generateFullDatabaseDump
+      return res.status(501).json({ message: "Funzionalità di backup non implementata" });
+      // const dumpPath = await generateFullDatabaseDump();
       
       // Imposta gli header per il download
       res.setHeader('Content-Disposition', `attachment; filename=database_backup_${new Date().toISOString().split('T')[0]}.sql`);
@@ -5870,9 +5871,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`File SQL caricato e salvato in: ${filePath}`);
       
-      // Ripristina il database dal file caricato
-      // Utilizziamo la funzione dedicata per i file caricati
-      const success = await restoreDatabaseFromUploadedFile(filePath);
+      // TODO: Implementare restoreDatabaseFromUploadedFile
+      return res.status(501).json({ message: "Funzionalità di restore non implementata" });
+      // const success = await restoreDatabaseFromUploadedFile(filePath);
       
       if (success) {
         // Rimuovi il file temporaneo dopo il ripristino
@@ -5907,8 +5908,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Elimina un backup
   app.delete("/api/database/backups/:backupId", (req, res) => {
     try {
+      // TODO: Implementare deleteBackup
+      return res.status(501).json({ message: "Funzionalità di eliminazione backup non implementata" });
       const backupId = req.params.backupId;
-      const result = deleteBackup(backupId);
+      // const result = deleteBackup(backupId);
       
       if (result) {
         res.json({ success: true, message: "Backup eliminato con successo" });
@@ -6877,17 +6880,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Invalida le cache specificate
     if (keys && Array.isArray(keys)) {
       keys.forEach(key => {
-        if (key === 'baskets' && storage.basketCache) {
-          storage.basketCache.clear();
-          console.log('🗑️ Cache cestelli invalidata');
+        // TODO: Le cache sono ora gestite nei controller specifici
+        if (key === 'baskets') {
+          console.log('🗑️ Cache cestelli richiesta per invalidazione');
         }
-        if (key === 'operations' && storage.operationCache) {
-          storage.operationCache.clear();
-          console.log('🗑️ Cache operazioni invalidata');
+        if (key === 'operations') {
+          console.log('🗑️ Cache operazioni richiesta per invalidazione');
         }
-        if (key === 'flupsys' && storage.flupsyCache) {
-          storage.flupsyCache.clear();
-          console.log('🗑️ Cache FLUPSY invalidata');
+        if (key === 'flupsys') {
+          console.log('🗑️ Cache FLUPSY richiesta per invalidazione');
         }
       });
     }
@@ -6908,13 +6909,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Send WebSocket notification to refresh all clients
-      if (wss) {
-        wss.broadcast('baskets_refreshed', { 
-          message: 'Force refresh all baskets',
-          timestamp: Date.now() 
-        });
-        console.log('📡 WebSocket notification sent to all clients');
-      }
+      // TODO: Import wss from websocket module
+      // if (wss) {
+      //   wss.broadcast('baskets_refreshed', { 
+      //     message: 'Force refresh all baskets',
+      //     timestamp: Date.now() 
+      //   });
+      //   console.log('📡 WebSocket notification sent to all clients');
+      // }
       
       forceNoCacheHeaders(res);
       res.json({ 
