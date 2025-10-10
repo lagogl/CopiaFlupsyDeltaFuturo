@@ -47,16 +47,8 @@ import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { LotLifecycleController } from "./controllers/lot-lifecycle-controller";
 
-// Utility per gestire errori unknown nei catch blocks
-function sendError(res: Response, error: unknown, message: string = "Errore interno del server", statusCode: number = 500) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  console.error(`${message}:`, error);
-  return res.status(statusCode).json({
-    success: false,
-    message,
-    error: errorMessage
-  });
-}
+// Import utility centralizzate
+import { sendError, sendSuccess } from "./utils/error-handler";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
 import * as AnalyticsController from "./controllers/analytics-controller";
@@ -151,119 +143,16 @@ import {
 // Import la funzione di completamento corretta dal controller fisso
 import { completeSelectionFixed } from "./controllers/selection-controller-fixed";
 
-// Preparazione per la gestione dei file di backup
-const getBackupUploadDir = () => {
-  const uploadDir = path.join(process.cwd(), 'uploads/backups');
-  
-  // Assicurati che la directory esista
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-  
-  return uploadDir;
-};
+// Import utility per percorsi file
+import { getBackupUploadDir, getTempDir, getLogsDir, getExportsDir } from "./utils/file-paths";
 
-// 🎯 FUNZIONI HELPER PER GESTIONE LOTTI MISTI
-async function handleBasketLotCompositionOnDelete(operation: any) {
-  try {
-    console.log(`🎯 Verifica impatto eliminazione operazione ${operation.id} su lotti misti del cestello ${operation.basketId}`);
-    
-    const { db } = await import("./db");
-    const { sql } = await import("drizzle-orm");
-    
-    // Verifica se il cestello ha una composizione mista
-    const composition = await db.execute(sql`
-      SELECT COUNT(*) as count FROM basket_lot_composition 
-      WHERE basket_id = ${operation.basketId}
-    `);
-    
-    if (composition[0]?.count > 1) {
-      console.log(`🎯 Cestello ${operation.basketId} ha composizione mista (${composition[0].count} lotti)`);
-      
-      // Se l'operazione cancellata era di tipo critico per i lotti misti
-      if (operation.metadata && typeof operation.metadata === 'string') {
-        const metadata = JSON.parse(operation.metadata);
-        if (metadata.operation_type === 'mixed_lot' || metadata.operation_type === 'screening_source') {
-          console.log(`🎯 Operazione critica per lotti misti - ricalcolo composizione`);
-          
-          // Verifica se ci sono altre operazioni che mantengono il lotto misto
-          const otherMixedOps = await db.execute(sql`
-            SELECT COUNT(*) as count FROM operations o
-            WHERE o.basket_id = ${operation.basketId} 
-            AND o.id != ${operation.id}
-            AND (o.metadata::text LIKE '%mixed_lot%' OR o.metadata::text LIKE '%screening%')
-          `);
-          
-          if (otherMixedOps[0]?.count === 0) {
-            console.log(`🎯 Nessun'altra operazione mantiene il lotto misto - eliminazione composizione`);
-            await db.execute(sql`
-              DELETE FROM basket_lot_composition WHERE basket_id = ${operation.basketId}
-            `);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error('❌ Errore gestione composizione lotti misti su eliminazione:', error);
-  }
-}
-
-async function handleBasketLotCompositionOnUpdate(operation: any, updateData: any) {
-  try {
-    console.log(`🎯 Verifica impatto modifica operazione ${operation.id} su lotti misti del cestello ${operation.basketId}`);
-    
-    // Se cambia il lotto o il conteggio animali, potrebbe influire sulla composizione
-    if (updateData.lotId || updateData.animalCount) {
-      const { db } = await import("./db");
-    const { sql } = await import("drizzle-orm");
-      
-      // Verifica se il cestello ha una composizione mista
-      const composition = await db.execute(sql`
-        SELECT COUNT(*) as count FROM basket_lot_composition 
-        WHERE basket_id = ${operation.basketId}
-      `);
-      
-      if (composition[0]?.count > 1) {
-        console.log(`🎯 Cestello ${operation.basketId} ha composizione mista - aggiornamento necessario`);
-        
-        // Se cambia il lotto dell'operazione principale di un cestello misto
-        if (updateData.lotId && updateData.lotId !== operation.lotId) {
-          console.log(`🎯 Cambio lotto da ${operation.lotId} a ${updateData.lotId} - ricalcolo composizione`);
-          
-          // Aggiorna il lotto dominante nella composizione
-          await db.execute(sql`
-            UPDATE basket_lot_composition 
-            SET lot_id = ${updateData.lotId}
-            WHERE basket_id = ${operation.basketId} 
-            AND lot_id = ${operation.lotId}
-            AND percentage = (SELECT MAX(percentage) FROM basket_lot_composition WHERE basket_id = ${operation.basketId})
-          `);
-        }
-        
-        // Se cambia il conteggio animali, ricalcola le percentuali
-        if (updateData.animalCount) {
-          console.log(`🎯 Cambio conteggio animali - ricalcolo percentuali composizione`);
-          
-          // Ricalcola tutte le percentuali basandosi sui nuovi totali
-          const totalAnimals = await db.execute(sql`
-            SELECT SUM(animal_count) as total FROM basket_lot_composition 
-            WHERE basket_id = ${operation.basketId}
-          `);
-          
-          if (totalAnimals[0]?.total > 0) {
-            await db.execute(sql`
-              UPDATE basket_lot_composition 
-              SET percentage = ROUND((animal_count::decimal / ${totalAnimals[0].total}) * 100, 1)
-              WHERE basket_id = ${operation.basketId}
-            `);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error('❌ Errore gestione composizione lotti misti su aggiornamento:', error);
-  }
-}
+// Import servizi per gestione lotti misti
+import { 
+  handleBasketLotCompositionOnDelete, 
+  handleBasketLotCompositionOnUpdate,
+  isBasketMixedLot,
+  getBasketLotComposition 
+} from "./services/basket-lot-composition.service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // 🎯 MODULI ORGANIZZATI - Registrazione route modularizzate
