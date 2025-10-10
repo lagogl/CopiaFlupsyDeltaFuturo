@@ -1,10 +1,10 @@
 import { db } from '../../db';
 import { 
-  selections, 
-  selectionSourceBaskets, 
-  selectionDestinationBaskets,
-  selectionBasketHistory,
-  selectionLotReferences,
+  screeningOperations, 
+  screeningSourceBaskets, 
+  screeningDestinationBaskets,
+  screeningBasketHistory,
+  screeningLotReferences,
   baskets,
   cycles,
   lots,
@@ -65,15 +65,15 @@ export class ScreeningService {
     // 1. Count totale per paginazione (con filtro status)
     const [{ count }] = await db
       .select({ count: sql<number>`COUNT(*)` })
-      .from(selections)
-      .where(eq(selections.status, status));
+      .from(screeningOperations)
+      .where(eq(screeningOperations.status, status));
 
     // 2. Query principale semplice con filtro status
     const screenings = await db
       .select()
-      .from(selections)
-      .where(eq(selections.status, status))
-      .orderBy(desc(selections.date), desc(selections.selectionNumber))
+      .from(screeningOperations)
+      .where(eq(screeningOperations.status, status))
+      .orderBy(desc(screeningOperations.date), desc(screeningOperations.screeningNumber))
       .limit(pageSize)
       .offset(offset);
 
@@ -82,13 +82,13 @@ export class ScreeningService {
       // Query separate per source e destination baskets
       const sourceBaskets = await db
         .select()
-        .from(selectionSourceBaskets)
-        .where(eq(selectionSourceBaskets.selectionId, screening.id));
+        .from(screeningSourceBaskets)
+        .where(eq(screeningSourceBaskets.screeningId, screening.id));
 
       const destBaskets = await db
         .select()
-        .from(selectionDestinationBaskets)
-        .where(eq(selectionDestinationBaskets.selectionId, screening.id));
+        .from(screeningDestinationBaskets)
+        .where(eq(screeningDestinationBaskets.screeningId, screening.id));
 
       // Calcola totali lato applicazione con reduce()
       const totalSourceAnimals = sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
@@ -137,8 +137,8 @@ export class ScreeningService {
     // Main screening operation
     const [screening] = await db
       .select()
-      .from(selections)
-      .where(eq(selections.id, id));
+      .from(screeningOperations)
+      .where(eq(screeningOperations.id, id));
 
     if (!screening) {
       return null;
@@ -147,15 +147,16 @@ export class ScreeningService {
     // Source baskets con dettagli
     const sourceBaskets = await db
       .select({
-        id: selectionSourceBaskets.id,
-        screeningOperationId: selectionSourceBaskets.selectionId,
-        basketId: selectionSourceBaskets.basketId,
-        cycleId: selectionSourceBaskets.cycleId,
-        animalCount: selectionSourceBaskets.animalCount,
-        averageWeight: selectionSourceBaskets.averageWeight,
-        status: selectionSourceBaskets.status,
-        dismissedAt: selectionSourceBaskets.dismissedAt,
-        notes: selectionSourceBaskets.notes,
+        id: screeningSourceBaskets.id,
+        screeningOperationId: screeningSourceBaskets.screeningId,
+        basketId: screeningSourceBaskets.basketId,
+        cycleId: screeningSourceBaskets.cycleId,
+        animalCount: screeningSourceBaskets.animalCount,
+        totalWeight: screeningSourceBaskets.totalWeight,
+        animalsPerKg: screeningSourceBaskets.animalsPerKg,
+        dismissed: screeningSourceBaskets.dismissed,
+        sizeId: screeningSourceBaskets.sizeId,
+        lotId: screeningSourceBaskets.lotId,
         basket: {
           id: baskets.id,
           physicalNumber: baskets.physicalNumber,
@@ -175,25 +176,31 @@ export class ScreeningService {
           location: flupsys.location
         }
       })
-      .from(selectionSourceBaskets)
-      .leftJoin(baskets, eq(selectionSourceBaskets.basketId, baskets.id))
-      .leftJoin(cycles, eq(selectionSourceBaskets.cycleId, cycles.id))
+      .from(screeningSourceBaskets)
+      .leftJoin(baskets, eq(screeningSourceBaskets.basketId, baskets.id))
+      .leftJoin(cycles, eq(screeningSourceBaskets.cycleId, cycles.id))
       .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
-      .where(eq(selectionSourceBaskets.selectionId, id));
+      .where(eq(screeningSourceBaskets.screeningId, id));
 
     // Destination baskets con dettagli
     const destinationBaskets = await db
       .select({
-        id: selectionDestinationBaskets.id,
-        screeningOperationId: selectionDestinationBaskets.selectionId,
-        basketId: selectionDestinationBaskets.basketId,
-        cycleId: selectionDestinationBaskets.cycleId,
-        sizeId: selectionDestinationBaskets.sizeId,
-        animalCount: selectionDestinationBaskets.animalCount,
-        averageWeight: selectionDestinationBaskets.averageWeight,
-        targetPosition: selectionDestinationBaskets.targetPosition,
-        positionAssigned: selectionDestinationBaskets.positionAssigned,
-        notes: selectionDestinationBaskets.notes,
+        id: screeningDestinationBaskets.id,
+        screeningOperationId: screeningDestinationBaskets.screeningId,
+        basketId: screeningDestinationBaskets.basketId,
+        cycleId: screeningDestinationBaskets.cycleId,
+        category: screeningDestinationBaskets.category,
+        flupsyId: screeningDestinationBaskets.flupsyId,
+        row: screeningDestinationBaskets.row,
+        position: screeningDestinationBaskets.position,
+        positionAssigned: screeningDestinationBaskets.positionAssigned,
+        animalCount: screeningDestinationBaskets.animalCount,
+        liveAnimals: screeningDestinationBaskets.liveAnimals,
+        totalWeight: screeningDestinationBaskets.totalWeight,
+        animalsPerKg: screeningDestinationBaskets.animalsPerKg,
+        deadCount: screeningDestinationBaskets.deadCount,
+        mortalityRate: screeningDestinationBaskets.mortalityRate,
+        notes: screeningDestinationBaskets.notes,
         basket: {
           id: baskets.id,
           physicalNumber: baskets.physicalNumber,
@@ -222,21 +229,20 @@ export class ScreeningService {
           location: flupsys.location
         }
       })
-      .from(selectionDestinationBaskets)
-      .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
-      .leftJoin(cycles, eq(selectionDestinationBaskets.cycleId, cycles.id))
-      .leftJoin(sizes, eq(selectionDestinationBaskets.sizeId, sizes.id))
-      .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
-      .where(eq(selectionDestinationBaskets.selectionId, id));
+      .from(screeningDestinationBaskets)
+      .leftJoin(baskets, eq(screeningDestinationBaskets.basketId, baskets.id))
+      .leftJoin(cycles, eq(screeningDestinationBaskets.cycleId, cycles.id))
+      .leftJoin(flupsys, eq(screeningDestinationBaskets.flupsyId, flupsys.id))
+      .where(eq(screeningDestinationBaskets.screeningId, id));
 
     // Lot references
     const lotReferences = await db
       .select({
-        id: selectionLotReferences.id,
-        screeningOperationId: selectionLotReferences.selectionId,
-        lotId: selectionLotReferences.lotId,
-        percentage: selectionLotReferences.percentage,
-        animalCount: selectionLotReferences.animalCount,
+        id: screeningLotReferences.id,
+        screeningOperationId: screeningLotReferences.screeningId,
+        destinationBasketId: screeningLotReferences.destinationBasketId,
+        destinationCycleId: screeningLotReferences.destinationCycleId,
+        lotId: screeningLotReferences.lotId,
         lot: {
           id: lots.id,
           supplier: lots.supplier,
@@ -245,9 +251,9 @@ export class ScreeningService {
           quality: lots.quality
         }
       })
-      .from(selectionLotReferences)
-      .leftJoin(lots, eq(selectionLotReferences.lotId, lots.id))
-      .where(eq(selectionLotReferences.selectionId, id));
+      .from(screeningLotReferences)
+      .leftJoin(lots, eq(screeningLotReferences.lotId, lots.id))
+      .where(eq(screeningLotReferences.screeningId, id));
 
     const result = {
       screening,
@@ -266,8 +272,8 @@ export class ScreeningService {
    */
   async getNextScreeningNumber(): Promise<number> {
     const [result] = await db
-      .select({ maxNumber: sql<number>`COALESCE(MAX(${selections.selectionNumber}), 0)` })
-      .from(selections);
+      .select({ maxNumber: sql<number>`COALESCE(MAX(${screeningOperations.screeningNumber}), 0)` })
+      .from(screeningOperations);
     
     return (result?.maxNumber || 0) + 1;
   }
@@ -279,11 +285,11 @@ export class ScreeningService {
   async getScreeningOperations(status?: string) {
     const query = db
       .select()
-      .from(selections)
-      .orderBy(desc(selections.date), desc(selections.selectionNumber));
+      .from(screeningOperations)
+      .orderBy(desc(screeningOperations.date), desc(screeningOperations.screeningNumber));
 
     if (status) {
-      return await query.where(eq(selections.status, status));
+      return await query.where(eq(screeningOperations.status, status));
     }
 
     return await query;
@@ -295,7 +301,7 @@ export class ScreeningService {
    */
   async createScreeningOperation(data: any) {
     const [result] = await db
-      .insert(selections)
+      .insert(screeningOperations)
       .values(data)
       .returning();
 
@@ -309,9 +315,9 @@ export class ScreeningService {
    */
   async updateScreeningOperation(id: number, data: any) {
     const [result] = await db
-      .update(selections)
+      .update(screeningOperations)
       .set(data)
-      .where(eq(selections.id, id))
+      .where(eq(screeningOperations.id, id))
       .returning();
 
     this.clearCache();
@@ -324,9 +330,9 @@ export class ScreeningService {
    */
   async completeScreeningOperation(id: number) {
     const [result] = await db
-      .update(selections)
+      .update(screeningOperations)
       .set({ status: 'completed' })
-      .where(eq(selections.id, id))
+      .where(eq(screeningOperations.id, id))
       .returning();
 
     this.clearCache();
@@ -339,9 +345,9 @@ export class ScreeningService {
    */
   async cancelScreeningOperation(id: number) {
     const [result] = await db
-      .update(selections)
+      .update(screeningOperations)
       .set({ status: 'cancelled' })
-      .where(eq(selections.id, id))
+      .where(eq(screeningOperations.id, id))
       .returning();
 
     this.clearCache();
@@ -352,13 +358,13 @@ export class ScreeningService {
   async getSourceBaskets(screeningId: number) {
     return await db
       .select()
-      .from(selectionSourceBaskets)
-      .where(eq(selectionSourceBaskets.selectionId, screeningId));
+      .from(screeningSourceBaskets)
+      .where(eq(screeningSourceBaskets.screeningId, screeningId));
   }
 
   async createSourceBasket(data: any) {
     const [result] = await db
-      .insert(selectionSourceBaskets)
+      .insert(screeningSourceBaskets)
       .values(data)
       .returning();
 
@@ -368,9 +374,9 @@ export class ScreeningService {
 
   async updateSourceBasket(id: number, data: any) {
     const [result] = await db
-      .update(selectionSourceBaskets)
+      .update(screeningSourceBaskets)
       .set(data)
-      .where(eq(selectionSourceBaskets.id, id))
+      .where(eq(screeningSourceBaskets.id, id))
       .returning();
 
     this.clearCache();
@@ -379,12 +385,11 @@ export class ScreeningService {
 
   async dismissSourceBasket(id: number) {
     const [result] = await db
-      .update(selectionSourceBaskets)
+      .update(screeningSourceBaskets)
       .set({ 
-        status: 'dismissed',
-        dismissedAt: new Date()
+        dismissed: true
       })
-      .where(eq(selectionSourceBaskets.id, id))
+      .where(eq(screeningSourceBaskets.id, id))
       .returning();
 
     this.clearCache();
@@ -393,8 +398,8 @@ export class ScreeningService {
 
   async deleteSourceBasket(id: number) {
     const [result] = await db
-      .delete(selectionSourceBaskets)
-      .where(eq(selectionSourceBaskets.id, id))
+      .delete(screeningSourceBaskets)
+      .where(eq(screeningSourceBaskets.id, id))
       .returning();
 
     this.clearCache();
@@ -405,13 +410,13 @@ export class ScreeningService {
   async getDestinationBaskets(screeningId: number) {
     return await db
       .select()
-      .from(selectionDestinationBaskets)
-      .where(eq(selectionDestinationBaskets.selectionId, screeningId));
+      .from(screeningDestinationBaskets)
+      .where(eq(screeningDestinationBaskets.screeningId, screeningId));
   }
 
   async createDestinationBasket(data: any) {
     const [result] = await db
-      .insert(selectionDestinationBaskets)
+      .insert(screeningDestinationBaskets)
       .values(data)
       .returning();
 
@@ -421,9 +426,9 @@ export class ScreeningService {
 
   async updateDestinationBasket(id: number, data: any) {
     const [result] = await db
-      .update(selectionDestinationBaskets)
+      .update(screeningDestinationBaskets)
       .set(data)
-      .where(eq(selectionDestinationBaskets.id, id))
+      .where(eq(screeningDestinationBaskets.id, id))
       .returning();
 
     this.clearCache();
@@ -432,12 +437,12 @@ export class ScreeningService {
 
   async assignPosition(id: number, position: any) {
     const [result] = await db
-      .update(selectionDestinationBaskets)
+      .update(screeningDestinationBaskets)
       .set({ 
-        targetPosition: position,
+        position: position,
         positionAssigned: true 
       })
-      .where(eq(selectionDestinationBaskets.id, id))
+      .where(eq(screeningDestinationBaskets.id, id))
       .returning();
 
     this.clearCache();
@@ -446,8 +451,8 @@ export class ScreeningService {
 
   async deleteDestinationBasket(id: number) {
     const [result] = await db
-      .delete(selectionDestinationBaskets)
-      .where(eq(selectionDestinationBaskets.id, id))
+      .delete(screeningDestinationBaskets)
+      .where(eq(screeningDestinationBaskets.id, id))
       .returning();
 
     this.clearCache();
@@ -457,14 +462,14 @@ export class ScreeningService {
   // History and Lot References Methods
   async createHistory(data: any) {
     return await db
-      .insert(selectionBasketHistory)
+      .insert(screeningBasketHistory)
       .values(data)
       .returning();
   }
 
   async createLotReference(data: any) {
     const [result] = await db
-      .insert(selectionLotReferences)
+      .insert(screeningLotReferences)
       .values(data)
       .returning();
 

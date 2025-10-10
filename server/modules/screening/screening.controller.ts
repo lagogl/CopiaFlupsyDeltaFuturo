@@ -103,7 +103,7 @@ export class ScreeningController {
         return res.status(404).json({ message: "Screening operation not found" });
       }
 
-      res.json(screening.screening);
+      res.json(screening);
     } catch (error) {
       console.error("Error fetching screening operation:", error);
       res.status(500).json({ message: "Failed to fetch screening operation" });
