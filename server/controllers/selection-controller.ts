@@ -984,6 +984,18 @@ export async function completeSelectionFixed(req: Request, res: Response) {
 
         if (basketInfo.length > 0 && basketInfo[0].currentCycleId) {
           
+          // Recupera l'ultima operazione del cestello per ottenere taglia e peso
+          const lastOp = await tx.select()
+            .from(operations)
+            .where(
+              and(
+                eq(operations.basketId, sourceBasket.basketId),
+                eq(operations.cycleId, basketInfo[0].currentCycleId)
+              )
+            )
+            .orderBy(sql`${operations.date} DESC, ${operations.id} DESC`)
+            .limit(1);
+          
           // 1. OPERAZIONE CHIUSURA-CICLO-VAGLIATURA (specifica per tracciabilità)
           await tx.insert(operations).values({
             date: selection[0].date,
@@ -991,6 +1003,9 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             basketId: sourceBasket.basketId,
             cycleId: basketInfo[0].currentCycleId,
             animalCount: sourceBasket.animalCount,
+            totalWeight: sourceBasket.totalWeight || (lastOp.length > 0 ? lastOp[0].totalWeight : null),
+            sizeId: sourceBasket.sizeId || (lastOp.length > 0 ? lastOp[0].sizeId : null),
+            animalsPerKg: sourceBasket.animalsPerKg || (lastOp.length > 0 ? lastOp[0].animalsPerKg : null),
             notes: `Chiusura per vagliatura #${selection[0].selectionNumber} del ${selection[0].date}. ` +
                    `Animali distribuiti: ${totalAnimalsDestination}. Mortalità: ${mortality}`
           });
