@@ -64,15 +64,6 @@ export async function setupBasketsIndexes(): Promise<void> {
 }
 
 /**
- * Funzione per invalidare manualmente la cache dei cestelli
- */
-export function invalidateCache(): void {
-  console.log('🧹 CESTELLI: Invalidazione manuale della cache richiesta');
-  BasketsCache.clear();
-  console.log('✅ CESTELLI: Cache invalidata con successo');
-}
-
-/**
  * Configura l'invalidazione della cache per i cestelli
  */
 export function setupBasketsCacheInvalidation(app: any): void {
