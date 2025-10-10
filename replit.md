@@ -7,6 +7,20 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 10, 2025)
+- **SISTEMA NOTIFICHE COMPLETAMENTE FUNZIONALE** (October 10, 2025): Sistema di notifiche real-time operativo al 100%
+  - **Notifiche Vendita da Vagliature**: Implementata creazione automatica notifiche quando vagliature generano vendite
+    - Pattern: `req.app.locals.createSaleNotification(operationId)` chiamato dopo insert operazione con `.returning()` 
+    - File: `server/controllers/selection-controller.ts` (righe ~1216-1251)
+  - **UI Notifiche Migliorata**: Icona campanella si colora per TUTTI i tipi di notifica, non solo vendite
+    - Icona verde per qualsiasi notifica non letta (vendite, accrescimenti, altri)
+    - Badge: verde per vendite, arancione per accrescimenti, rosso per altri tipi
+    - File: `client/src/components/NotificationBell.tsx` (righe ~177-202)
+  - **Controllo Real-Time Accrescimento**: Notifiche di accrescimento ora generate immediatamente, non solo a mezzanotte
+    - Nuova funzione: `checkOperationForTargetSize(operationId)` in `growth-notification-handler.ts`
+    - Verifica taglia target dopo OGNI operazione di peso/prima-attivazione
+    - Integrata in 3 punti in `server/routes.ts`: prima-attivazione (riga ~2332), chiusura ciclo (riga ~2531), operazioni standard (riga ~2593)
+    - Pattern asincrono non-bloccante: `.catch(err => console.error(...))`
+    - Timer 24h mantiene per sicurezza, ma controllo primario ora real-time
 - **CRITICAL BUG FIX - Cache Invalidation dopo Popolamento FLUPSY**: Risolto bug critico che impediva l'aggiornamento automatico dei cestelli dopo il popolamento di un FLUPSY
   - **Problema**: Codice di invalidazione cache era nel file sbagliato (`server/routes.ts` invece di `server/modules/core/flupsys/flupsys.service.ts`)
   - **Causa Root**: La route POST `/api/flupsys/:id/populate` è gestita dal modulo FLUPSY, non da routes.ts
