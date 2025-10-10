@@ -335,5 +335,118 @@ export async function checkCyclesForTargetSizes(): Promise<number> {
   }
 }
 
+/**
+ * Controlla in tempo reale se un'operazione ha portato il cestello a raggiungere una taglia target
+ * @param operationId ID dell'operazione appena creata
+ * @returns Promise che risolve con true se è stata creata una notifica, false altrimenti
+ */
+export async function checkOperationForTargetSize(operationId: number): Promise<boolean> {
+  try {
+    // Verifica se il tipo di notifica "accrescimento" è abilitato
+    const isEnabled = await isNotificationTypeEnabled('accrescimento');
+    if (!isEnabled) {
+      return false;
+    }
+
+    // Recupera l'operazione appena creata
+    const operationData = await db.execute(sql`
+      SELECT 
+        o.id,
+        o.cycle_id,
+        o.basket_id,
+        o.total_weight,
+        o.animal_count,
+        o.date,
+        o.size_id,
+        o.type,
+        b.physical_number as basket_number,
+        c.state as cycle_state
+      FROM operations o
+      JOIN baskets b ON o.basket_id = b.id
+      JOIN cycles c ON o.cycle_id = c.id
+      WHERE o.id = ${operationId}
+    `);
+
+    if (!operationData.rows || operationData.rows.length === 0) {
+      return false;
+    }
+
+    const operation = operationData.rows[0] as any;
+
+    // Verifica che sia un'operazione di peso o prima-attivazione e che il ciclo sia attivo
+    if (!['peso', 'prima-attivazione'].includes(operation.type) || operation.cycle_state !== 'active') {
+      return false;
+    }
+
+    // Verifica che ci siano dati sufficienti
+    if (!operation.total_weight || !operation.animal_count) {
+      return false;
+    }
+
+    // Recupera le taglie configurate
+    const configuredSizeIds = await getConfiguredTargetSizes();
+    let targetSizeIds: number[];
+    
+    if (!configuredSizeIds || configuredSizeIds.length === 0) {
+      // Usa TP-3000 come default
+      const defaultSize = await db.execute(sql`
+        SELECT id FROM sizes WHERE name = 'TP-3000'
+      `);
+      
+      if (!defaultSize.rows || defaultSize.rows.length === 0) {
+        return false;
+      }
+      
+      targetSizeIds = [Number(defaultSize.rows[0].id)];
+    } else {
+      targetSizeIds = configuredSizeIds;
+    }
+
+    // Calcola animali per kg dall'operazione appena creata
+    const currentAnimalsPerKg = operation.animal_count / operation.total_weight;
+    const operationDate = new Date(operation.date);
+    const currentDate = new Date();
+    
+    // Calcola la crescita dall'operazione a oggi
+    const daysSinceOperation = Math.floor((currentDate.getTime() - operationDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    let valueToCheck = currentAnimalsPerKg;
+    
+    if (daysSinceOperation > 0) {
+      const growthFactor = await calculateGrowthFactorAcrossMonths(operationDate, currentDate);
+      valueToCheck = currentAnimalsPerKg / growthFactor;
+      
+      console.log(`🔍 Controllo tempo reale cestello #${operation.basket_number}: ${currentAnimalsPerKg} → ${Math.round(valueToCheck)} animali/kg (crescita ${daysSinceOperation} giorni)`);
+    } else {
+      console.log(`🔍 Controllo tempo reale cestello #${operation.basket_number}: ${currentAnimalsPerKg} animali/kg (operazione appena creata)`);
+    }
+
+    // Verifica per ogni taglia configurata
+    for (const sizeId of targetSizeIds) {
+      const matchedSize = await checkSizeMatch(valueToCheck, sizeId);
+      
+      if (matchedSize) {
+        const notificationId = await createTargetSizeNotification(
+          operation.cycle_id,
+          operation.basket_id,
+          operation.basket_number,
+          valueToCheck,
+          matchedSize
+        );
+        
+        if (notificationId !== null) {
+          console.log(`✅ Notifica accrescimento creata in tempo reale: Cestello #${operation.basket_number} ha raggiunto ${matchedSize.name}`);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error(`Errore durante il controllo in tempo reale per operazione ${operationId}:`, error);
+    return false;
+  }
+}
+
 // Mantieni la compatibilità con il vecchio nome
 export const checkCyclesForTP3000 = checkCyclesForTargetSizes;

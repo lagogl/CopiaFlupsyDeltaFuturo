@@ -33,7 +33,8 @@ import {
   updateNotificationSetting
 } from "./controllers/notification-settings-controller";
 import { 
-  checkCyclesForTP3000 
+  checkCyclesForTP3000,
+  checkOperationForTargetSize
 } from "./controllers/growth-notification-handler";
 
 // Importazione dei controller ancora utilizzati
@@ -2324,6 +2325,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         OperationsCache.clear();
         console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
         
+        // Controlla in tempo reale se il cestello ha raggiunto una taglia target
+        if (operation.operation && operation.operation.id) {
+          checkOperationForTargetSize(operation.operation.id)
+            .catch(err => console.error('❌ Errore controllo taglia target:', err));
+        }
+        
         // Broadcast operation created event via WebSockets
         console.log("🔍 VERIFICA WEBSOCKET: Controllando se global.broadcastUpdate esiste...");
         console.log("🔍 VERIFICA WEBSOCKET: typeof global.broadcastUpdate =", typeof (global as any).broadcastUpdate);
@@ -2517,6 +2524,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           OperationsCache.clear();
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
           
+          // Controlla in tempo reale se il cestello ha raggiunto una taglia target
+          if (newOperation && newOperation.id) {
+            checkOperationForTargetSize(newOperation.id)
+              .catch(err => console.error('❌ Errore controllo taglia target:', err));
+          }
+          
           // Then close the cycle
           await storage.closeCycle(cycleId, format(date, 'yyyy-MM-dd'));
           
@@ -2572,6 +2585,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { OperationsCache } = await import('./operations-cache-service');
           OperationsCache.clear();
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
+          
+          // Controlla in tempo reale se il cestello ha raggiunto una taglia target
+          if (newOperation && newOperation.id) {
+            checkOperationForTargetSize(newOperation.id)
+              .catch(err => console.error('❌ Errore controllo taglia target:', err));
+          }
           
           // Broadcast operation created event via WebSockets
           // Notifica WebSocket per invalidazione cache
