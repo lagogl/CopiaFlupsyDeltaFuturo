@@ -734,6 +734,16 @@ export async function completeSelectionFixed(req: Request, res: Response) {
     console.log(`   Animali destinazione: ${totalAnimalsDestination}`);
     console.log(`   Mortalità calcolata: ${mortality} (${mortality > 0 ? 'perdita' : 'guadagno'})`);
 
+    // VALIDAZIONE AGGIUNTIVA: Verifica cestelli con doppio ruolo (origine E destinazione)
+    const sourceBasketsIds = new Set(sourceBaskets.map(sb => sb.basketId));
+    const destBasketsIds = new Set(destinationBaskets.map(db => db.basketId));
+    const doublRoleBaskets = Array.from(sourceBasketsIds).filter(id => destBasketsIds.has(id));
+    
+    if (doublRoleBaskets.length > 0) {
+      console.log(`⚠️ ATTENZIONE: ${doublRoleBaskets.length} cestelli sono sia origine che destinazione:`, doublRoleBaskets);
+      console.log(`   Questo è supportato: prima verranno cessati, poi riattivati con nuovo ciclo.`);
+    }
+
     // TRANSAZIONE CORRETTA
     await db.transaction(async (tx) => {
       
@@ -986,15 +996,40 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             .set({ state: 'closed', endDate: selection[0].date })
             .where(eq(cycles.id, newCycle.id));
 
-          // Rendi cestello disponibile
+          // Rendi cestello disponibile - CORREZIONE: Non forzare posizione hardcoded
+          // Se il cestello venduto aveva una posizione specificata, la mantiene
+          // Altrimenti, lascia NULL per evitare conflitti
+          let updateData: any = { 
+            state: 'available',
+            currentCycleId: null  // Usa null invece di undefined
+          };
+
+          // Se c'è una posizione specificata per il cestello venduto, usala
+          if (destBasket.position) {
+            const positionStr = String(destBasket.position);
+            const match = positionStr.match(/^([A-Z]+)(\d+)$/);
+            if (match) {
+              updateData.row = match[1];
+              updateData.position = parseInt(match[2]);
+              updateData.flupsyId = destBasket.flupsyId || null;
+              console.log(`      📍 Cestello venduto ${destBasket.basketId} mantiene posizione ${match[1]}-${match[2]}`);
+            } else {
+              // Se il formato non è valido, lascia posizione NULL
+              updateData.row = null;
+              updateData.position = null;
+              updateData.flupsyId = null;
+              console.log(`      📍 Cestello venduto ${destBasket.basketId} senza posizione valida - liberato`);
+            }
+          } else {
+            // Nessuna posizione specificata - libera completamente il cestello
+            updateData.row = null;
+            updateData.position = null;
+            updateData.flupsyId = null;
+            console.log(`      📍 Cestello venduto ${destBasket.basketId} liberato senza posizione`);
+          }
+
           await tx.update(baskets)
-            .set({ 
-              state: 'available',
-              currentCycleId: undefined,
-              position: 1,
-              row: 'DX',
-              flupsyId: destBasket.flupsyId || 1
-            })
+            .set(updateData)
             .where(eq(baskets.id, destBasket.basketId));
 
         } else {
