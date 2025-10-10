@@ -176,6 +176,9 @@ export default function NotificationBell() {
   
   // Filtra le notifiche di vendita non lette
   const unreadSalesCount = unreadNotifications?.notifications?.filter(n => n.type === 'vendita' && !n.isRead).length || 0;
+  
+  // Filtra le notifiche di accrescimento non lette
+  const unreadGrowthCount = unreadNotifications?.notifications?.filter(n => n.type === 'growth' && !n.isRead).length || 0;
 
   return (
     <>
@@ -183,13 +186,13 @@ export default function NotificationBell() {
         className="relative flex items-center hover:bg-primary-dark p-2 rounded-md"
         onClick={() => setIsOpen(true)}
       >
-        <Bell className={`h-5 w-5 mr-1 ${unreadSalesCount > 0 ? 'text-green-400' : ''}`} />
+        <Bell className={`h-5 w-5 mr-1 ${unreadCount > 0 ? 'text-green-400' : ''}`} />
         <span className="text-sm">Notifiche</span>
         
         {/* Badge per il conteggio delle notifiche non lette */}
         {unreadCount > 0 && (
           <span className={`absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${
-            unreadSalesCount > 0 ? 'bg-green-500' : 'bg-red-500'
+            unreadSalesCount > 0 ? 'bg-green-500' : unreadGrowthCount > 0 ? 'bg-orange-500' : 'bg-red-500'
           } text-white`}>
             {unreadCount}
           </span>
