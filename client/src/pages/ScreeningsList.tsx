@@ -231,7 +231,7 @@ export default function ScreeningsList() {
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex gap-2 justify-center">
-                              <Link href={`/selections/${screening.id}`}>
+                              <Link href={`/screenings/${screening.id}`}>
                                 <Button
                                   variant="outline"
                                   size="sm"

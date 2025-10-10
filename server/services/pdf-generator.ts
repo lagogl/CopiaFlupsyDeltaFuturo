@@ -3,6 +3,7 @@
  * Utilizza Puppeteer per convertire HTML in PDF con layout professionale
  */
 import puppeteer from 'puppeteer';
+import chromium from '@sparticuz/chromium';
 import handlebars from 'handlebars';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -447,22 +448,41 @@ export class PDFGeneratorService {
 
   async init() {
     if (!this.browser) {
+      // Configura chromium path e args per funzionare su Replit
+      chromium.setHeadlessMode = true;
+      chromium.setGraphicsMode = false;
+      
       this.browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu'
-        ]
+        headless: chromium.headless,
+        executablePath: await chromium.executablePath() || undefined,
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport
       });
     }
   }
 
+  async generateFromHTML(html: string, options?: any): Promise<Buffer> {
+    await this.init();
+    
+    const page = await this.browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    const pdfBuffer = await page.pdf({
+      format: options?.format || 'A4',
+      margin: options?.margin || {
+        top: '1cm',
+        right: '1cm',
+        bottom: '1cm',
+        left: '1cm'
+      },
+      printBackground: options?.printBackground !== false,
+      preferCSSPageSize: options?.preferCSSPageSize || false
+    });
+    
+    await page.close();
+    return pdfBuffer;
+  }
+  
   async generateSalePDF(saleData: SaleData, companyId?: string | number): Promise<Buffer> {
     await this.init();
 

@@ -17,7 +17,8 @@ import {
   removeSourceBasket,
   removeDestinationBasket,
   completeSelectionFixed,
-  migrateBasketLotData
+  migrateBasketLotData,
+  generatePDFReport
 } from "../../../controllers/selection-controller";
 
 export class SelectionsController {
@@ -181,6 +182,14 @@ export class SelectionsController {
    */
   async removeDestinationBasket(req: Request, res: Response) {
     return await removeDestinationBasket(req, res);
+  }
+
+  /**
+   * GET /api/selections/:id/report.pdf
+   * Generate PDF report for a selection
+   */
+  async generatePDFReport(req: Request, res: Response) {
+    return await generatePDFReport(req, res);
   }
 }
 

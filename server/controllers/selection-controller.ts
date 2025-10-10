@@ -1404,3 +1404,206 @@ async function determineSizeId(animalsPerKg: number): Promise<number | null> {
     return null;
   }
 }
+
+/**
+ * Genera un report PDF per una selezione/vagliatura
+ */
+export async function generatePDFReport(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    
+    // Recupera dati selezione
+    const selection = await db.select()
+      .from(selections)
+      .where(eq(selections.id, Number(id)))
+      .limit(1);
+    
+    if (!selection || selection.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Selezione non trovata"
+      });
+    }
+    
+    // Recupera cestelli origine
+    const sourceBaskets = await db.select()
+    .from(selectionSourceBaskets)
+    .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+    
+    // Recupera cestelli destinazione
+    const destBaskets = await db.select()
+    .from(selectionDestinationBaskets)
+    .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
+    
+    // Calcola totali
+    const totalSourceAnimals = sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+    const totalDestAnimals = destBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+    const mortality = Math.max(0, totalSourceAnimals - totalDestAnimals);
+    const mortalityPercent = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0';
+    
+    // Genera HTML
+    const html = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Vagliatura #${selection[0].selectionNumber}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #1e40af;
+            border-bottom: 2px solid #1e40af;
+            padding-bottom: 10px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .info-box {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .info-box h3 {
+            margin: 0 0 10px 0;
+            color: #1e40af;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: bold;
+        }
+        .summary {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .mortality {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        @media print {
+            body {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Report Vagliatura #${selection[0].selectionNumber}</h1>
+    
+    <div class="info-grid">
+        <div class="info-box">
+            <h3>Data Vagliatura</h3>
+            <p>${new Date(selection[0].date).toLocaleDateString('it-IT')}</p>
+        </div>
+        <div class="info-box">
+            <h3>Stato</h3>
+            <p>${selection[0].status === 'completed' ? 'Completata' : 'In corso'}</p>
+        </div>
+    </div>
+    
+    <h2>Cestelli Origine (${sourceBaskets.length})</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Cestello ID</th>
+                <th>Animali</th>
+                <th>Peso (kg)</th>
+                <th>Animali/kg</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${sourceBaskets.map(b => `
+                <tr>
+                    <td>#${b.basketId}</td>
+                    <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
+                    <td>${(b.weight || 0).toFixed(2)}</td>
+                    <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <h2>Cestelli Destinazione (${destBaskets.length})</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Cestello ID</th>
+                <th>Animali</th>
+                <th>Peso (kg)</th>
+                <th>Animali/kg</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${destBaskets.map(b => `
+                <tr>
+                    <td>#${b.basketId}</td>
+                    <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
+                    <td>${(b.weight || 0).toFixed(2)}</td>
+                    <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <div class="summary">
+        <h2>Riepilogo</h2>
+        <p><strong>Totale Animali Origine:</strong> ${totalSourceAnimals.toLocaleString('it-IT')}</p>
+        <p><strong>Totale Animali Destinazione:</strong> ${totalDestAnimals.toLocaleString('it-IT')}</p>
+        <p class="mortality"><strong>Mortalità:</strong> ${mortality.toLocaleString('it-IT')} (${mortalityPercent}%)</p>
+    </div>
+    
+    <p style="text-align: center; margin-top: 50px; color: #6b7280; font-size: 12px;">
+        Report generato il ${new Date().toLocaleString('it-IT')} - FLUPSY Management System
+    </p>
+</body>
+</html>
+    `;
+    
+    // Usa puppeteer per generare PDF
+    const { pdfGenerator } = await import('../services/pdf-generator');
+    const pdfBuffer = await pdfGenerator.generateFromHTML(html, {
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      }
+    });
+    
+    // Invia PDF al client
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="vagliatura-${selection[0].selectionNumber}.pdf"`);
+    res.send(pdfBuffer);
+    
+  } catch (error) {
+    console.error("Errore durante la generazione del PDF:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore durante la generazione del PDF: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
