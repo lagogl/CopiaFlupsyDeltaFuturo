@@ -2586,7 +2586,7 @@ export default function Operations() {
                           ) : op.sizeId ? (
                             <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" 
                                   style={{ backgroundColor: sizes?.find((s: any) => s.id === op.sizeId)?.color || '#e5e7eb', color: '#111827' }}>
-                              {sizes?.find((s: any) => s.id === op.sizeId)?.code || `Size #${op.sizeId}`}
+                              {sizes?.find((s: any) => s.id === op.sizeId)?.name || `Size #${op.sizeId}`}
                             </span>
                           ) : op.animalsPerKg ? (
                             // Usa la funzione per determinare la taglia in base al numero di animali per kg
@@ -3391,11 +3391,11 @@ export default function Operations() {
                                     {cycleOps.length > 0 && (
                                       <>
                                         {cycleOps[0].size ? (
-                                          <span className="mr-1">{cycleOps[0].size.code}</span>
+                                          <span className="mr-1">{cycleOps[0].size.name}</span>
                                         ) : cycleOps[0].sizeId ? (
-                                          <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[0].sizeId)?.code || `Size #${cycleOps[0].sizeId}`}</span>
+                                          <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[0].sizeId)?.name || `Size #${cycleOps[0].sizeId}`}</span>
                                         ) : cycleOps[0].animalsPerKg ? (
-                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(parseFloat(cycleOps[0].animalsPerKg))?.code || 'Calcolata'}</span>
+                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(parseFloat(cycleOps[0].animalsPerKg))?.name || 'Calcolata'}</span>
                                         ) : (
                                           <span className="mr-1">N/D</span>
                                         )}
@@ -3421,11 +3421,11 @@ export default function Operations() {
                                     {cycleOps.length > 0 && (
                                       <>
                                         {cycleOps[cycleOps.length - 1].size ? (
-                                          <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
+                                          <span className="mr-1">{cycleOps[cycleOps.length - 1].size.name}</span>
                                         ) : cycleOps[cycleOps.length - 1].sizeId ? (
-                                          <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[cycleOps.length - 1].sizeId)?.code || `Size #${cycleOps[cycleOps.length - 1].sizeId}`}</span>
+                                          <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[cycleOps.length - 1].sizeId)?.name || `Size #${cycleOps[cycleOps.length - 1].sizeId}`}</span>
                                         ) : cycleOps[cycleOps.length - 1].animalsPerKg ? (
-                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg))?.code || 'Calcolata'}</span>
+                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg))?.name || 'Calcolata'}</span>
                                         ) : (
                                           <span className="mr-1">N/D</span>
                                         )}
