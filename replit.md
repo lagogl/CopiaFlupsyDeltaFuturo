@@ -6,6 +6,16 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (October 10, 2025)
+- **Major Refactoring Completato**: Modularizzazione di routes.ts (ridotto da 7873 a 7245 righe)
+  - Nuovo modulo: `server/modules/system/maintenance` - Route di test, debug e emergenza
+  - Nuovo modulo: `server/modules/system/database-management` - Backup, restore, export giacenze
+  - Nuovo modulo: `server/modules/reports/eco-impact` - Gestione impatto ambientale e sostenibilità
+  - Nuovo modulo: `server/modules/reports/sales-reports` - Report e statistiche vendite
+  - Utility centralizzate: `server/utils/error-handler.ts` per gestione errori unificata
+  - Servizi estratti: `server/services/basket-lot-composition.service.ts` per composizione lotti misti
+  - Pulizia import non utilizzati e codice duplicato
+
 ## System Architecture
 
 ### Frontend Architecture
