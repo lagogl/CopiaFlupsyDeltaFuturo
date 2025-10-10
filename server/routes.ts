@@ -6859,100 +6859,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // END ANALYTICS MODULE - MIGRATION COMPLETE
   // ========================================
   
-  // === Eco-Impact Routes ===
-  const ecoImpactController = new EcoImpactController();
-  
-  // API per categorie di impatto
-  app.get("/api/eco-impact/categories", ecoImpactController.getImpactCategories.bind(ecoImpactController));
-  app.post("/api/eco-impact/categories", ecoImpactController.createImpactCategory.bind(ecoImpactController));
-  
-  // API per fattori di impatto
-  app.get("/api/eco-impact/factors", ecoImpactController.getImpactFactors.bind(ecoImpactController));
-  app.post("/api/eco-impact/factors", ecoImpactController.createImpactFactor.bind(ecoImpactController));
-  
-  // API per impatto ambientale delle operazioni
-  app.get("/api/eco-impact/operations/:operationId/impacts", ecoImpactController.getOperationImpacts.bind(ecoImpactController));
-  app.post("/api/eco-impact/operations/:operationId/calculate", ecoImpactController.calculateOperationImpact.bind(ecoImpactController));
-  
-  // API per punteggio di sostenibilità FLUPSY
-  app.get("/api/eco-impact/flupsys/:flupsyId/sustainability", ecoImpactController.calculateFlupsySustainability.bind(ecoImpactController));
-  
-  // API per obiettivi di sostenibilità
-  app.get("/api/eco-impact/goals", ecoImpactController.getSustainabilityGoals.bind(ecoImpactController));
-  app.post("/api/eco-impact/goals", ecoImpactController.createSustainabilityGoal.bind(ecoImpactController));
-  
-  // API per report di sostenibilità
-  app.get("/api/eco-impact/reports", ecoImpactController.getSustainabilityReports.bind(ecoImpactController));
-  app.post("/api/eco-impact/reports", ecoImpactController.createSustainabilityReport.bind(ecoImpactController));
-  
-  // API per valori di impatto predefiniti
-  app.get("/api/eco-impact/defaults", ecoImpactController.getOperationImpactDefaults.bind(ecoImpactController));
-  app.post("/api/eco-impact/defaults", ecoImpactController.createOrUpdateOperationImpactDefault.bind(ecoImpactController));
-  app.delete("/api/eco-impact/defaults/:id", ecoImpactController.deleteOperationImpactDefault.bind(ecoImpactController));
+  // Registra il modulo ECO-IMPACT
+  const ecoImpactModule = await import('./modules/reports/eco-impact');
+  app.use('/api/eco-impact', ecoImpactModule.ecoImpactRoutes);
+  console.log('✅ Modulo ECO-IMPACT registrato su /api/eco-impact/*');
   
   // API per gestione sequenze ID database
   app.get("/api/sequences", SequenceController.getSequencesInfo);
   app.post("/api/sequences/reset", SequenceController.resetSequence);
   
-  // === Sales Reports API ===
-  app.get("/api/reports/sales", async (req, res) => {
-    try {
-      const from = req.query.from as string;
-      const to = req.query.to as string;
-      
-      if (!from || !to) {
-        return res.status(400).json({ message: "Date range required (from, to)" });
-      }
-      
-      // Query per ottenere tutte le operazioni di vendita nel periodo
-      const salesOperations = await db.select({
-        id: operations.id,
-        date: operations.date,
-        type: operations.type,
-        basketId: operations.basketId,
-        cycleId: operations.cycleId,
-        animalCount: operations.animalCount,
-        totalWeight: operations.totalWeight,
-        animalsPerKg: operations.animalsPerKg,
-        notes: operations.notes,
-        basketPhysicalNumber: baskets.physicalNumber,
-        flupsyName: flupsys.name,
-        lotSupplier: lots.supplier
-      })
-      .from(operations)
-      .leftJoin(baskets, eq(operations.basketId, baskets.id))
-      .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
-      .leftJoin(cycles, eq(operations.cycleId, cycles.id))
-      .leftJoin(lots, eq(operations.lotId, lots.id))
-      .where(
-        and(
-          inArray(operations.type, ['vendita', 'selezione-per-vendita', 'cessazione']),
-          gte(operations.date, from),
-          lte(operations.date, to)
-        )
-      )
-      .orderBy(desc(operations.date));
-      
-      // Calcola statistiche
-      const totalSales = salesOperations.length;
-      const totalAnimals = salesOperations.reduce((sum, op) => sum + (op.animalCount || 0), 0);
-      const totalWeight = salesOperations.reduce((sum, op) => sum + (op.totalWeight || 0), 0);
-      const averagePrice = totalWeight > 0 ? totalAnimals / totalWeight : 0;
-      
-      const salesStats = {
-        totalSales,
-        totalAnimals,
-        totalWeight,
-        averagePrice,
-        operations: salesOperations
-      };
-      
-      res.json(salesStats);
-    } catch (error) {
-      console.error("Error fetching sales reports:", error);
-      res.status(500).json({ message: "Failed to fetch sales reports" });
-    }
-  });
+  // Registra il modulo SALES REPORTS  
+  const salesReportsModule = await import('./modules/reports/sales-reports');
+  app.use('/api/reports', salesReportsModule.salesReportsRoutes);
+  console.log('✅ Modulo SALES REPORTS registrato su /api/reports/sales/*');
 
   // === Route per gestione posizione cestelli ===
   // app.put("/api/baskets/:id/position", updateBasketPosition);
@@ -7138,85 +7057,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sales reports - Summary
-  app.get('/api/reports/sales/summary', async (req, res) => {
-    try {
-      const { startDate, endDate } = req.query;
-      
-      if (!startDate || !endDate) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'startDate e endDate sono richiesti' 
-        });
-      }
-
-      const summary = await storage.getSalesReportsSummary(startDate as string, endDate as string);
-      res.json({ success: true, summary });
-    } catch (error) {
-      console.error('Error getting sales summary:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Sales reports - By Product
-  app.get('/api/reports/sales/by-product', async (req, res) => {
-    try {
-      const { startDate, endDate } = req.query;
-      
-      if (!startDate || !endDate) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'startDate e endDate sono richiesti' 
-        });
-      }
-
-      const reportsByProduct = await storage.getSalesReportsByProduct(startDate as string, endDate as string);
-      res.json({ success: true, reports: reportsByProduct });
-    } catch (error) {
-      console.error('Error getting sales by product:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Sales reports - By Customer
-  app.get('/api/reports/sales/by-customer', async (req, res) => {
-    try {
-      const { startDate, endDate } = req.query;
-      
-      if (!startDate || !endDate) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'startDate e endDate sono richiesti' 
-        });
-      }
-
-      const reportsByCustomer = await storage.getSalesReportsByCustomer(startDate as string, endDate as string);
-      res.json({ success: true, reports: reportsByCustomer });
-    } catch (error) {
-      console.error('Error getting sales by customer:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Sales reports - Monthly
-  app.get('/api/reports/sales/monthly', async (req, res) => {
-    try {
-      const { year } = req.query;
-      
-      if (!year) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'year è richiesto' 
-        });
-      }
-
-      const monthlyReports = await storage.getSalesReportsMonthly(parseInt(year as string));
-      res.json({ success: true, reports: monthlyReports });
-    } catch (error) {
-      console.error('Error getting monthly sales:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
 
   // === ENDPOINT SINCRONIZZAZIONE DATABASE ESTERNO ===
   app.post("/api/sync/external-database", async (req, res) => {
