@@ -396,3 +396,18 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     throw error;
   }
 }
+
+/**
+ * Invalida esplicitamente tutta la cache dei cestelli
+ * Utile per forzare l'aggiornamento dopo operazioni di popolamento FLUPSY
+ */
+export function invalidateCache(): boolean {
+  try {
+    BasketsCache.clear();
+    console.log('🔄 Cache cestelli invalidata manualmente');
+    return true;
+  } catch (error) {
+    console.error('Errore durante l\'invalidazione della cache cestelli:', error);
+    return false;
+  }
+}
