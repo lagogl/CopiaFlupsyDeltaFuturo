@@ -79,7 +79,7 @@ export default function NotificationManager() {
       targetSizeIds?: number[] 
     }) => {
       return apiRequest('/api/notification-settings/' + type, {
-        method: 'PATCH',
+        method: 'PUT',
         body: JSON.stringify({ isEnabled, targetSizeIds }),
       });
     },

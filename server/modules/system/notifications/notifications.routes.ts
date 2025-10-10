@@ -9,5 +9,6 @@ router.put("/notifications/:id/read", (req, res) => notificationsController.mark
 router.put("/notifications/read-all", (req, res) => notificationsController.markAllNotificationsAsRead(req, res));
 router.get("/notification-settings", (req, res) => notificationsController.getSettings(req, res));
 router.put("/notification-settings/:type", (req, res) => notificationsController.updateSettings(req, res));
+router.post("/notifications/test-growth", (req, res) => notificationsController.testGrowthNotifications(req, res));
 
 export default router;
