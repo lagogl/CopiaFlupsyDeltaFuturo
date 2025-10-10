@@ -262,69 +262,136 @@ export async function migrateBasketLotData(req: Request, res: Response) {
 // =============== FUNZIONI CRUD STANDARD ===============
 
 /**
- * Ottieni tutte le selezioni con dati aggregati
+ * Ottieni tutte le selezioni con dati aggregati, paginazione e filtri
  */
 export async function getSelections(req: Request, res: Response) {
   try {
-    // Recupera tutte le selezioni
-    const selectionsData = await db.select().from(selections);
+    // Parse query parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 20;
+    const screeningNumber = req.query.screeningNumber as string;
+    const dateFrom = req.query.dateFrom as string;
+    const dateTo = req.query.dateTo as string;
     
-    // Arricchisci con dati aggregati
-    const enrichedSelections = await Promise.all(selectionsData.map(async (selection) => {
-      // Conta cestelli origine
-      const sourceBaskets = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(selectionSourceBaskets)
-        .where(eq(selectionSourceBaskets.selectionId, selection.id));
+    // Build where conditions
+    const conditions = [];
+    if (screeningNumber) {
+      conditions.push(eq(selections.selectionNumber, parseInt(screeningNumber)));
+    }
+    if (dateFrom) {
+      conditions.push(sql`${selections.date} >= ${dateFrom}`);
+    }
+    if (dateTo) {
+      conditions.push(sql`${selections.date} <= ${dateTo}`);
+    }
+    
+    // Count total records
+    const totalCount = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(selections)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    
+    const total = Number(totalCount[0]?.count || 0);
+    const totalPages = Math.ceil(total / pageSize);
+    const offset = (page - 1) * pageSize;
+    
+    // Fetch paginated selections
+    const selectionsQuery = db.select()
+      .from(selections)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(sql`${selections.date} DESC, ${selections.id} DESC`)
+      .limit(pageSize)
+      .offset(offset);
       
-      // Conta cestelli destinazione  
-      const destBaskets = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(selectionDestinationBaskets)
-        .where(eq(selectionDestinationBaskets.selectionId, selection.id));
+    const selectionsData = await selectionsQuery;
+    
+    // Ottimizza con query aggregate singole per tutti i record
+    if (selectionsData.length > 0) {
+      const selectionIds = selectionsData.map(s => s.id);
       
-      // Somma animali origine
-      const sourceAnimals = await db.select({ 
-        total: sql<number>`COALESCE(SUM(animal_count), 0)` 
+      // Aggregazione cestelli origine in una singola query
+      const sourceAggregation = await db.select({
+        selectionId: selectionSourceBaskets.selectionId,
+        count: sql<number>`COUNT(*)`,
+        totalAnimals: sql<number>`COALESCE(SUM(animal_count), 0)`
       })
-        .from(selectionSourceBaskets)
-        .where(eq(selectionSourceBaskets.selectionId, selection.id));
+      .from(selectionSourceBaskets)
+      .where(sql`${selectionSourceBaskets.selectionId} IN (${sql.join(selectionIds, sql`, `)})`)
+      .groupBy(selectionSourceBaskets.selectionId);
+      
+      // Aggregazione cestelli destinazione in una singola query
+      const destAggregation = await db.select({
+        selectionId: selectionDestinationBaskets.selectionId,
+        count: sql<number>`COUNT(*)`,
+        totalAnimals: sql<number>`COALESCE(SUM(animal_count), 0)`
+      })
+      .from(selectionDestinationBaskets)
+      .where(sql`${selectionDestinationBaskets.selectionId} IN (${sql.join(selectionIds, sql`, `)})`)
+      .groupBy(selectionDestinationBaskets.selectionId);
+      
+      // Recupera tutte le taglie di riferimento in una singola query
+      const sizeIds = selectionsData
+        .filter(s => s.referenceSizeId)
+        .map(s => s.referenceSizeId);
         
-      // Somma animali destinazione
-      const destAnimals = await db.select({ 
-        total: sql<number>`COALESCE(SUM(animal_count), 0)` 
-      })
-        .from(selectionDestinationBaskets)
-        .where(eq(selectionDestinationBaskets.selectionId, selection.id));
-      
-      const totalSource = Number(sourceAnimals[0]?.total || 0);
-      const totalDest = Number(destAnimals[0]?.total || 0);
-      const mortality = totalSource - totalDest;
-      
-      // Se c'è referenceSizeId, recupera i dati della taglia
-      let referenceSize = null;
-      if (selection.referenceSizeId) {
-        const sizeData = await db.select()
+      let sizesMap: Record<number, any> = {};
+      if (sizeIds.length > 0) {
+        const sizesData = await db.select()
           .from(sizes)
-          .where(eq(sizes.id, selection.referenceSizeId))
-          .limit(1);
-        if (sizeData.length > 0) {
-          referenceSize = sizeData[0];
-        }
+          .where(sql`${sizes.id} IN (${sql.join(sizeIds, sql`, `)})`);
+        sizesMap = Object.fromEntries(sizesData.map(s => [s.id, s]));
       }
       
-      return {
-        ...selection,
-        sourceCount: Number(sourceBaskets[0]?.count || 0),
-        destinationCount: Number(destBaskets[0]?.count || 0),
-        totalSourceAnimals: totalSource,
-        totalDestAnimals: totalDest,
-        mortalityAnimals: mortality,
-        referenceSize: referenceSize
-      };
-    }));
+      // Map aggregations per ID
+      const sourceMap = Object.fromEntries(sourceAggregation.map(s => [s.selectionId, s]));
+      const destMap = Object.fromEntries(destAggregation.map(d => [d.selectionId, d]));
+      
+      // Arricchisci le selezioni con i dati aggregati
+      const enrichedSelections = selectionsData.map(selection => {
+        const source = sourceMap[selection.id];
+        const dest = destMap[selection.id];
+        
+        const totalSource = Number(source?.totalAnimals || 0);
+        const totalDest = Number(dest?.totalAnimals || 0);
+        // Evita mortalità negative con Math.max
+        const mortality = Math.max(0, totalSource - totalDest);
+        
+        return {
+          ...selection,
+          sourceCount: Number(source?.count || 0),
+          destinationCount: Number(dest?.count || 0),
+          totalSourceAnimals: totalSource,
+          totalDestAnimals: totalDest,
+          mortalityAnimals: mortality,
+          referenceSize: selection.referenceSizeId ? sizesMap[selection.referenceSizeId] : null
+        };
+      });
+      
+      return res.status(200).json({
+        success: true,
+        selections: enrichedSelections,
+        pagination: {
+          page,
+          pageSize,
+          totalCount: total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      });
+    }
     
+    // Nessun risultato
     return res.status(200).json({
       success: true,
-      selections: enrichedSelections
+      selections: [],
+      pagination: {
+        page,
+        pageSize,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
     });
   } catch (error) {
     console.error("Errore durante il recupero delle selezioni:", error);
