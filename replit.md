@@ -7,6 +7,13 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 10, 2025)
+- **CRITICAL BUG FIX - Cache Invalidation dopo Popolamento FLUPSY**: Risolto bug critico che impediva l'aggiornamento automatico dei cestelli dopo il popolamento di un FLUPSY
+  - **Problema**: Codice di invalidazione cache era nel file sbagliato (`server/routes.ts` invece di `server/modules/core/flupsys/flupsys.service.ts`)
+  - **Causa Root**: La route POST `/api/flupsys/:id/populate` è gestita dal modulo FLUPSY, non da routes.ts
+  - **Soluzione**: Aggiunto import dinamico di `invalidateCache` da `baskets-controller` in `flupsys.service.ts` metodo `populateFlupsy()` (righe ~239-248)
+  - **Pattern**: Import dinamico con try-catch per evitare che errori di cache blocchino il popolamento
+  - **Verifica**: Test confermati - cache viene invalidata correttamente (log: "✅ Cache cestelli invalidata dopo popolamento FLUPSY")
+  - **Cleanup**: Rimosso codice legacy duplicato da routes.ts (ridotto da 7193 a ~7165 righe)
 - **Major Refactoring Completato**: Modularizzazione di routes.ts (ridotto da 7873 a 7245 righe)
   - Nuovo modulo: `server/modules/system/maintenance` - Route di test, debug e emergenza
   - Nuovo modulo: `server/modules/system/database-management` - Backup, restore, export giacenze

@@ -4165,7 +4165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const basketData of basketsToCreate) {
         createdCount++;
         
-        const progressMessage = `🔧 Creazione cestello ${createdCount}/${basketsToCreate.length} - Posizione ${basketData.row}-${basketData.position}`);
+        const progressMessage = `🔧 Creazione cestello ${createdCount}/${basketsToCreate.length} - Posizione ${basketData.row}-${basketData.position}`;
         console.log(progressMessage);
         broadcastMessage("flupsy_populate_progress", { 
           message: progressMessage, 
@@ -4189,7 +4189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newBaskets.push(newBasket);
       }
       
-      const completeMessage = `✅ POPOLAMENTO COMPLETATO - ${newBaskets.length} nuovi cestelli creati nel FLUPSY "${flupsy.name}"`);
+      const completeMessage = `✅ POPOLAMENTO COMPLETATO - ${newBaskets.length} nuovi cestelli creati nel FLUPSY "${flupsy.name}"`;
       console.log(completeMessage);
       broadcastMessage("flupsy_populate_progress", { 
         message: completeMessage, 
@@ -4197,31 +4197,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         flupsyName: flupsy.name,
         totalCreated: newBaskets.length
       });
-
-      // Invia notifica WebSocket per invalidare immediatamente la cache dei cestelli
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('baskets_bulk_created', {
-          flupsyId: id,
-          flupsyName: flupsy.name,
-          basketsCreated: newBaskets.length,
-          newBaskets: newBaskets,
-          message: `${newBaskets.length} cestelli creati nel FLUPSY ${flupsy.name}`
-        });
-        console.log(`🚀 POBLAMENTO: Notifica WebSocket inviata per ${newBaskets.length} cestelli`);
-      }
-
-      // Invalida anche la cache dei cestelli nel server per aggiornamenti immediati
-      try {
-        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller");
-        if (typeof invalidateBasketsCache === 'function') {
-          invalidateBasketsCache();
-          console.log("✅ Cache cestelli invalidata dopo popolamento FLUPSY");
-        } else {
-          console.log("⚠️ Funzione invalidateCache non trovata nel controller cestelli");
-        }
-      } catch (error) {
-        console.log("⚠️ Impossibile invalidare cache cestelli:", error.message);
-      }
 
       // Restituisci il risultato
       return res.json({ 

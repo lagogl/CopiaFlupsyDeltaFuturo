@@ -233,6 +233,17 @@ export class FlupsyService {
       totalCreated: created
     });
 
+    // Invalida la cache dei cestelli per aggiornamenti immediati
+    try {
+      const { invalidateCache } = await import("../../../controllers/baskets-controller");
+      if (typeof invalidateCache === 'function') {
+        invalidateCache();
+        console.log("✅ Cache cestelli invalidata dopo popolamento FLUPSY");
+      }
+    } catch (err: any) {
+      console.log("⚠️ Errore invalidazione cache cestelli:", err.message || err);
+    }
+
     return {
       success: true,
       message: `Popolamento FLUPSY completato con successo. ${created} nuovi cestelli creati.`,
