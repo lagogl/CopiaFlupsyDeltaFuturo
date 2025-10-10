@@ -49,7 +49,7 @@ export default function ScreeningDetail() {
   const [, navigate] = useLocation();
 
   const { data: screening, isLoading } = useQuery<ScreeningDetail>({
-    queryKey: [`/api/screenings/${id}`],
+    queryKey: [`/api/selections/${id}`],
     enabled: !!id
   });
 
@@ -124,10 +124,8 @@ export default function ScreeningDetail() {
             Indietro
           </Button>
           <Button
-            onClick={() => window.open(`/api/screenings/${screening.id}/report.pdf`, '_blank')}
+            onClick={() => window.open(`/api/selections/${screening.id}/report.pdf`, '_blank')}
             data-testid="button-print-pdf"
-            disabled
-            title="Funzionalità PDF temporaneamente non disponibile"
           >
             <Download className="h-4 w-4 mr-2" />
             Stampa PDF
