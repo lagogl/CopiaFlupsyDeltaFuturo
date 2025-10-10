@@ -262,14 +262,69 @@ export async function migrateBasketLotData(req: Request, res: Response) {
 // =============== FUNZIONI CRUD STANDARD ===============
 
 /**
- * Ottieni tutte le selezioni
+ * Ottieni tutte le selezioni con dati aggregati
  */
 export async function getSelections(req: Request, res: Response) {
   try {
+    // Recupera tutte le selezioni
     const selectionsData = await db.select().from(selections);
+    
+    // Arricchisci con dati aggregati
+    const enrichedSelections = await Promise.all(selectionsData.map(async (selection) => {
+      // Conta cestelli origine
+      const sourceBaskets = await db.select({ count: sql<number>`COUNT(*)` })
+        .from(selectionSourceBaskets)
+        .where(eq(selectionSourceBaskets.selectionId, selection.id));
+      
+      // Conta cestelli destinazione  
+      const destBaskets = await db.select({ count: sql<number>`COUNT(*)` })
+        .from(selectionDestinationBaskets)
+        .where(eq(selectionDestinationBaskets.selectionId, selection.id));
+      
+      // Somma animali origine
+      const sourceAnimals = await db.select({ 
+        total: sql<number>`COALESCE(SUM(animal_count), 0)` 
+      })
+        .from(selectionSourceBaskets)
+        .where(eq(selectionSourceBaskets.selectionId, selection.id));
+        
+      // Somma animali destinazione
+      const destAnimals = await db.select({ 
+        total: sql<number>`COALESCE(SUM(animal_count), 0)` 
+      })
+        .from(selectionDestinationBaskets)
+        .where(eq(selectionDestinationBaskets.selectionId, selection.id));
+      
+      const totalSource = Number(sourceAnimals[0]?.total || 0);
+      const totalDest = Number(destAnimals[0]?.total || 0);
+      const mortality = totalSource - totalDest;
+      
+      // Se c'è referenceSizeId, recupera i dati della taglia
+      let referenceSize = null;
+      if (selection.referenceSizeId) {
+        const sizeData = await db.select()
+          .from(sizes)
+          .where(eq(sizes.id, selection.referenceSizeId))
+          .limit(1);
+        if (sizeData.length > 0) {
+          referenceSize = sizeData[0];
+        }
+      }
+      
+      return {
+        ...selection,
+        sourceCount: Number(sourceBaskets[0]?.count || 0),
+        destinationCount: Number(destBaskets[0]?.count || 0),
+        totalSourceAnimals: totalSource,
+        totalDestAnimals: totalDest,
+        mortalityAnimals: mortality,
+        referenceSize: referenceSize
+      };
+    }));
+    
     return res.status(200).json({
       success: true,
-      selections: selectionsData
+      selections: enrichedSelections
     });
   } catch (error) {
     console.error("Errore durante il recupero delle selezioni:", error);

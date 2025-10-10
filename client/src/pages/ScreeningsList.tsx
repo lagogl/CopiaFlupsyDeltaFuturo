@@ -11,22 +11,33 @@ import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface ScreeningListItem {
+interface SelectionListItem {
   id: number;
-  screeningNumber: number;
+  selectionNumber: number;
   date: string;
   purpose: string | null;
+  screeningType: string | null;
+  referenceSizeId: number | null;
   status: string;
-  sourceCount: number;
-  destinationCount: number;
-  totalSourceAnimals: number;
-  totalDestAnimals: number;
-  mortalityAnimals: number;
+  createdAt: string;
+  updatedAt: string | null;
+  notes: string | null;
+  sourceCount?: number;
+  destinationCount?: number;
+  totalSourceAnimals?: number;
+  totalDestAnimals?: number;
+  mortalityAnimals?: number;
+  referenceSize?: {
+    id: number;
+    code: string;
+    name: string;
+  };
 }
 
-interface ScreeningsResponse {
-  screenings: ScreeningListItem[];
-  pagination: {
+interface SelectionsResponse {
+  success: boolean;
+  selections: SelectionListItem[];
+  pagination?: {
     page: number;
     pageSize: number;
     totalCount: number;
@@ -51,16 +62,16 @@ export default function ScreeningsList() {
   if (dateFrom) queryParams.set('dateFrom', dateFrom);
   if (dateTo) queryParams.set('dateTo', dateTo);
 
-  const { data: response, isLoading } = useQuery<ScreeningsResponse>({
-    queryKey: ['/api/screenings', page, pageSize, screeningNumber, dateFrom, dateTo],
+  const { data: response, isLoading } = useQuery<SelectionsResponse>({
+    queryKey: ['/api/selections', page, pageSize, screeningNumber, dateFrom, dateTo],
     queryFn: async () => {
-      const res = await fetch(`/api/screenings?${queryParams.toString()}`);
-      if (!res.ok) throw new Error('Failed to fetch screenings');
+      const res = await fetch(`/api/selections?${queryParams.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch selections');
       return res.json();
     },
   });
 
-  const screenings = response?.screenings || [];
+  const screenings = response?.selections || [];
   const pagination = response?.pagination;
 
   const formatNumber = (num: number) => num.toLocaleString('it-IT');
@@ -181,14 +192,16 @@ export default function ScreeningsList() {
                   </TableHeader>
                   <TableBody>
                     {screenings.map((screening) => {
-                      const mortalityPercent = screening.totalSourceAnimals > 0
-                        ? ((screening.mortalityAnimals / screening.totalSourceAnimals) * 100).toFixed(2)
-                        : 0;
+                      const totalSource = screening.totalSourceAnimals ?? 0;
+                      const mortality = screening.mortalityAnimals ?? 0;
+                      const mortalityPercent = totalSource > 0
+                        ? ((mortality / totalSource) * 100).toFixed(2)
+                        : "0";
 
                       return (
                         <TableRow key={screening.id} data-testid={`row-screening-${screening.id}`}>
                           <TableCell className="font-medium" data-testid={`text-number-${screening.id}`}>
-                            #{screening.screeningNumber}
+                            #{screening.selectionNumber}
                           </TableCell>
                           <TableCell data-testid={`text-date-${screening.id}`}>
                             {formatDate(screening.date)}
@@ -200,25 +213,25 @@ export default function ScreeningsList() {
                             {screening.referenceSize?.code || '-'}
                           </TableCell>
                           <TableCell className="text-right" data-testid={`text-source-count-${screening.id}`}>
-                            {screening.sourceCount}
+                            {screening.sourceCount ?? 0}
                           </TableCell>
                           <TableCell className="text-right" data-testid={`text-dest-count-${screening.id}`}>
-                            {screening.destinationCount}
+                            {screening.destinationCount ?? 0}
                           </TableCell>
                           <TableCell className="text-right" data-testid={`text-source-animals-${screening.id}`}>
-                            {formatNumber(screening.totalSourceAnimals)}
+                            {formatNumber(screening.totalSourceAnimals ?? 0)}
                           </TableCell>
                           <TableCell className="text-right" data-testid={`text-dest-animals-${screening.id}`}>
-                            {formatNumber(screening.totalDestAnimals)}
+                            {formatNumber(screening.totalDestAnimals ?? 0)}
                           </TableCell>
                           <TableCell className="text-right" data-testid={`text-mortality-${screening.id}`}>
                             <Badge variant={Number(mortalityPercent) > 10 ? "destructive" : "secondary"}>
-                              {formatNumber(screening.mortalityAnimals)} ({mortalityPercent}%)
+                              {formatNumber(mortality)} ({mortalityPercent}%)
                             </Badge>
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex gap-2 justify-center">
-                              <Link href={`/screenings/${screening.id}`}>
+                              <Link href={`/selections/${screening.id}`}>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -231,7 +244,7 @@ export default function ScreeningsList() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => window.open(`/api/screenings/${screening.id}/report.pdf`, '_blank')}
+                                onClick={() => window.open(`/api/selections/${screening.id}/report.pdf`, '_blank')}
                                 data-testid={`button-pdf-${screening.id}`}
                               >
                                 <Download className="h-4 w-4 mr-1" />
