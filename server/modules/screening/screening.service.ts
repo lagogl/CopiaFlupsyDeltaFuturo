@@ -174,15 +174,23 @@ export class ScreeningService {
           id: flupsys.id,
           name: flupsys.name,
           location: flupsys.location
+        },
+        size: {
+          id: sizes.id,
+          code: sizes.code,
+          name: sizes.name,
+          minAnimalsPerKg: sizes.minAnimalsPerKg,
+          maxAnimalsPerKg: sizes.maxAnimalsPerKg
         }
       })
       .from(screeningSourceBaskets)
       .leftJoin(baskets, eq(screeningSourceBaskets.basketId, baskets.id))
       .leftJoin(cycles, eq(screeningSourceBaskets.cycleId, cycles.id))
       .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .leftJoin(sizes, eq(screeningSourceBaskets.sizeId, sizes.id))
       .where(eq(screeningSourceBaskets.screeningId, id));
 
-    // Destination baskets con dettagli
+    // Destination baskets con dettagli (size viene dalla referenceSize della vagliatura)
     const destinationBaskets = await db
       .select({
         id: screeningDestinationBaskets.id,
@@ -230,8 +238,10 @@ export class ScreeningService {
         }
       })
       .from(screeningDestinationBaskets)
+      .leftJoin(screeningOperations, eq(screeningDestinationBaskets.screeningId, screeningOperations.id))
       .leftJoin(baskets, eq(screeningDestinationBaskets.basketId, baskets.id))
       .leftJoin(cycles, eq(screeningDestinationBaskets.cycleId, cycles.id))
+      .leftJoin(sizes, eq(screeningOperations.referenceSizeId, sizes.id))
       .leftJoin(flupsys, eq(screeningDestinationBaskets.flupsyId, flupsys.id))
       .where(eq(screeningDestinationBaskets.screeningId, id));
 
