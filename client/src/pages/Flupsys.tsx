@@ -238,12 +238,22 @@ export default function Flupsys() {
           description: data.message || "Il FLUPSY è già completamente popolato",
           variant: "default",
         });
+        // Chiudi automaticamente il dialog dopo 2 secondi
+        setTimeout(() => {
+          setIsPopulateDialogOpen(false);
+          setPopulateResult(null);
+        }, 2000);
       } else {
         toast({
           title: "Popolamento completato",
           description: data.message || `FLUPSY popolato con successo - ${data.totalCreated || 0} nuovi cestelli creati`,
           variant: "success",
         });
+        // Chiudi automaticamente il dialog dopo 2 secondi
+        setTimeout(() => {
+          setIsPopulateDialogOpen(false);
+          setPopulateResult(null);
+        }, 2000);
       }
     },
     onError: (error: any) => {
