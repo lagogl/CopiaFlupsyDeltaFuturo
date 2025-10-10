@@ -408,20 +408,121 @@ export async function getSelections(req: Request, res: Response) {
 export async function getSelectionById(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const selection = await db.select().from(selections)
+    
+    // Recupera la selezione base
+    const [selection] = await db.select().from(selections)
       .where(eq(selections.id, Number(id)))
       .limit(1);
     
-    if (!selection || selection.length === 0) {
+    if (!selection) {
       return res.status(404).json({
         success: false,
         error: "Selezione non trovata"
       });
     }
 
+    // Recupera la taglia di riferimento se presente
+    let referenceSize = null;
+    if (selection.referenceSizeId) {
+      const [size] = await db.select().from(sizes)
+        .where(eq(sizes.id, selection.referenceSizeId))
+        .limit(1);
+      if (size) {
+        referenceSize = {
+          id: size.id,
+          code: size.code,
+          name: size.name
+        };
+      }
+    }
+
+    // Recupera i cestelli di origine (solo dalla tabella)
+    const sourceBasketRows = await db.select().from(selectionSourceBaskets)
+      .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+
+    // Arricchisci con flupsyName
+    const sourceBaskets = await Promise.all(sourceBasketRows.map(async (sb) => {
+      let flupsyName = null;
+      // Recupera basket per ottenere flupsyId
+      const [basket] = await db.select().from(baskets)
+        .where(eq(baskets.id, sb.basketId))
+        .limit(1);
+      
+      if (basket?.flupsyId) {
+        const [flupsy] = await db.select().from(flupsys)
+          .where(eq(flupsys.id, basket.flupsyId))
+          .limit(1);
+        flupsyName = flupsy?.name || null;
+      }
+      return { ...sb, flupsyName };
+    }));
+
+    // Recupera i cestelli di destinazione (solo dalla tabella)
+    const destBasketRows = await db.select().from(selectionDestinationBaskets)
+      .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
+
+    // Arricchisci con flupsyName, row, position e size
+    const destinationBaskets = await Promise.all(destBasketRows.map(async (destBasket) => {
+      let flupsyName = null;
+      let flupsyId = null;
+      let row = null;
+      let position = null;
+      let size = null;
+      
+      // Recupera basket per ottenere flupsyId, row e position
+      const [basket] = await db.select().from(baskets)
+        .where(eq(baskets.id, destBasket.basketId))
+        .limit(1);
+      
+      if (basket) {
+        flupsyId = basket.flupsyId;
+        row = basket.row;
+        position = basket.position;
+        
+        if (basket.flupsyId) {
+          const [flupsy] = await db.select().from(flupsys)
+            .where(eq(flupsys.id, basket.flupsyId))
+            .limit(1);
+          flupsyName = flupsy?.name || null;
+        }
+      }
+      
+      if (destBasket.sizeId) {
+        const [sizeData] = await db.select().from(sizes)
+          .where(eq(sizes.id, destBasket.sizeId))
+          .limit(1);
+        if (sizeData) {
+          size = {
+            id: sizeData.id,
+            code: sizeData.code,
+            name: sizeData.name
+          };
+        }
+      }
+      
+      return {
+        ...destBasket,
+        flupsyId,
+        flupsyName,
+        row,
+        position,
+        positionAssigned: row !== null && position !== null,
+        size
+      };
+    }));
+
+    // Costruisce la risposta con dati completi
+    const detailedSelection = {
+      ...selection,
+      screeningNumber: selection.selectionNumber,
+      referenceSize,
+      sourceBaskets,
+      destinationBaskets
+    };
+
     return res.status(200).json({
       success: true,
-      selection: selection[0]
+      selection: detailedSelection
     });
   } catch (error) {
     console.error("Errore durante il recupero della selezione:", error);
