@@ -151,8 +151,11 @@ export function createSecureApiLogger() {
     const path = req.path;
     let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-    // Only capture response in development for API endpoints
-    if (config.enableApiResponseLogging && path.startsWith("/api")) {
+    // Skip logging for binary files (PDF, images, etc.)
+    const isBinaryFile = path.endsWith('.pdf') || path.endsWith('.jpg') || path.endsWith('.png') || path.endsWith('.zip');
+    
+    // Only capture response in development for API endpoints (excluding binary files)
+    if (config.enableApiResponseLogging && path.startsWith("/api") && !isBinaryFile) {
       const originalResJson = res.json;
       res.json = function (bodyJson, ...args) {
         capturedJsonResponse = bodyJson;

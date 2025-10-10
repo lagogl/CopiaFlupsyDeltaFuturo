@@ -1594,10 +1594,17 @@ export async function generatePDFReport(req: Request, res: Response) {
       }
     });
     
+    // Converti Uint8Array in Buffer (puppeteer restituisce Uint8Array)
+    const buffer = Buffer.from(pdfBuffer);
+    
     // Invia PDF al client
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="vagliatura-${selection[0].selectionNumber}.pdf"`);
-    res.send(pdfBuffer);
+    res.status(200);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="vagliatura-${selection[0].selectionNumber}.pdf"`,
+      'Content-Length': buffer.length
+    });
+    res.end(buffer);
     
   } catch (error) {
     console.error("Errore durante la generazione del PDF:", error);
