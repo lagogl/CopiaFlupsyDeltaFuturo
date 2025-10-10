@@ -36,6 +36,7 @@ import BasketSelection from "@/pages/BasketSelection";
 import ExportPage from "@/pages/ExportPage";
 import DiarioDiBordo from "@/pages/DiarioDiBordo";
 import NotificationSettings from "@/pages/NotificationSettings";
+import NotificationManager from "@/pages/NotificationManager";
 import EcoImpact from "@/pages/EcoImpact";
 import SalesReports from "@/pages/SalesReports";
 import AuthPage from "@/pages/AuthPage";
@@ -118,7 +119,7 @@ function Router() {
       <ProtectedRoute path="/backup" component={BackupPage} requiredRole="admin" />
       <ProtectedRoute path="/diario-di-impianto" component={DiarioDiBordo}/>
       <ProtectedRoute path="/diario-di-bordo" component={DiarioDiBordo}/>
-      <ProtectedRoute path="/notification-settings" component={NotificationSettings} />
+      <ProtectedRoute path="/notification-settings" component={NotificationManager} />
       <ProtectedRoute path="/amministrazione-utilita" component={AmministrazioneUtilita} requiredRole="admin" />
       <ProtectedRoute path="/eco-impact" component={EcoImpact}/>
       <ProtectedRoute path="/sales-reports" component={SalesReports}/>
