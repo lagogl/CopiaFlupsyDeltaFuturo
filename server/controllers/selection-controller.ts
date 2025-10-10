@@ -1210,7 +1210,7 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             saleNotes += ` - LOTTO MISTO: ${compositionDetails}`;
           }
           
-          await tx.insert(operations).values({
+          const [saleOperation] = await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
             basketId: destBasket.basketId,
@@ -1227,7 +1227,25 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             lotId: primaryLotId, // ✅ LOTTO DOMINANTE
             metadata: operationMetadata,
             notes: saleNotes
-          });
+          }).returning();
+          
+          // Crea notifica per l'operazione di vendita
+          if (saleOperation && req.app?.locals?.createSaleNotification) {
+            try {
+              console.log(`📧 Creazione notifica vendita per operazione ${saleOperation.id}...`);
+              req.app.locals.createSaleNotification(saleOperation.id)
+                .then((notification: any) => {
+                  if (notification) {
+                    console.log(`✅ Notifica vendita ${notification.id} creata con successo`);
+                  }
+                })
+                .catch((err: any) => {
+                  console.error(`❌ Errore creazione notifica vendita:`, err);
+                });
+            } catch (err) {
+              console.error(`❌ Errore durante creazione notifica vendita:`, err);
+            }
+          }
 
           // Chiudi ciclo per vendita
           await tx.update(cycles)
