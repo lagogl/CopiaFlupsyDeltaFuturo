@@ -1639,7 +1639,7 @@ export async function generatePDFReport(req: Request, res: Response) {
                 <tr>
                     <td>#${b.basketId}</td>
                     <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
-                    <td>${(b.weight || 0).toFixed(2)}</td>
+                    <td>${(b.totalWeight || 0).toFixed(2)}</td>
                     <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
                 </tr>
             `).join('')}
@@ -1661,7 +1661,7 @@ export async function generatePDFReport(req: Request, res: Response) {
                 <tr>
                     <td>#${b.basketId}</td>
                     <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
-                    <td>${(b.weight || 0).toFixed(2)}</td>
+                    <td>${(b.totalWeight || 0).toFixed(2)}</td>
                     <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
                 </tr>
             `).join('')}
