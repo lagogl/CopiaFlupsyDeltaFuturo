@@ -36,22 +36,14 @@ import {
   checkCyclesForTP3000 
 } from "./controllers/growth-notification-handler";
 
-// Importazione dei controller
-import * as SelectionController from "./controllers/selection-controller";
-import * as ScreeningController from "./controllers/screening-controller";
-// WhatsApp controller rimosso
-import * as EmailController from "./controllers/email-controller";
-import * as TelegramController from "./controllers/telegram-controller";
+// Importazione dei controller ancora utilizzati
 import * as NotificationController from "./controllers/notification-controller";
-// import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { LotLifecycleController } from "./controllers/lot-lifecycle-controller";
 
 // Import utility centralizzate
 import { sendError, sendSuccess } from "./utils/error-handler";
-import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
-import * as AnalyticsController from "./controllers/analytics-controller";
 import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/operations-unified-controller";
 
 // 🎯 MODULI ORGANIZZATI
@@ -60,8 +52,6 @@ import { cyclesRoutes } from "./modules/operations/cycles";
 import { registerScreeningRoutes } from "./modules/screening/screening.routes";
 import { registerAnalyticsRoutes } from "./modules/analytics/analytics.routes";
 import { registerIntegrationsRoutes } from "./modules/integrations/integrations.routes";
-// import { updateBasketPosition } from "./controllers/basket-position-controller";
-// import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 import { checkDatabaseIntegrityHandler } from "./controllers/database-integrity-controller";
 import fattureInCloudRouter from "./controllers/fatture-in-cloud-controller";
@@ -70,15 +60,6 @@ import fattureInCloudRouter from "./controllers/fatture-in-cloud-controller";
 // API esterne disabilitate
 // import { registerExternalApiRoutes } from "./external-api-routes";
 import { execFile } from 'child_process';
-import { 
-  createDatabaseBackup, 
-  restoreDatabaseFromBackup, 
-  getAvailableBackups,
-  getBackupFilePath,
-  generateFullDatabaseDump,
-  restoreDatabaseFromUploadedFile,
-  deleteBackup
-} from './database-service';
 import { 
   insertFlupsySchema,
   insertBasketSchema, 
@@ -6158,9 +6139,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registra le route per cancellare e completare le selezioni
   implementSelectionRoutes(app, db);
   
-  // === Route per operazioni di vagliatura ===
-  app.post("/api/screening/prepare", ScreeningController.prepareScreeningOperation);
-  app.post("/api/screening/execute", ScreeningController.executeScreeningOperation);
   
   // === Route per storico vagliature (lista e PDF) ===
   // Lista vagliature completate con dettagli aggregati
@@ -6873,11 +6851,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/reports', salesReportsModule.salesReportsRoutes);
   console.log('✅ Modulo SALES REPORTS registrato su /api/reports/sales/*');
 
-  // === Route per gestione posizione cestelli ===
-  // app.put("/api/baskets/:id/position", updateBasketPosition);
-
-  // Endpoint per ottenere le posizioni disponibili in un flupsy
-  // app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
 
   // Middleware anti-cache per API critiche
   function forceNoCacheHeaders(res: any) {
