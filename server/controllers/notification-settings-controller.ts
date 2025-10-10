@@ -38,10 +38,13 @@ export async function updateNotificationSetting(req: Request, res: Response) {
   const { type } = req.params;
   const { isEnabled, targetSizeIds } = req.body;
 
+  console.log('📝 Update notification setting:', { type, isEnabled, targetSizeIds, body: req.body });
+
   if (typeof isEnabled !== 'boolean') {
+    console.error('❌ isEnabled validation failed:', { isEnabled, type: typeof isEnabled });
     return res.status(400).json({
       success: false,
-      error: "Il valore 'isEnabled' deve essere un booleano"
+      error: `Il valore 'isEnabled' deve essere un booleano, ricevuto: ${typeof isEnabled}`
     });
   }
 
