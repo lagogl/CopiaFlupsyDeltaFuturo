@@ -255,7 +255,7 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     console.log(`🔍 CTE PARAMS DEBUG:`, filterParams);
     const startQueryTime = Date.now();
     
-    const queryResult = await db.execute(sql.raw(cteQuery, filterParams));
+    const queryResult = await db.execute(sql.raw(cteQuery));
     const queryTime = Date.now() - startQueryTime;
     console.log(`🚀 CTE: Query completata in ${queryTime}ms`);
     
