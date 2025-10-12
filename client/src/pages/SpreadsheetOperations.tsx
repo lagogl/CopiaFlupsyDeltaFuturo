@@ -574,6 +574,7 @@ export default function SpreadsheetOperations() {
         return {
           basketId: basket.id,
           physicalNumber: basket.physicalNumber,
+          currentCycleId: basket.currentCycleId, // ✅ Aggiungi ID ciclo attivo del cestello
           type: selectedOperationType,
           date: operationDate,
           // CAMPI OBBLIGATORI - usa il lotto dalla prima attivazione del cestello
