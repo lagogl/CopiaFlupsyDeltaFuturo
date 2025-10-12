@@ -3,7 +3,7 @@ import { it } from 'date-fns/locale';
 import { sendGmailEmail, getEmailRecipients } from './gmail-service';
 import { db } from '../db';
 import { eq } from 'drizzle-orm';
-import { advancedSales, ddtLines } from '@shared/schema';
+import { advancedSales, ddtRighe } from '@shared/schema';
 
 /**
  * Genera PDF DDT (riutilizza logica esistente)
@@ -38,8 +38,8 @@ async function generateDDTPdf(saleId: number): Promise<Buffer> {
   }
   
   // Recupera righe DDT
-  const lines = await db.query.ddtLines.findMany({
-    where: eq(ddtLines.ddtId, sale.ddtId!),
+  const lines = await db.query.ddtRighe.findMany({
+    where: eq(ddtRighe.ddtId, sale.ddtId!),
     with: {
       size: true
     }
@@ -176,8 +176,8 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
     }
     
     // Recupera righe DDT
-    const lines = await db.query.ddtLines.findMany({
-      where: eq(ddtLines.ddtId, sale.ddtId!),
+    const lines = await db.query.ddtRighe.findMany({
+      where: eq(ddtRighe.ddtId, sale.ddtId!),
       with: {
         size: true
       }
