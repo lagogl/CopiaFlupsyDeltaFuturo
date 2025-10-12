@@ -368,20 +368,25 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
         }
       }
       
-      // Debug: verifica campi indirizzo dall'API (primi 3 clienti)
-      if (allClienti.indexOf(clienteFIC) < 3) {
-        console.log(`🔍 DEBUG Cliente "${clienteFIC.name}":`, {
-          address_city: clienteFIC.address_city,
-          address_postal_code: clienteFIC.address_postal_code,
-          address_province: clienteFIC.address_province
-        });
+      // Estrai CAP e Città dal campo address_city
+      // Fatture in Cloud spesso include il CAP nella città (es: "45010 Rosolina RO, Italia")
+      let cap = clienteFIC.address_postal_code || '';
+      let comune = clienteFIC.address_city || '';
+      
+      if (!cap && comune) {
+        // Cerca CAP all'inizio della stringa città (5 cifre)
+        const capMatch = comune.match(/^(\d{5})\s+(.+)/);
+        if (capMatch) {
+          cap = capMatch[1];
+          comune = capMatch[2]; // Rimuovi CAP dalla città
+        }
       }
       
       const datiCliente = {
         denominazione: clienteFIC.name || 'N/A',
         indirizzo: clienteFIC.address_street || '',
-        comune: clienteFIC.address_city || '',
-        cap: clienteFIC.address_postal_code || '',
+        comune: comune,
+        cap: cap,
         provincia: clienteFIC.address_province || '',
         paese: clienteFIC.country || 'Italia',
         email: clienteFIC.email || '',
