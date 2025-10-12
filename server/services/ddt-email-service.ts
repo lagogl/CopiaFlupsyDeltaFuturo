@@ -303,7 +303,7 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
     
     // Invia email con allegato
     await sendGmailEmail({
-      to: recipients,
+      to: recipients.join(', '), // Converti array in stringa separata da virgole
       subject: `✅ DDT Inviato - ${ddtData.clienteNome || 'Cliente'} - N° ${ddtData.numero} - ${dateFormatted}`,
       html,
       attachments: [{
