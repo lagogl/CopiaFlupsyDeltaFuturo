@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useWebSocketMessage } from '@/lib/websocket';
 import { 
   Settings, 
   CloudIcon, 
@@ -23,7 +25,8 @@ import {
   Building,
   RefreshCw,
   FileCheck,
-  Save
+  Save,
+  Loader2
 } from 'lucide-react';
 
 interface ConfigurationType {
@@ -61,6 +64,31 @@ const FattureInCloudConfig: React.FC = () => {
   const [companyId, setCompanyId] = useState('');
   const [apiToken, setApiToken] = useState('');
   const [authMode, setAuthMode] = useState<'oauth' | 'token'>('token');
+  
+  // Stati per il progresso della sincronizzazione
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [syncMessage, setSyncMessage] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Hook per ascoltare messaggi WebSocket di progresso sincronizzazione
+  useWebSocketMessage<any>('fic_sync_progress', (data) => {
+    console.log('Progresso sincronizzazione FIC:', data);
+    
+    if (data) {
+      setSyncProgress(data.progress || 0);
+      setSyncMessage(data.message || '');
+      setIsSyncing(data.step !== 'complete');
+      
+      // Quando la sincronizzazione è completa, aggiorna la lista clienti
+      if (data.step === 'complete') {
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/clients'] });
+          setSyncProgress(0);
+          setSyncMessage('');
+        }, 2000);
+      }
+    }
+  });
 
   // Gestione parametri OAuth2 di ritorno
   useEffect(() => {
@@ -173,6 +201,10 @@ const FattureInCloudConfig: React.FC = () => {
   // Mutation per sincronizzare i clienti
   const syncClientsMutation = useMutation({
     mutationFn: async () => {
+      setIsSyncing(true);
+      setSyncProgress(0);
+      setSyncMessage('Avvio sincronizzazione...');
+      
       const response = await fetch('/api/fatture-in-cloud/clients/sync', {
         method: 'POST'
       });
@@ -187,6 +219,9 @@ const FattureInCloudConfig: React.FC = () => {
       });
     },
     onError: (error: any) => {
+      setIsSyncing(false);
+      setSyncProgress(0);
+      setSyncMessage('');
       toast({
         title: "Errore sincronizzazione",
         description: error.message,
@@ -901,10 +936,10 @@ const FattureInCloudConfig: React.FC = () => {
                 <span>Management Clienti</span>
                 <Button
                   onClick={() => syncClientsMutation.mutate()}
-                  disabled={syncClientsMutation.isPending || !isAuthenticated()}
+                  disabled={isSyncing || !isAuthenticated()}
                 >
-                  {syncClientsMutation.isPending ? (
-                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                  {isSyncing ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   ) : (
                     <RotateCcw className="w-4 h-4 mr-2" />
                   )}
@@ -912,6 +947,20 @@ const FattureInCloudConfig: React.FC = () => {
                 </Button>
               </CardTitle>
             </CardHeader>
+            
+            {/* Barra di progresso sincronizzazione */}
+            {isSyncing && (
+              <div className="px-6 pb-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">{syncMessage}</span>
+                    <span className="font-medium">{syncProgress}%</span>
+                  </div>
+                  <Progress value={syncProgress} className="h-2" />
+                </div>
+              </div>
+            )}
+            
             <CardContent>
               {clientsQuery.isLoading ? (
                 <div className="flex items-center justify-center p-8">

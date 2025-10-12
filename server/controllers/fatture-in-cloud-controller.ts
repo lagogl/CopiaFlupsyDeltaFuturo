@@ -311,6 +311,9 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
   try {
     await refreshTokenIfNeeded();
     
+    // Importa la funzione di broadcast WebSocket
+    const { broadcastMessage } = await import("../websocket");
+    
     // Recupera tutti i clienti gestendo la paginazione
     let allClienti: any[] = [];
     let currentPage = 1;
@@ -318,6 +321,11 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
     const perPage = 100;
     
     console.log('🔄 Inizio sincronizzazione clienti con paginazione...');
+    broadcastMessage("fic_sync_progress", { 
+      message: "Recupero clienti da Fatture in Cloud...", 
+      step: "fetch", 
+      progress: 0 
+    });
     
     while (hasMorePages) {
       const response = await withRetry(() => 
@@ -334,6 +342,13 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
       
       console.log(`📄 Pagina ${currentPage}/${lastPage} - Recuperati ${pageData.length} clienti (Totale finora: ${allClienti.length}${total ? `/${total}` : ''})`);
       
+      // Notifica progresso recupero
+      broadcastMessage("fic_sync_progress", { 
+        message: `Recupero pagina ${currentPage}/${lastPage} - ${allClienti.length} clienti finora...`, 
+        step: "fetch", 
+        progress: Math.round((currentPage / lastPage) * 30) // 0-30% per il fetch
+      });
+      
       // Condizioni di stop: ultima pagina raggiunta o meno risultati di per_page
       hasMorePages = currentPage < lastPage && pageData.length === perPage;
       currentPage++;
@@ -346,11 +361,17 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
     }
     
     console.log(`✅ Recuperati ${allClienti.length} clienti totali da Fatture in Cloud`);
+    broadcastMessage("fic_sync_progress", { 
+      message: `Recuperati ${allClienti.length} clienti. Inizio sincronizzazione...`, 
+      step: "sync", 
+      progress: 30 
+    });
     
     let clientiAggiornati = 0;
     let clientiCreati = 0;
     
-    for (const clienteFIC of allClienti) {
+    for (let i = 0; i < allClienti.length; i++) {
+      const clienteFIC = allClienti[i];
       // Cerca cliente esistente per P.IVA o denominazione
       let clienteEsistente = null;
       
@@ -420,7 +441,31 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
         await db.insert(clienti).values(datiCliente);
         clientiCreati++;
       }
+      
+      // Notifica progresso ogni 5 clienti o all'ultimo
+      if ((i + 1) % 5 === 0 || i === allClienti.length - 1) {
+        const syncProgress = 30 + Math.round(((i + 1) / allClienti.length) * 70); // 30-100%
+        broadcastMessage("fic_sync_progress", { 
+          message: `Sincronizzazione: ${i + 1}/${allClienti.length} clienti (${clientiCreati} nuovi, ${clientiAggiornati} aggiornati)`, 
+          step: "sync", 
+          progress: syncProgress,
+          current: i + 1,
+          total: allClienti.length,
+          created: clientiCreati,
+          updated: clientiAggiornati
+        });
+      }
     }
+    
+    // Notifica completamento
+    broadcastMessage("fic_sync_progress", { 
+      message: `✅ Sincronizzazione completata: ${clientiCreati} nuovi, ${clientiAggiornati} aggiornati`, 
+      step: "complete", 
+      progress: 100,
+      created: clientiCreati,
+      updated: clientiAggiornati,
+      total: allClienti.length
+    });
     
     res.json({
       success: true,
