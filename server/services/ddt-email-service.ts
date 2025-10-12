@@ -3,7 +3,7 @@ import { it } from 'date-fns/locale';
 import { sendGmailEmail, getEmailRecipients } from './gmail-service';
 import { db } from '../db';
 import { eq } from 'drizzle-orm';
-import { advancedSales, ddtRighe, ddt } from '@shared/schema';
+import { advancedSales, ddtRighe, ddt, saleBags } from '@shared/schema';
 
 /**
  * Genera PDF DDT (riutilizza logica esistente)
@@ -12,25 +12,9 @@ async function generateDDTPdf(saleId: number): Promise<Buffer> {
   const PDFDocument = require('pdfkit');
   const { getCompanyLogo } = await import('./logo-service');
   
-  // Recupera dati vendita con DDT collegato
+  // Recupera dati vendita (query semplice senza relazioni nidificate)
   const sale = await db.query.advancedSales.findFirst({
-    where: eq(advancedSales.id, saleId),
-    with: {
-      bags: {
-        with: {
-          allocations: {
-            with: {
-              basket: {
-                with: {
-                  flupsy: true,
-                  size: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    where: eq(advancedSales.id, saleId)
   });
   
   if (!sale || !sale.ddtId) {
@@ -155,30 +139,19 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
       return;
     }
     
-    // Recupera dati vendita completi
+    // Recupera dati vendita (query semplice senza relazioni nidificate)
     const sale = await db.query.advancedSales.findFirst({
-      where: eq(advancedSales.id, saleId),
-      with: {
-        bags: {
-          with: {
-            allocations: {
-              with: {
-                basket: {
-                  with: {
-                    flupsy: true,
-                    size: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+      where: eq(advancedSales.id, saleId)
     });
     
     if (!sale || !sale.ddtId) {
       throw new Error(`Vendita ${saleId} o DDT non trovato`);
     }
+    
+    // Recupera sacchi separatamente
+    const bags = await db.query.saleBags.findMany({
+      where: eq(saleBags.advancedSaleId, saleId)
+    });
 
     // Recupera DDT principale
     const [ddtData] = await db.select().from(ddt).where(eq(ddt.id, sale.ddtId)).limit(1);
