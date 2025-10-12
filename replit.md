@@ -125,3 +125,9 @@ Preferred communication style: Simple, everyday language.
   - **Frontend**: `/fatture-in-cloud` page (FattureInCloudConfig.tsx) for configuration and management
   - **Secrets**: FATTURE_IN_CLOUD_CLIENT_ID, FATTURE_IN_CLOUD_CLIENT_SECRET, FATTURE_IN_CLOUD_COMPANY_ID stored in Replit secrets
   - **Database Schema**: New `fatture_in_cloud_config` table added for dedicated OAuth2 configuration storage (October 2025)
+  - **DDT Transport Fields** (October 12, 2025): Critical field names discovered after extensive testing:
+    - ✅ **CORRECT**: `dn_ai_packages_number` (string, e.g., `"2"`) - Delivery Note Accompanying Invoice package count
+    - ✅ **CORRECT**: `dn_ai_weight` (string, e.g., `"34.80"`) - Delivery Note Accompanying Invoice weight
+    - Fields must be at **root level** of document payload, NOT in nested objects
+    - Both fields require **string type**, not numbers (API validation fails with numeric values)
+    - ❌ Failed attempts: `delivery_note_*` in extra_data, `ddt_transport.*` object, numeric `dn_ai_packages_number`
