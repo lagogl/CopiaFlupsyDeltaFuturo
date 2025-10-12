@@ -1761,7 +1761,7 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     // Recupera righe DDT
     const righe = await db.select().from(ddtRighe).where(eq(ddtRighe.ddtId, parseInt(ddtId))).orderBy(ddtRighe.id);
 
-    // Prepara payload per Fatture in Cloud con oggetto ddt_transport
+    // Prepara payload per Fatture in Cloud con campi DN_AI (Delivery Note Accompanying Invoice)
     const ddtPayload = {
       data: {
         type: 'delivery_note',
@@ -1778,11 +1778,8 @@ export async function sendDDTToFIC(req: Request, res: Response) {
         date: ddtData.data,
         number: ddtData.numero,
         numeration: '/ddt',
-        ddt_transport: {
-          number_of_packages: ddtData.totaleColli || 0,
-          weight: ddtData.pesoTotale || "0",
-          weight_uom: "kg"
-        },
+        dn_ai_packages_number: ddtData.totaleColli || null,
+        dn_ai_weight: ddtData.pesoTotale || null,
         items_list: righe.map(riga => ({
           name: riga.descrizione,
           qty: parseFloat(riga.quantita || '0'),
@@ -1794,16 +1791,18 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     
     // Invia a Fatture in Cloud
     console.log(`🚀 Invio DDT ${ddtData.numero} a Fatture in Cloud...`);
-    console.log(`📦 Payload FIC ddt_transport:`, JSON.stringify({
-      number_of_packages: ddtPayload.data.ddt_transport.number_of_packages,
-      weight: ddtPayload.data.ddt_transport.weight,
-      weight_uom: ddtPayload.data.ddt_transport.weight_uom,
+    console.log(`📦 Payload FIC DN_AI:`, JSON.stringify({
+      dn_ai_packages_number: ddtPayload.data.dn_ai_packages_number,
+      dn_ai_weight: ddtPayload.data.dn_ai_weight,
       items_count: ddtPayload.data.items_list.length
     }, null, 2));
     const ficResponse = await ficApiRequest('POST', companyId, accessToken, '/issued_documents', ddtPayload);
     
     console.log(`✅ DDT inviato con successo! FIC ID: ${ficResponse.data.data.id}`);
-    console.log(`📊 Risposta FIC COMPLETA:`, JSON.stringify(ficResponse.data.data, null, 2));
+    console.log(`📊 Risposta FIC DN_AI:`, JSON.stringify({
+      dn_ai_packages_number: ficResponse.data.data.dn_ai_packages_number,
+      dn_ai_weight: ficResponse.data.data.dn_ai_weight
+    }, null, 2));
     
     // Aggiorna DDT con ID esterno
     await db.update(ddt).set({
