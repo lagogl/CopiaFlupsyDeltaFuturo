@@ -1778,7 +1778,7 @@ export async function sendDDTToFIC(req: Request, res: Response) {
         date: ddtData.data,
         number: ddtData.numero,
         numeration: '/ddt',
-        dn_ai_packages_number: ddtData.totaleColli || null,
+        dn_ai_packages_number: ddtData.totaleColli ? ddtData.totaleColli.toString() : null,
         dn_ai_weight: ddtData.pesoTotale || null,
         items_list: righe.map(riga => ({
           name: riga.descrizione,
