@@ -341,10 +341,15 @@ export async function configureBags(req: Request, res: Response) {
         
         // Validazione peso loss (max 1.5kg = 1500g)
         const weightLossGrams = Math.min(bag.weightLoss || 0, 1500);
-        const finalWeight = bag.originalWeight - weightLossGrams;
+        const finalWeightGrams = bag.originalWeight - weightLossGrams;
+        
+        // Converti grammi → kg per salvare nel database
+        const finalWeightKg = finalWeightGrams / 1000;
+        const originalWeightKg = bag.originalWeight / 1000;
+        const weightLossKg = weightLossGrams / 1000;
         
         // Ricalcola animals per kg con limite 5%
-        let newAnimalsPerKg = bag.animalCount / (finalWeight / 1000);
+        let newAnimalsPerKg = bag.animalCount / finalWeightKg;
         const maxVariation = bag.originalAnimalsPerKg * 0.05;
         
         if (Math.abs(newAnimalsPerKg - bag.originalAnimalsPerKg) > maxVariation) {
@@ -360,9 +365,9 @@ export async function configureBags(req: Request, res: Response) {
           advancedSaleId: parseInt(saleId),
           bagNumber: i + 1,
           sizeCode: finalSizeCode,
-          totalWeight: finalWeight,
-          originalWeight: bag.originalWeight,
-          weightLoss: weightLossGrams,
+          totalWeight: finalWeightKg,
+          originalWeight: originalWeightKg,
+          weightLoss: weightLossKg,
           animalCount: bag.animalCount,
           animalsPerKg: newAnimalsPerKg,
           originalAnimalsPerKg: bag.originalAnimalsPerKg,
@@ -386,9 +391,9 @@ export async function configureBags(req: Request, res: Response) {
         }
       }
 
-      // Aggiorna totali vendita
+      // Aggiorna totali vendita (converti grammi → kg)
       const totalBags = bags.length;
-      const totalWeight = bags.reduce((sum, bag) => sum + (bag.originalWeight - (bag.weightLoss || 0)), 0);
+      const totalWeight = bags.reduce((sum, bag) => sum + ((bag.originalWeight - (bag.weightLoss || 0)) / 1000), 0);
       const totalAnimals = bags.reduce((sum, bag) => sum + bag.animalCount, 0);
 
       await tx.update(advancedSales)
