@@ -3,7 +3,7 @@ import { it } from 'date-fns/locale';
 import { sendGmailEmail, getEmailRecipients } from './gmail-service';
 import { db } from '../db';
 import { eq } from 'drizzle-orm';
-import { advancedSales, ddtRighe } from '@shared/schema';
+import { advancedSales, ddtRighe, ddt } from '@shared/schema';
 
 /**
  * Genera PDF DDT (riutilizza logica esistente)
@@ -12,7 +12,7 @@ async function generateDDTPdf(saleId: number): Promise<Buffer> {
   const PDFDocument = require('pdfkit');
   const { getCompanyLogo } = await import('./logo-service');
   
-  // Recupera dati vendita
+  // Recupera dati vendita con DDT collegato
   const sale = await db.query.advancedSales.findFirst({
     where: eq(advancedSales.id, saleId),
     with: {
@@ -33,16 +33,21 @@ async function generateDDTPdf(saleId: number): Promise<Buffer> {
     }
   });
   
-  if (!sale) {
-    throw new Error(`Vendita ${saleId} non trovata`);
+  if (!sale || !sale.ddtId) {
+    throw new Error(`Vendita ${saleId} o DDT non trovato`);
+  }
+
+  // Recupera DDT principale
+  const [ddtData] = await db.select().from(ddt).where(eq(ddt.id, sale.ddtId)).limit(1);
+  
+  if (!ddtData) {
+    throw new Error(`DDT ${sale.ddtId} non trovato`);
   }
   
   // Recupera righe DDT
   const lines = await db.query.ddtRighe.findMany({
-    where: eq(ddtRighe.ddtId, sale.ddtId!),
-    with: {
-      size: true
-    }
+    where: eq(ddtRighe.ddtId, sale.ddtId),
+    orderBy: (ddtRighe, { asc }) => [asc(ddtRighe.id)]
   });
   
   // Crea PDF
@@ -68,28 +73,25 @@ async function generateDDTPdf(saleId: number): Promise<Buffer> {
       
       // Intestazione DDT
       doc.fontSize(20).font('Helvetica-Bold').text('DOCUMENTO DI TRASPORTO', 200, 50);
-      doc.fontSize(12).font('Helvetica').text(`N° ${sale.ddtNumber || 'N/A'}`, 200, 75);
-      doc.text(`Data: ${format(new Date(sale.saleDate), 'dd/MM/yyyy', { locale: it })}`, 200, 90);
+      doc.fontSize(12).font('Helvetica').text(`N° ${ddtData.numero}`, 200, 75);
+      doc.text(`Data: ${format(new Date(ddtData.data), 'dd/MM/yyyy', { locale: it })}`, 200, 90);
       
-      // Dati cliente (snapshot immutabile)
-      const customerData = sale.customerDataSnapshot ? JSON.parse(sale.customerDataSnapshot) : {};
+      // Dati cliente (snapshot immutabile dal DDT)
       doc.fontSize(11).font('Helvetica-Bold').text('DESTINATARIO:', 40, 140);
       doc.fontSize(10).font('Helvetica');
-      doc.text(customerData.name || 'N/A', 40, 160);
-      if (customerData.address) doc.text(customerData.address, 40, 175);
-      if (customerData.city || customerData.province || customerData.zip) {
-        doc.text(`${customerData.zip || ''} ${customerData.city || ''} (${customerData.province || ''})`, 40, 190);
+      doc.text(ddtData.clienteNome || 'N/A', 40, 160);
+      if (ddtData.clienteIndirizzo) doc.text(ddtData.clienteIndirizzo, 40, 175);
+      if (ddtData.clienteCitta || ddtData.clienteProvincia || ddtData.clienteCap) {
+        doc.text(`${ddtData.clienteCap || ''} ${ddtData.clienteCitta || ''} (${ddtData.clienteProvincia || ''})`, 40, 190);
       }
-      if (customerData.vat_number) doc.text(`P.IVA: ${customerData.vat_number}`, 40, 205);
+      if (ddtData.clientePiva) doc.text(`P.IVA: ${ddtData.clientePiva}`, 40, 205);
       
-      // Tabella righe DDT
+      // Tabella righe DDT (solo descrizione e quantità)
       const tableTop = 250;
       doc.fontSize(11).font('Helvetica-Bold');
-      doc.text('Taglia', 40, tableTop);
-      doc.text('Quantità', 250, tableTop, { width: 100, align: 'right' });
-      doc.text('Peso Totale (kg)', 400, tableTop, { width: 120, align: 'right' });
-      doc.text('Prezzo/kg (€)', 560, tableTop, { width: 100, align: 'right' });
-      doc.text('Totale (€)', 700, tableTop, { width: 100, align: 'right' });
+      doc.text('Descrizione', 40, tableTop);
+      doc.text('Quantità', 500, tableTop, { width: 150, align: 'right' });
+      doc.text('U.M.', 700, tableTop, { width: 100, align: 'center' });
       
       doc.moveTo(40, tableTop + 20).lineTo(800, tableTop + 20).stroke();
       
@@ -97,13 +99,9 @@ async function generateDDTPdf(saleId: number): Promise<Buffer> {
       doc.font('Helvetica').fontSize(10);
       
       for (const line of lines) {
-        const totalPrice = (line.totalWeightKg || 0) * (line.pricePerKg || 0);
-        
-        doc.text(line.size?.name || 'N/A', 40, yPos);
-        doc.text((line.quantity || 0).toLocaleString('it-IT'), 250, yPos, { width: 100, align: 'right' });
-        doc.text((line.totalWeightKg || 0).toFixed(2), 400, yPos, { width: 120, align: 'right' });
-        doc.text((line.pricePerKg || 0).toFixed(2), 560, yPos, { width: 100, align: 'right' });
-        doc.text(totalPrice.toFixed(2), 700, yPos, { width: 100, align: 'right' });
+        doc.text(line.descrizione || 'N/A', 40, yPos, { width: 450 });
+        doc.text(parseFloat(line.quantita || '0').toLocaleString('it-IT'), 500, yPos, { width: 150, align: 'right' });
+        doc.text(line.unitaMisura || 'NR', 700, yPos, { width: 100, align: 'center' });
         
         yPos += 25;
         
@@ -113,16 +111,23 @@ async function generateDDTPdf(saleId: number): Promise<Buffer> {
         }
       }
       
-      // Totale generale
-      const totalAmount = lines.reduce((sum, line) => 
-        sum + ((line.totalWeightKg || 0) * (line.pricePerKg || 0)), 0
+      // Totale animali
+      const totalQuantity = lines.reduce((sum, line) => 
+        sum + parseFloat(line.quantita || '0'), 0
       );
       
       doc.moveTo(40, yPos).lineTo(800, yPos).stroke();
       yPos += 10;
       doc.fontSize(12).font('Helvetica-Bold');
-      doc.text('TOTALE DOCUMENTO:', 560, yPos);
-      doc.text(`€ ${totalAmount.toFixed(2)}`, 700, yPos, { width: 100, align: 'right' });
+      doc.text('TOTALE ANIMALI:', 500, yPos);
+      doc.text(totalQuantity.toLocaleString('it-IT'), 700, yPos, { width: 100, align: 'right' });
+      
+      // Peso totale dal DDT (se disponibile)
+      if (ddtData.pesoTotale) {
+        yPos += 20;
+        doc.text('PESO TOTALE:', 500, yPos);
+        doc.text(`${parseFloat(ddtData.pesoTotale).toFixed(2)} kg`, 700, yPos, { width: 100, align: 'right' });
+      }
       
       // Footer
       doc.fontSize(8).font('Helvetica').text(
@@ -171,27 +176,30 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
       }
     });
     
-    if (!sale) {
-      throw new Error(`Vendita ${saleId} non trovata`);
+    if (!sale || !sale.ddtId) {
+      throw new Error(`Vendita ${saleId} o DDT non trovato`);
+    }
+
+    // Recupera DDT principale
+    const [ddtData] = await db.select().from(ddt).where(eq(ddt.id, sale.ddtId)).limit(1);
+    
+    if (!ddtData) {
+      throw new Error(`DDT ${sale.ddtId} non trovato`);
     }
     
     // Recupera righe DDT
     const lines = await db.query.ddtRighe.findMany({
-      where: eq(ddtRighe.ddtId, sale.ddtId!),
-      with: {
-        size: true
-      }
+      where: eq(ddtRighe.ddtId, sale.ddtId),
+      orderBy: (ddtRighe, { asc }) => [asc(ddtRighe.id)]
     });
     
-    const customerData = sale.customerDataSnapshot ? JSON.parse(sale.customerDataSnapshot) : {};
+    // Usa customerDetails invece di customerDataSnapshot
+    const customerData = sale.customerDetails || {};
     const dateFormatted = format(new Date(sale.saleDate), 'dd/MM/yyyy', { locale: it });
     
     // Calcola totali
-    const totalQuantity = lines.reduce((sum, line) => sum + (line.quantity || 0), 0);
-    const totalWeight = lines.reduce((sum, line) => sum + (line.totalWeightKg || 0), 0);
-    const totalAmount = lines.reduce((sum, line) => 
-      sum + ((line.totalWeightKg || 0) * (line.pricePerKg || 0)), 0
-    );
+    const totalQuantity = lines.reduce((sum, line) => sum + parseFloat(line.quantita || '0'), 0);
+    const totalWeight = ddtData.pesoTotale ? parseFloat(ddtData.pesoTotale) : 0;
     
     // Costruisci HTML email
     const html = `
@@ -205,7 +213,7 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px; border-bottom: 1px solid #bbf7d0;"><strong>Numero DDT:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #bbf7d0;">${sale.ddtNumber || 'N/A'}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #bbf7d0;">${ddtData.numero}</td>
             </tr>
             <tr>
               <td style="padding: 8px; border-bottom: 1px solid #bbf7d0;"><strong>Data:</strong></td>
@@ -227,24 +235,24 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px; border-bottom: 1px solid #bae6fd;"><strong>Ragione Sociale:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${customerData.name || 'N/A'}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${ddtData.clienteNome || 'N/A'}</td>
             </tr>
-            ${customerData.address ? `
+            ${ddtData.clienteIndirizzo ? `
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #bae6fd;"><strong>Indirizzo:</strong></td>
-                <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${customerData.address}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${ddtData.clienteIndirizzo}</td>
               </tr>
             ` : ''}
-            ${customerData.city ? `
+            ${ddtData.clienteCitta ? `
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #bae6fd;"><strong>Città:</strong></td>
-                <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${customerData.zip || ''} ${customerData.city} (${customerData.province || ''})</td>
+                <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${ddtData.clienteCap || ''} ${ddtData.clienteCitta} (${ddtData.clienteProvincia || ''})</td>
               </tr>
             ` : ''}
-            ${customerData.vat_number ? `
+            ${ddtData.clientePiva ? `
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #bae6fd;"><strong>P.IVA:</strong></td>
-                <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${customerData.vat_number}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${ddtData.clientePiva}</td>
               </tr>
             ` : ''}
           </table>
@@ -255,44 +263,31 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead>
               <tr style="background-color: #e2e8f0;">
-                <th style="padding: 10px; text-align: left; border: 1px solid #cbd5e1;">Taglia</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #cbd5e1;">Descrizione</th>
                 <th style="padding: 10px; text-align: right; border: 1px solid #cbd5e1;">Quantità</th>
-                <th style="padding: 10px; text-align: right; border: 1px solid #cbd5e1;">Peso Tot. (kg)</th>
-                <th style="padding: 10px; text-align: right; border: 1px solid #cbd5e1;">Prezzo/kg (€)</th>
-                <th style="padding: 10px; text-align: right; border: 1px solid #cbd5e1;">Totale (€)</th>
+                <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e1;">U.M.</th>
               </tr>
             </thead>
             <tbody>
-              ${lines.map(line => {
-                const lineTotal = (line.totalWeightKg || 0) * (line.pricePerKg || 0);
-                return `
+              ${lines.map(line => `
                   <tr>
                     <td style="padding: 10px; border: 1px solid #cbd5e1;">
-                      <span style="background-color: #dbeafe; padding: 4px 8px; border-radius: 3px; font-weight: bold;">
-                        ${line.size?.name || 'N/A'}
-                      </span>
+                      ${line.descrizione || 'N/A'}
                     </td>
                     <td style="padding: 10px; text-align: right; border: 1px solid #cbd5e1; font-weight: bold;">
-                      ${(line.quantity || 0).toLocaleString('it-IT')}
+                      ${parseFloat(line.quantita || '0').toLocaleString('it-IT')}
                     </td>
-                    <td style="padding: 10px; text-align: right; border: 1px solid #cbd5e1;">
-                      ${(line.totalWeightKg || 0).toFixed(2)}
-                    </td>
-                    <td style="padding: 10px; text-align: right; border: 1px solid #cbd5e1;">
-                      ${(line.pricePerKg || 0).toFixed(2)}
-                    </td>
-                    <td style="padding: 10px; text-align: right; border: 1px solid #cbd5e1; font-weight: bold;">
-                      ${lineTotal.toFixed(2)}
+                    <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e1;">
+                      ${line.unitaMisura || 'NR'}
                     </td>
                   </tr>
-                `;
-              }).join('')}
+                `).join('')}
               <tr style="background-color: #f0fdf4;">
-                <td colspan="4" style="padding: 12px; text-align: right; border: 1px solid #cbd5e1; font-weight: bold; font-size: 16px;">
-                  TOTALE DOCUMENTO:
+                <td colspan="2" style="padding: 12px; text-align: right; border: 1px solid #cbd5e1; font-weight: bold; font-size: 16px;">
+                  TOTALE ANIMALI:
                 </td>
                 <td style="padding: 12px; text-align: right; border: 1px solid #cbd5e1; font-weight: bold; font-size: 16px; color: #16a34a;">
-                  € ${totalAmount.toFixed(2)}
+                  ${totalQuantity.toLocaleString('it-IT')}
                 </td>
               </tr>
             </tbody>
@@ -336,10 +331,10 @@ export async function sendDDTConfirmationEmail(saleId: number): Promise<void> {
     // Invia email con allegato
     await sendGmailEmail({
       to: recipients,
-      subject: `✅ DDT Inviato - ${customerData.name || 'Cliente'} - N° ${sale.ddtNumber || 'N/A'} - ${dateFormatted}`,
+      subject: `✅ DDT Inviato - ${ddtData.clienteNome || 'Cliente'} - N° ${ddtData.numero} - ${dateFormatted}`,
       html,
       attachments: [{
-        filename: `DDT_${sale.ddtNumber || saleId}_${format(new Date(sale.saleDate), 'yyyy-MM-dd')}.pdf`,
+        filename: `DDT_${ddtData.numero}_${format(new Date(sale.saleDate), 'yyyy-MM-dd')}.pdf`,
         content: pdfBuffer,
         contentType: 'application/pdf'
       }]
