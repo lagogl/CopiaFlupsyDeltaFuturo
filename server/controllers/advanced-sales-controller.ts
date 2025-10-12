@@ -1803,12 +1803,7 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     const ficResponse = await ficApiRequest('POST', companyId, accessToken, '/issued_documents', ddtPayload);
     
     console.log(`✅ DDT inviato con successo! FIC ID: ${ficResponse.data.data.id}`);
-    console.log(`📊 Risposta FIC ddt_transport:`, JSON.stringify({
-      number_of_packages: ficResponse.data.data.ddt_transport?.number_of_packages,
-      weight: ficResponse.data.data.ddt_transport?.weight,
-      weight_uom: ficResponse.data.data.ddt_transport?.weight_uom,
-      numeration: ficResponse.data.data.numeration
-    }, null, 2));
+    console.log(`📊 Risposta FIC COMPLETA:`, JSON.stringify(ficResponse.data.data, null, 2));
     
     // Aggiorna DDT con ID esterno
     await db.update(ddt).set({
