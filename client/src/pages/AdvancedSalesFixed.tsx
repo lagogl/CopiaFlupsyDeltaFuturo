@@ -69,7 +69,7 @@ export default function AdvancedSales() {
   const createSaleMutation = useMutation({
     mutationFn: (data: any) => apiRequest('/api/advanced-sales', 'POST', data),
     onSuccess: () => {
-      toast({ title: "Successo", description: "Vendita creata con successo" });
+      toast({ variant: "success", title: "Successo", description: "Vendita creata con successo" });
       setNewSaleForm({
         operationIds: [],
         customerId: null,
@@ -92,7 +92,7 @@ export default function AdvancedSales() {
     mutationFn: ({ saleId, status }: { saleId: number; status: string }) =>
       apiRequest(`/api/advanced-sales/${saleId}/status`, 'PATCH', { status }),
     onSuccess: () => {
-      toast({ title: "Successo", description: "Stato vendita aggiornato" });
+      toast({ variant: "success", title: "Successo", description: "Stato vendita aggiornato" });
       queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
     }
   });

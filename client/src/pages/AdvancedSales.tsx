@@ -142,7 +142,7 @@ export default function AdvancedSales() {
   const createSaleMutation = useMutation({
     mutationFn: (data: any) => apiRequest('/api/advanced-sales', 'POST', data),
     onSuccess: (response) => {
-      toast({ title: "Successo", description: "Vendita avanzata creata con successo" });
+      toast({ variant: "success", title: "Successo", description: "Vendita avanzata creata con successo" });
       setCurrentSaleId(response.sale.id);
       setActiveTab("config");
       queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
@@ -180,7 +180,7 @@ export default function AdvancedSales() {
     mutationFn: ({ saleId, bags }: { saleId: number; bags: BagConfiguration[] }) => 
       apiRequest(`/api/advanced-sales/${saleId}/bags`, 'POST', { bags }),
     onSuccess: () => {
-      toast({ title: "Successo", description: "Configurazione sacchi completata" });
+      toast({ variant: "success", title: "Successo", description: "Configurazione sacchi completata" });
       queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
     },
     onError: (error: any) => {
@@ -197,7 +197,7 @@ export default function AdvancedSales() {
     mutationFn: ({ saleId, status }: { saleId: number; status: string }) =>
       apiRequest(`/api/advanced-sales/${saleId}/status`, 'PATCH', { status }),
     onSuccess: () => {
-      toast({ title: "Successo", description: "Stato vendita aggiornato" });
+      toast({ variant: "success", title: "Successo", description: "Stato vendita aggiornato" });
       queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
     },
     onError: (error: any) => {
@@ -373,7 +373,7 @@ export default function AdvancedSales() {
     };
 
     setBagConfigs([...bagConfigs, newBag]);
-    toast({ title: "Successo", description: "Sacco aggiunto" });
+    toast({ variant: "success", title: "Successo", description: "Sacco aggiunto" });
   };
 
   // Rimuove un sacco
@@ -399,7 +399,7 @@ export default function AdvancedSales() {
     }
 
     setBagConfigs([...bagConfigs, { ...bag }]);
-    toast({ title: "Successo", description: "Sacco clonato" });
+    toast({ variant: "success", title: "Successo", description: "Sacco clonato" });
   };
 
   // Aggiorna un campo del sacco
