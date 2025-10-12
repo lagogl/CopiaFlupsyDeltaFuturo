@@ -4,12 +4,12 @@ import { sendGmailEmail, getEmailRecipients } from './gmail-service';
 import { db } from '../db';
 import { eq } from 'drizzle-orm';
 import { advancedSales, ddtRighe, ddt, saleBags } from '@shared/schema';
+import PDFDocument from 'pdfkit';
 
 /**
  * Genera PDF DDT (riutilizza logica esistente)
  */
 async function generateDDTPdf(saleId: number): Promise<Buffer> {
-  const PDFDocument = require('pdfkit');
   const { getCompanyLogo } = await import('./logo-service');
   
   // Recupera dati vendita (query semplice senza relazioni nidificate)
