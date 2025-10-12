@@ -1250,8 +1250,12 @@ export async function generatePDFReport(req: Request, res: Response) {
       boxY += 15;
       doc.font('Helvetica');
       
-      if (cliente.indirizzo !== 'N/A') {
-        doc.text(`${cliente.indirizzo}, ${cliente.cap} ${cliente.comune} (${cliente.provincia})`, boxRightX + 10, boxY, { width: boxWidth - 20 });
+      if (cliente.indirizzo && cliente.indirizzo !== 'N/A') {
+        doc.text(cliente.indirizzo, boxRightX + 10, boxY, { width: boxWidth - 20 });
+        boxY += 12;
+      }
+      if (cliente.cap || cliente.comune) {
+        doc.text(`${cliente.cap || ''} ${cliente.comune || ''} (${cliente.provincia || ''})`, boxRightX + 10, boxY, { width: boxWidth - 20 });
         boxY += 12;
       }
       if (cliente.piva !== 'N/A') {
