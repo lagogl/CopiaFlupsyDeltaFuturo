@@ -98,12 +98,8 @@ export default function NotificationBell() {
     };
   }, [queryClient, toast]);
 
-  // Ottieni tutte le notifiche quando il dialogo è aperto
-  const { data: allNotifications, refetch: refetchAll } = useQuery<{ success: boolean; notifications: Notification[] }>({
-    queryKey: ['/api/notifications', 'all'],
-    queryFn: () => apiRequest({ url: '/api/notifications' }),
-    enabled: isOpen, // Esegui la query solo quando il dialogo è aperto
-  });
+  // Nota: Il popup mostra solo notifiche NON LETTE
+  // Per vedere tutte le notifiche (incluse quelle lette), vai allo storico completo
 
   // Formatta la data nel formato italiano
   const formatDate = (dateStr: string) => {
@@ -202,17 +198,17 @@ export default function NotificationBell() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Notifiche</DialogTitle>
+            <DialogTitle className="text-2xl">Notifiche Non Lette</DialogTitle>
             <div className="text-sm text-muted-foreground">
-              Le notifiche di sistema e le operazioni importanti vengono mostrate qui.
+              Solo le notifiche non ancora lette. Clicca su "Segna come letta" per archiviarle nello storico.
             </div>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
             {isLoading ? (
               <div className="text-center py-4">Caricamento notifiche...</div>
-            ) : allNotifications?.notifications && allNotifications.notifications.length > 0 ? (
-              allNotifications.notifications.map((notification) => (
+            ) : unreadNotifications?.notifications && unreadNotifications.notifications.length > 0 ? (
+              unreadNotifications.notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-4 rounded-lg border ${
@@ -325,22 +321,20 @@ export default function NotificationBell() {
                     })}
                   </div>
                   
-                  {!notification.isRead && (
-                    <div className="mt-2 flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markAsRead(notification.id)}
-                      >
-                        Segna come letta
-                      </Button>
-                    </div>
-                  )}
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => markAsRead(notification.id)}
+                    >
+                      Segna come letta
+                    </Button>
+                  </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-6 text-gray-500">
-                Non ci sono notifiche
+                Nessuna notifica non letta. Vai allo storico per vedere le notifiche archiviate.
               </div>
             )}
           </div>
