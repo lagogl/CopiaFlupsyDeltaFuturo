@@ -227,8 +227,12 @@ export default function SpreadsheetOperations() {
   };
 
   // Validazione date per evitare duplicati e date anteriori
-  const validateOperationDate = (basketId: number, date: string): { valid: boolean; error?: string } => {
-    const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basketId);
+  const validateOperationDate = (basketId: number, date: string, currentCycleId?: number | null): { valid: boolean; error?: string } => {
+    // ✅ FILTRO SOLO OPERAZIONI DEL CICLO ATTIVO (non dei cicli chiusi!)
+    const basketOperations = ((operations as any[]) || []).filter((op: any) => 
+      op.basketId === basketId && 
+      (currentCycleId ? op.cycleId === currentCycleId : true)
+    );
     
     if (basketOperations.length === 0) {
       return { valid: true }; // Nessuna operazione esistente, qualsiasi data è valida
@@ -286,7 +290,8 @@ export default function SpreadsheetOperations() {
     // ⚠️ FIX CRITICO: Usa operationDate (data globale) invece di editingForm.date
     // perché il salvataggio usa operationDate (linea 1169)
     if (editingForm.basketId && operationDate) {
-      const dateValidation = validateOperationDate(editingForm.basketId, operationDate);
+      // ✅ Passa anche currentCycleId per filtrare solo operazioni del ciclo attivo
+      const dateValidation = validateOperationDate(editingForm.basketId, operationDate, editingForm.currentCycleId);
       if (!dateValidation.valid && dateValidation.error) {
         errors.push(dateValidation.error);
       }
@@ -1142,6 +1147,7 @@ export default function SpreadsheetOperations() {
     const initData: any = {
       basketId: row.basketId,
       physicalNumber: row.physicalNumber, // ✅ Aggiungi numero fisico del cestello
+      currentCycleId: row.currentCycleId, // ✅ IMPORTANTE: ID ciclo attivo per validazione date
       type: selectedOperationType,
       date: operationDate, // Usa la data selezionata nei controlli
       // Distribuisci lotti diversi tra cestelli diversi
