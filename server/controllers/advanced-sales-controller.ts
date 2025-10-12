@@ -1786,9 +1786,19 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     
     // Invia a Fatture in Cloud
     console.log(`🚀 Invio DDT ${ddtData.numero} a Fatture in Cloud...`);
+    console.log(`📦 Payload FIC:`, JSON.stringify({
+      transport_packages: ddtPayload.data.transport_packages,
+      transport_weight: ddtPayload.data.transport_weight,
+      items_count: ddtPayload.data.items_list.length
+    }, null, 2));
     const ficResponse = await ficApiRequest('POST', companyId, accessToken, '/issued_documents', ddtPayload);
     
     console.log(`✅ DDT inviato con successo! FIC ID: ${ficResponse.data.data.id}`);
+    console.log(`📊 Risposta FIC:`, JSON.stringify({
+      transport_packages: ficResponse.data.data.transport_packages,
+      transport_weight: ficResponse.data.data.transport_weight,
+      numeration: ficResponse.data.data.numeration
+    }, null, 2));
     
     // Aggiorna DDT con ID esterno
     await db.update(ddt).set({
