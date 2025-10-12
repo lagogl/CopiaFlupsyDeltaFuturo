@@ -1492,6 +1492,59 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       }
     }
 
+    // Invia email di conferma vagliatura
+    try {
+      const { sendScreeningConfirmationEmail } = await import('../services/screening-email-service');
+      
+      // Recupera info FLUPSY e cestello del primo origine per l'email
+      const firstSourceBasket = sourceBaskets[0];
+      const basketInfo = await db.select({
+        basketNumber: baskets.number,
+        flupsyName: flupsys.name
+      })
+      .from(baskets)
+      .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .where(eq(baskets.id, firstSourceBasket.basketId))
+      .limit(1);
+      
+      // Recupera info taglie per i risultati
+      const resultsWithSizes = await Promise.all(
+        destinationBaskets.map(async (dest) => {
+          const sizeInfo = dest.sizeId ? await db.select()
+            .from(sizes)
+            .where(eq(sizes.id, dest.sizeId))
+            .limit(1) : [];
+          
+          return {
+            sizeCode: sizeInfo[0]?.code || 'N/A',
+            quantity: dest.animalCount || 0,
+            averageWeight: dest.animalsPerKg ? (1000 / dest.animalsPerKg) : null,
+            destination: dest.destinationType === 'sale' ? 'sale' : 
+                        dest.destinationType === 'basket' ? 'basket' : 'discard',
+            targetBasketNumber: dest.destinationType === 'basket' ? dest.position : null
+          };
+        })
+      );
+      
+      const totalSold = destinationBaskets
+        .filter(d => d.destinationType === 'sale')
+        .reduce((sum, d) => sum + (d.animalCount || 0), 0);
+      
+      await sendScreeningConfirmationEmail({
+        date: selection[0].selectionDate || new Date(),
+        flupsyName: basketInfo[0]?.flupsyName || 'N/A',
+        basketNumber: basketInfo[0]?.basketNumber || 'N/A',
+        type: selection[0].type || 'normal',
+        results: resultsWithSizes,
+        totalSold,
+        notes: selection[0].notes || ''
+      });
+      
+      console.log('✅ Email conferma vagliatura inviata');
+    } catch (emailError) {
+      console.error('❌ Errore invio email vagliatura (non bloccante):', emailError);
+    }
+
     // Invia notifiche WebSocket
     if (typeof (global as any).broadcastUpdate === 'function') {
       (global as any).broadcastUpdate('selection_completed', {

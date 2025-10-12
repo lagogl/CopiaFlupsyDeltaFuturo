@@ -1794,8 +1794,9 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     }).where(eq(ddt.id, parseInt(ddtId)));
 
     // Recupera advancedSaleId dalla prima riga DDT per aggiornare anche la vendita
+    let advancedSaleId: number | null = null;
     if (righe.length > 0 && righe[0].advancedSaleId) {
-      const advancedSaleId = righe[0].advancedSaleId;
+      advancedSaleId = righe[0].advancedSaleId;
       
       await db.update(advancedSales).set({
         ddtStatus: 'inviato',
@@ -1803,6 +1804,17 @@ export async function sendDDTToFIC(req: Request, res: Response) {
       }).where(eq(advancedSales.id, advancedSaleId));
       
       console.log(`✅ Vendita ${advancedSaleId} aggiornata con stato 'inviato'`);
+    }
+
+    // Invia email di conferma DDT con PDF allegato
+    if (advancedSaleId) {
+      try {
+        const { sendDDTConfirmationEmail } = await import('../services/ddt-email-service');
+        await sendDDTConfirmationEmail(advancedSaleId);
+        console.log('✅ Email conferma DDT inviata');
+      } catch (emailError) {
+        console.error('❌ Errore invio email DDT (non bloccante):', emailError);
+      }
     }
 
     res.json({
