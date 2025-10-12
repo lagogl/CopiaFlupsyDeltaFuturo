@@ -15,12 +15,17 @@ Preferred communication style: Simple, everyday language.
     - Icona verde per qualsiasi notifica non letta (vendite, accrescimenti, altri)
     - Badge: verde per vendite, arancione per accrescimenti, rosso per altri tipi
     - File: `client/src/components/NotificationBell.tsx` (righe ~177-202)
-  - **Controllo Real-Time Accrescimento**: Notifiche di accrescimento ora generate immediatamente, non solo a mezzanotte
-    - Nuova funzione: `checkOperationForTargetSize(operationId)` in `growth-notification-handler.ts`
-    - Verifica taglia target dopo OGNI operazione di peso/prima-attivazione
-    - Integrata in 3 punti in `server/routes.ts`: prima-attivazione (riga ~2332), chiusura ciclo (riga ~2531), operazioni standard (riga ~2593)
-    - Pattern asincrono non-bloccante: `.catch(err => console.error(...))`
-    - Timer 24h mantiene per sicurezza, ma controllo primario ora real-time
+  - **Sistema Notifiche Accrescimento Dual-Mode**: Due casistiche separate per massima precisione
+    - **Casistica 1 - Real-Time (valore misurato)**: 
+      - Funzione: `checkOperationForTargetSize(operationId)` 
+      - Trigger: Dopo ogni operazione peso/prima-attivazione
+      - Logica: Usa valore **reale misurato** dall'operazione (animalsPerKg) - NO proiezione SGR
+      - Integrata in 3 punti in `server/routes.ts`: prima-attivazione (~2332), chiusura ciclo (~2531), operazioni standard (~2593)
+    - **Casistica 2 - Batch Mezzanotte (proiezione SGR)**:
+      - Funzione: `checkCyclesForTargetSizes()` 
+      - Trigger: Timer a mezzanotte + endpoint manuale `POST /api/check-growth-notifications`
+      - Logica: Solo cicli ATTIVI con operazioni passate → calcola proiezione giornaliera usando `sgr.percentage` (crescita % giornaliera per mese) → confronta con taglie target
+      - Timer: Configurato in `server/index.ts` (righe 152-175), esecuzione giornaliera automatica
 - **CRITICAL BUG FIX - Cache Invalidation dopo Popolamento FLUPSY**: Risolto bug critico che impediva l'aggiornamento automatico dei cestelli dopo il popolamento di un FLUPSY
   - **Problema**: Codice di invalidazione cache era nel file sbagliato (`server/routes.ts` invece di `server/modules/core/flupsys/flupsys.service.ts`)
   - **Causa Root**: La route POST `/api/flupsys/:id/populate` è gestita dal modulo FLUPSY, non da routes.ts

@@ -404,22 +404,12 @@ export async function checkOperationForTargetSize(operationId: number): Promise<
 
     // Calcola animali per kg dall'operazione appena creata
     const currentAnimalsPerKg = operation.animal_count / operation.total_weight;
-    const operationDate = new Date(operation.date);
-    const currentDate = new Date();
     
-    // Calcola la crescita dall'operazione a oggi
-    const daysSinceOperation = Math.floor((currentDate.getTime() - operationDate.getTime()) / (1000 * 60 * 60 * 24));
+    // CASISTICA 1 (Real-time): usa il valore REALE misurato dall'operazione
+    // NON applicare proiezione SGR - quella è solo per il controllo batch a mezzanotte
+    const valueToCheck = currentAnimalsPerKg;
     
-    let valueToCheck = currentAnimalsPerKg;
-    
-    if (daysSinceOperation > 0) {
-      const growthFactor = await calculateGrowthFactorAcrossMonths(operationDate, currentDate);
-      valueToCheck = currentAnimalsPerKg / growthFactor;
-      
-      console.log(`🔍 Controllo tempo reale cestello #${operation.basket_number}: ${currentAnimalsPerKg} → ${Math.round(valueToCheck)} animali/kg (crescita ${daysSinceOperation} giorni)`);
-    } else {
-      console.log(`🔍 Controllo tempo reale cestello #${operation.basket_number}: ${currentAnimalsPerKg} animali/kg (operazione appena creata)`);
-    }
+    console.log(`🔍 Controllo tempo reale cestello #${operation.basket_number}: ${Math.round(currentAnimalsPerKg)} animali/kg (valore misurato reale)`);
 
     // Verifica per ogni taglia configurata
     for (const sizeId of targetSizeIds) {
