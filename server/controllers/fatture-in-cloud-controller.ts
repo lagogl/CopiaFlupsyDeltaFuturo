@@ -373,23 +373,27 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
       let cap = clienteFIC.address_postal_code || '';
       let comune = clienteFIC.address_city || '';
       
-      // Debug specifico per Apollo
-      if (clienteFIC.name && clienteFIC.name.toLowerCase().includes('apollo')) {
-        console.log(`🔍 DEBUG Apollo - Dati grezzi API:`, {
-          name: clienteFIC.name,
-          address_city: clienteFIC.address_city,
-          address_postal_code: clienteFIC.address_postal_code,
-          address_province: clienteFIC.address_province,
-          address_street: clienteFIC.address_street
-        });
-      }
-      
       if (!cap && comune) {
         // Cerca CAP all'inizio della stringa città (5 cifre)
         const capMatch = comune.match(/^(\d{5})\s+(.+)/);
         if (capMatch) {
           cap = capMatch[1];
           comune = capMatch[2]; // Rimuovi CAP dalla città
+        }
+      }
+      
+      // Se il CAP è ancora vuoto, prova a recuperarlo con una chiamata dedicata
+      if (!cap && clienteFIC.id) {
+        try {
+          const dettagliResponse = await apiRequest('GET', `/entities/clients/${clienteFIC.id}`);
+          const dettagli = dettagliResponse.data.data;
+          
+          if (dettagli?.address_postal_code) {
+            cap = dettagli.address_postal_code;
+            console.log(`✅ CAP recuperato per ${clienteFIC.name}: ${cap}`);
+          }
+        } catch (error) {
+          console.log(`⚠️  Impossibile recuperare CAP dettagliato per ${clienteFIC.name}`);
         }
       }
       
