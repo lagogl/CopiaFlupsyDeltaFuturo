@@ -1778,8 +1778,10 @@ export async function sendDDTToFIC(req: Request, res: Response) {
         date: ddtData.data,
         number: ddtData.numero,
         numeration: '/ddt',
-        transport_packages: ddtData.totaleColli || 0,
-        transport_weight: ddtData.pesoTotale ? parseFloat(ddtData.pesoTotale) : 0,
+        extra_data: {
+          delivery_note_number_of_packages: ddtData.totaleColli || 0,
+          delivery_note_weight: ddtData.pesoTotale || "0"
+        },
         items_list: righe.map(riga => ({
           name: riga.descrizione,
           qty: parseFloat(riga.quantita || '0'),
@@ -1791,17 +1793,17 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     
     // Invia a Fatture in Cloud
     console.log(`🚀 Invio DDT ${ddtData.numero} a Fatture in Cloud...`);
-    console.log(`📦 Payload FIC:`, JSON.stringify({
-      transport_packages: ddtPayload.data.transport_packages,
-      transport_weight: ddtPayload.data.transport_weight,
+    console.log(`📦 Payload FIC extra_data:`, JSON.stringify({
+      delivery_note_number_of_packages: ddtPayload.data.extra_data.delivery_note_number_of_packages,
+      delivery_note_weight: ddtPayload.data.extra_data.delivery_note_weight,
       items_count: ddtPayload.data.items_list.length
     }, null, 2));
     const ficResponse = await ficApiRequest('POST', companyId, accessToken, '/issued_documents', ddtPayload);
     
     console.log(`✅ DDT inviato con successo! FIC ID: ${ficResponse.data.data.id}`);
-    console.log(`📊 Risposta FIC:`, JSON.stringify({
-      transport_packages: ficResponse.data.data.transport_packages,
-      transport_weight: ficResponse.data.data.transport_weight,
+    console.log(`📊 Risposta FIC extra_data:`, JSON.stringify({
+      delivery_note_number_of_packages: ficResponse.data.data.extra_data?.delivery_note_number_of_packages,
+      delivery_note_weight: ficResponse.data.data.extra_data?.delivery_note_weight,
       numeration: ficResponse.data.data.numeration
     }, null, 2));
     
