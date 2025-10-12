@@ -1762,6 +1762,7 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     const righe = await db.select().from(ddtRighe).where(eq(ddtRighe.ddtId, parseInt(ddtId))).orderBy(ddtRighe.id);
 
     // Prepara payload per Fatture in Cloud
+    // Nota: Campi peso e colli sia in extra_data che a livello root per compatibilità
     const ddtPayload = {
       data: {
         type: 'delivery_note',
@@ -1778,6 +1779,8 @@ export async function sendDDTToFIC(req: Request, res: Response) {
         date: ddtData.data,
         number: ddtData.numero,
         numeration: '/ddt',
+        delivery_note_number_of_packages: ddtData.totaleColli || 0,
+        delivery_note_weight: ddtData.pesoTotale || "0",
         extra_data: {
           delivery_note_number_of_packages: ddtData.totaleColli || 0,
           delivery_note_weight: ddtData.pesoTotale || "0"
@@ -1793,9 +1796,11 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     
     // Invia a Fatture in Cloud
     console.log(`🚀 Invio DDT ${ddtData.numero} a Fatture in Cloud...`);
-    console.log(`📦 Payload FIC extra_data:`, JSON.stringify({
-      delivery_note_number_of_packages: ddtPayload.data.extra_data.delivery_note_number_of_packages,
-      delivery_note_weight: ddtPayload.data.extra_data.delivery_note_weight,
+    console.log(`📦 Payload FIC (root + extra_data):`, JSON.stringify({
+      root_packages: ddtPayload.data.delivery_note_number_of_packages,
+      root_weight: ddtPayload.data.delivery_note_weight,
+      extra_packages: ddtPayload.data.extra_data.delivery_note_number_of_packages,
+      extra_weight: ddtPayload.data.extra_data.delivery_note_weight,
       items_count: ddtPayload.data.items_list.length
     }, null, 2));
     const ficResponse = await ficApiRequest('POST', companyId, accessToken, '/issued_documents', ddtPayload);
