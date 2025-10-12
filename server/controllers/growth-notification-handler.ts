@@ -155,12 +155,32 @@ async function createTargetSizeNotification(
     `);
 
     if (existingNotifications.rows && existingNotifications.rows.length > 0) {
-      // Aggiorna la notifica esistente
+      // Aggiorna la notifica esistente in target_size_annotations
       await db.execute(sql`
         UPDATE target_size_annotations
         SET status = 'pending', updated_at = NOW()
         WHERE basket_id = ${basketId} AND target_size_id = ${targetSize.id}
       `);
+      
+      // Crea SEMPRE una nuova notifica nel sistema generale (anche se l'annotazione esiste già)
+      await db.execute(sql`
+        INSERT INTO notifications
+        (type, title, message, is_read, created_at, related_entity_type, related_entity_id, data)
+        VALUES (
+          'accrescimento',
+          'Taglia raggiunta',
+          ${`Il cestello #${basketNumber} (ciclo #${cycleId}) ha raggiunto la taglia ${targetSize.name} (${Math.round(projectedAnimalsPerKg)} esemplari/kg)`},
+          false,
+          NOW(),
+          'basket',
+          ${basketId},
+          ${JSON.stringify({ cycleId, basketId, targetSizeId: targetSize.id, targetSizeName: targetSize.name, projectedAnimalsPerKg })}
+        )
+      `);
+      
+      // Invalida la cache delle notifiche
+      NotificationsCache.clear();
+      
       return Number(existingNotifications.rows[0].id);
     }
 
