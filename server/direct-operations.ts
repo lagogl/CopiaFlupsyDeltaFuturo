@@ -343,22 +343,45 @@ export function implementDirectOperationRoute(app: Express) {
         console.log(`✅ Prima-attivazione su cestello DISPONIBILE - nessuna validazione date contro cicli precedenti`);
         // Non recuperare operazioni vecchie - cestello libero può iniziare nuovo ciclo con qualsiasi data
       } else {
-        // Per tutte le altre operazioni, valida date SOLO nel ciclo corrente
+        // Per operazioni non-prima-attivazione: se manca cycleId, trova il ciclo attivo
+        let effectiveCycleId = operationData.cycleId;
+        
+        if (!effectiveCycleId) {
+          console.log(`⚠️ Operazione ${operationData.type} senza cycleId - cerco ciclo attivo per cestello ${operationData.basketId}`);
+          const activeCycleResult = await db
+            .select()
+            .from(cycles)
+            .where(
+              and(
+                eq(cycles.basketId, operationData.basketId),
+                eq(cycles.state, 'active')
+              )
+            )
+            .limit(1);
+          
+          if (activeCycleResult.length > 0) {
+            effectiveCycleId = activeCycleResult[0].id;
+            operationData.cycleId = effectiveCycleId;  // Salva il cycleId trovato
+            console.log(`✅ Trovato ciclo attivo ${effectiveCycleId} per cestello ${operationData.basketId}`);
+          } else {
+            throw new Error(`Il cestello #${basket.physicalNumber} non ha un ciclo attivo. Non è possibile registrare operazioni ${operationData.type}.`);
+          }
+        }
+        
+        // Ora valida date SOLO nel ciclo corrente (attivo o specificato)
         existingOperations = await db
           .select()
           .from(operations)
           .where(
-            operationData.cycleId 
-              ? and(
-                  eq(operations.basketId, operationData.basketId),
-                  eq(operations.cycleId, operationData.cycleId)  // Solo stesso ciclo aperto
-                )
-              : eq(operations.basketId, operationData.basketId)  // Fallback generico
+            and(
+              eq(operations.basketId, operationData.basketId),
+              eq(operations.cycleId, effectiveCycleId)
+            )
           )
           .orderBy(sql`${operations.date} DESC`);
         
-        console.log(`🔍 VALIDAZIONE CICLO: Cercando operazioni per cestello ${operationData.basketId}, cycleId: ${operationData.cycleId}`);
-        console.log(`🔍 VALIDAZIONE CICLO: Trovate ${existingOperations.length} operazioni esistenti per cesta ${operationData.basketId} ${operationData.cycleId ? `nel ciclo ${operationData.cycleId}` : ''}`);
+        console.log(`🔍 VALIDAZIONE CICLO: Cercando operazioni per cestello ${operationData.basketId}, cycleId: ${effectiveCycleId}`);
+        console.log(`🔍 VALIDAZIONE CICLO: Trovate ${existingOperations.length} operazioni esistenti nel ciclo ${effectiveCycleId}`);
         
         if (existingOperations.length > 0) {
           console.log(`🔍 OPERAZIONI TROVATE:`, existingOperations.map(op => ({ id: op.id, date: op.date, cycleId: op.cycleId, type: op.type })));
