@@ -368,6 +368,15 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
         }
       }
       
+      // Debug: verifica campi indirizzo dall'API (primi 3 clienti)
+      if (allClienti.indexOf(clienteFIC) < 3) {
+        console.log(`🔍 DEBUG Cliente "${clienteFIC.name}":`, {
+          address_city: clienteFIC.address_city,
+          address_postal_code: clienteFIC.address_postal_code,
+          address_province: clienteFIC.address_province
+        });
+      }
+      
       const datiCliente = {
         denominazione: clienteFIC.name || 'N/A',
         indirizzo: clienteFIC.address_street || '',
