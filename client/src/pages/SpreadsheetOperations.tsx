@@ -1140,6 +1140,7 @@ export default function SpreadsheetOperations() {
     // (la riga originale non viene modificata)
     const initData: any = {
       basketId: row.basketId,
+      physicalNumber: row.physicalNumber, // ✅ Aggiungi numero fisico del cestello
       type: selectedOperationType,
       date: operationDate, // Usa la data selezionata nei controlli
       // Distribuisci lotti diversi tra cestelli diversi
@@ -2914,7 +2915,7 @@ export default function SpreadsheetOperations() {
             <div className="px-3 py-2 md:py-2 max-md:py-3 border-b border-blue-300" style={{backgroundColor: 'rgba(59, 130, 246, 0.15)'}}>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-blue-900 flex items-center gap-2">
-                  📝 Cestello #{editingForm.basketId} - {selectedOperationType}
+                  📝 Cestello #{editingForm.physicalNumber} - {selectedOperationType}
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full max-md:hidden">
                     Riga visibile sotto
                   </span>
