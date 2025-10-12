@@ -2496,10 +2496,14 @@ export default function SpreadsheetOperations() {
                                   <h5 className="font-semibold text-xs uppercase tracking-wide text-gray-600">Cronologia Operazioni</h5>
                                   <div className="space-y-1 max-h-32 overflow-y-auto">
                                     {(() => {
+                                      // ✅ Filtra SOLO operazioni del ciclo ATTIVO corrente
                                       const basketOps = ((operations as any[]) || [])
-                                        .filter((op: any) => op.basketId === row.basketId)
+                                        .filter((op: any) => 
+                                          op.basketId === row.basketId && 
+                                          op.cycleId === (row as any).currentCycleId
+                                        )
                                         .sort((a: any, b: any) => b.id - a.id)
-                                        .slice(0, 5); // Mostra ultime 5 operazioni
+                                        .slice(0, 5); // Mostra ultime 5 operazioni del ciclo attivo
                                       
                                       if (basketOps.length === 0) {
                                         return (
