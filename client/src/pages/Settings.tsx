@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { AlertCircle, DatabaseBackup, Save, Smartphone, Trash2, HelpCircle, RefreshCw, RotateCw } from "lucide-react";
+import { AlertCircle, DatabaseBackup, Save, Smartphone, Trash2, HelpCircle, RefreshCw, RotateCw, Mail } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import NFCReader from "@/components/NFCReader";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,10 @@ export default function Settings() {
   const { toast } = useToast();
   const [resetPassword, setResetPassword] = useState("");
   const { areTooltipsEnabled, enableAllTooltips, disableAllTooltips, markTooltipAsSeen, setFirstTimeUser } = useTooltip();
+  
+  // Stati per configurazione email
+  const [emailRecipients, setEmailRecipients] = useState<string>('');
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
   
   // Check NFC support on component mount
   useEffect(() => {
@@ -212,6 +216,79 @@ export default function Settings() {
     }
   };
 
+  // Carica configurazione email
+  useEffect(() => {
+    const loadEmailConfig = async () => {
+      try {
+        const response = await fetch('/api/email/config');
+        if (!response.ok) {
+          throw new Error('Errore nel caricamento della configurazione email');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.config) {
+          setEmailRecipients(data.config.recipients?.split(',').join(', ') || '');
+        }
+      } catch (error) {
+        console.error('Errore nel caricamento della configurazione email:', error);
+      }
+    };
+    
+    loadEmailConfig();
+  }, []);
+
+  // Salva configurazione email
+  const saveEmailConfig = async () => {
+    if (!emailRecipients.trim()) {
+      toast({
+        title: "Attenzione",
+        description: "Inserisci almeno un indirizzo email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSavingEmail(true);
+      
+      const response = await fetch('/api/email/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipients: emailRecipients.split(',').map(email => email.trim()),
+          cc: '',
+          send_time: '20:00',
+          auto_enabled: 'false'
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Errore nel salvataggio della configurazione email');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: 'Configurazione salvata',
+          description: 'I destinatari email sono stati aggiornati con successo',
+        });
+      }
+    } catch (error) {
+      console.error('Errore nel salvataggio della configurazione email:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile salvare la configurazione email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -219,8 +296,9 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-4 mb-6">
+        <TabsList className="grid grid-cols-5 mb-6">
           <TabsTrigger value="general">Generale</TabsTrigger>
+          <TabsTrigger value="email">Email</TabsTrigger>
           <TabsTrigger value="nfc">NFC</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
           <TabsTrigger value="about">Informazioni</TabsTrigger>
@@ -342,6 +420,67 @@ export default function Settings() {
                   I suggerimenti contestuali ti aiutano a comprendere le funzionalità dell'applicazione 
                   mostrando brevi spiegazioni quando passi con il mouse sopra gli elementi o quando accedi 
                   a una nuova sezione per la prima volta.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="email" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurazione Email</CardTitle>
+              <CardDescription>
+                Configura i destinatari per le email automatiche di conferma
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                <Mail className="h-4 w-4" />
+                <AlertTitle>Email automatiche attive</AlertTitle>
+                <AlertDescription>
+                  Il sistema invia automaticamente email di conferma quando:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Viene confermata una vagliatura</li>
+                    <li>Viene inviato un DDT a Fatture in Cloud (con PDF allegato)</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email-recipients">
+                    Destinatari Email
+                  </Label>
+                  <Input
+                    id="email-recipients"
+                    type="text"
+                    placeholder="esempio@email.com, altro@email.com"
+                    value={emailRecipients}
+                    onChange={(e) => setEmailRecipients(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Inserisci uno o più indirizzi email separati da virgola. 
+                    Questi destinatari riceveranno le email di conferma automatiche.
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={saveEmailConfig}
+                  disabled={isSavingEmail || !emailRecipients.trim()}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSavingEmail ? 'Salvataggio...' : 'Salva Configurazione'}
+                </Button>
+              </div>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Nota</AlertTitle>
+                <AlertDescription>
+                  Le email vengono inviate tramite Gmail usando l'integrazione OAuth2 configurata. 
+                  Assicurati che gli indirizzi email siano corretti per ricevere le notifiche.
                 </AlertDescription>
               </Alert>
             </CardContent>
