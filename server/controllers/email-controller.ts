@@ -205,13 +205,20 @@ const simpleCron: CronScheduler = {
  * Salva o aggiorna le configurazioni email nel database
  * @param configData Dati di configurazione da salvare
  */
-async function saveEmailConfig(configData: Record<string, string>) {
+async function saveEmailConfig(configData: Record<string, any>) {
   try {
     // Aggiorna o crea i singoli record di configurazione
     // Per ogni tipo di configurazione (recipients, cc, ecc.) manteniamo un record separato
     
-    // Destinatari email
-    await upsertConfigValue('email_recipients', configData.recipients || '');
+    // Destinatari email - gestisce sia array che stringhe
+    let recipientsValue = '';
+    if (Array.isArray(configData.recipients)) {
+      // Se è un array, salva come JSON string
+      recipientsValue = JSON.stringify(configData.recipients);
+    } else {
+      recipientsValue = configData.recipients || '';
+    }
+    await upsertConfigValue('email_recipients', recipientsValue);
     
     // CC email
     await upsertConfigValue('email_cc', configData.cc || '');
@@ -272,9 +279,20 @@ async function getEmailConfig() {
         return row ? row.value : defaultValue;
       };
       
+      // Gestisce conversione email recipients da JSON array a stringa separata da virgole
+      let emailRecipients = getConfigValue('email_recipients', '');
+      try {
+        const parsed = JSON.parse(emailRecipients);
+        if (Array.isArray(parsed)) {
+          emailRecipients = parsed.join(', ');
+        }
+      } catch {
+        // Se non è JSON, lascia il valore così com'è
+      }
+      
       return {
         // Email config
-        recipients: getConfigValue('email_recipients', ''),
+        recipients: emailRecipients,
         cc: getConfigValue('email_cc', ''),
         send_time: getConfigValue('email_send_time', '20:00'),
         auto_enabled: getConfigValue('auto_email_enabled', 'false'),

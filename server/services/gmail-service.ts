@@ -156,7 +156,16 @@ export async function getEmailRecipients(): Promise<string[]> {
       .where(eq(emailConfig.key, 'email_recipients'));
     
     if (config.length > 0 && config[0].value) {
-      return config[0].value.split(',').map(email => email.trim()).filter(email => email.length > 0);
+      // Prova prima a parsare come JSON array
+      try {
+        const parsed = JSON.parse(config[0].value);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(email => email && email.length > 0);
+        }
+      } catch {
+        // Fallback: split per virgola (compatibilità legacy)
+        return config[0].value.split(',').map(email => email.trim()).filter(email => email.length > 0);
+      }
     }
     
     return [];
