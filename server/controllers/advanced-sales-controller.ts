@@ -1761,8 +1761,7 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     // Recupera righe DDT
     const righe = await db.select().from(ddtRighe).where(eq(ddtRighe.ddtId, parseInt(ddtId))).orderBy(ddtRighe.id);
 
-    // Prepara payload per Fatture in Cloud
-    // Nota: Campi peso e colli sia in extra_data che a livello root per compatibilità
+    // Prepara payload per Fatture in Cloud con oggetto ddt_transport
     const ddtPayload = {
       data: {
         type: 'delivery_note',
@@ -1779,11 +1778,10 @@ export async function sendDDTToFIC(req: Request, res: Response) {
         date: ddtData.data,
         number: ddtData.numero,
         numeration: '/ddt',
-        delivery_note_number_of_packages: ddtData.totaleColli || 0,
-        delivery_note_weight: ddtData.pesoTotale || "0",
-        extra_data: {
-          delivery_note_number_of_packages: ddtData.totaleColli || 0,
-          delivery_note_weight: ddtData.pesoTotale || "0"
+        ddt_transport: {
+          number_of_packages: ddtData.totaleColli || 0,
+          weight: ddtData.pesoTotale || "0",
+          weight_uom: "kg"
         },
         items_list: righe.map(riga => ({
           name: riga.descrizione,
@@ -1796,19 +1794,19 @@ export async function sendDDTToFIC(req: Request, res: Response) {
     
     // Invia a Fatture in Cloud
     console.log(`🚀 Invio DDT ${ddtData.numero} a Fatture in Cloud...`);
-    console.log(`📦 Payload FIC (root + extra_data):`, JSON.stringify({
-      root_packages: ddtPayload.data.delivery_note_number_of_packages,
-      root_weight: ddtPayload.data.delivery_note_weight,
-      extra_packages: ddtPayload.data.extra_data.delivery_note_number_of_packages,
-      extra_weight: ddtPayload.data.extra_data.delivery_note_weight,
+    console.log(`📦 Payload FIC ddt_transport:`, JSON.stringify({
+      number_of_packages: ddtPayload.data.ddt_transport.number_of_packages,
+      weight: ddtPayload.data.ddt_transport.weight,
+      weight_uom: ddtPayload.data.ddt_transport.weight_uom,
       items_count: ddtPayload.data.items_list.length
     }, null, 2));
     const ficResponse = await ficApiRequest('POST', companyId, accessToken, '/issued_documents', ddtPayload);
     
     console.log(`✅ DDT inviato con successo! FIC ID: ${ficResponse.data.data.id}`);
-    console.log(`📊 Risposta FIC extra_data:`, JSON.stringify({
-      delivery_note_number_of_packages: ficResponse.data.data.extra_data?.delivery_note_number_of_packages,
-      delivery_note_weight: ficResponse.data.data.extra_data?.delivery_note_weight,
+    console.log(`📊 Risposta FIC ddt_transport:`, JSON.stringify({
+      number_of_packages: ficResponse.data.data.ddt_transport?.number_of_packages,
+      weight: ficResponse.data.data.ddt_transport?.weight,
+      weight_uom: ficResponse.data.data.ddt_transport?.weight_uom,
       numeration: ficResponse.data.data.numeration
     }, null, 2));
     
