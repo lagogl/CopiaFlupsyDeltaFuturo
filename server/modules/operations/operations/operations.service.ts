@@ -34,7 +34,11 @@ const OPERATION_COLUMNS = {
   lot_animalCount: lots.animalCount,
   lot_weight: lots.weight,
   lot_notes: lots.notes,
-  flupsyName: flupsys.name
+  flupsyName: flupsys.name,
+  // Aggiungi campi per size
+  size_id: sizes.id,
+  size_code: sizes.code,
+  size_name: sizes.name
 };
 
 export interface OperationsOptions {
@@ -156,6 +160,7 @@ class OperationsService {
         .leftJoin(lots, eq(operations.lotId, lots.id))
         .leftJoin(baskets, eq(operations.basketId, baskets.id))
         .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+        .leftJoin(sizes, eq(operations.sizeId, sizes.id))
         .orderBy(desc(operations.date))
         .limit(pageSize)
         .offset(offset);
@@ -304,6 +309,15 @@ class OperationsService {
           metadata: row.metadata,
           flupsyName: row.flupsyName
         };
+        
+        // Aggiungi oggetto size se presente
+        if (row.size_id) {
+          operation.size = {
+            id: row.size_id,
+            code: row.size_code,
+            name: row.size_name
+          };
+        }
         
         if (lot) {
           operation.lot = lot;

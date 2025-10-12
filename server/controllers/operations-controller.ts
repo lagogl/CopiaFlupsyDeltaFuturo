@@ -38,7 +38,11 @@ const OPERATION_COLUMNS = {
   lot_weight: lots.weight,
   lot_notes: lots.notes,
   // Aggiungi nome del FLUPSY
-  flupsyName: flupsys.name
+  flupsyName: flupsys.name,
+  // Aggiungi campi per size
+  size_id: sizes.id,
+  size_code: sizes.code,
+  size_name: sizes.name
 };
 
 interface OperationsOptions {
@@ -191,13 +195,14 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
     const countResult = await countQuery;
     const totalCount = parseInt(countResult[0].count as string);
     
-    // 2. Esegui query principale con paginazione - INCLUDE LOT, BASKET E FLUPSY JOIN
+    // 2. Esegui query principale con paginazione - INCLUDE LOT, BASKET, FLUPSY E SIZES JOIN
     let query = db
       .select(OPERATION_COLUMNS)
       .from(operations)
       .leftJoin(lots, eq(operations.lotId, lots.id))
       .leftJoin(baskets, eq(operations.basketId, baskets.id))
       .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .leftJoin(sizes, eq(operations.sizeId, sizes.id))
       .orderBy(desc(operations.date))
       .limit(pageSize)
       .offset(offset);
@@ -328,12 +333,21 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
         };
       }
       
-      // Rimuovi i campi lot_* e aggiungi l'oggetto lot
+      // Crea oggetto size se presente
+      const size = row.size_id ? {
+        id: row.size_id,
+        code: row.size_code,
+        name: row.size_name
+      } : null;
+      
+      // Rimuovi i campi lot_* e size_* e aggiungi gli oggetti lot e size
       const { lot_id, lot_arrivalDate, lot_supplier, lot_supplierLotNumber, 
-              lot_quality, lot_animalCount, lot_weight, lot_notes, ...operation } = row;
+              lot_quality, lot_animalCount, lot_weight, lot_notes,
+              size_id, size_code, size_name, ...operation } = row;
       
       return {
         ...operation,
+        size,
         lot,
         lotComposition // Aggiungi composizione se esiste (null altrimenti)
       };
