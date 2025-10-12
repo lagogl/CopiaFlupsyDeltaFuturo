@@ -281,6 +281,9 @@ export async function createSystemNotification(
       isRead: false
     }).returning();
     
+    // Invalida la cache delle notifiche per mostrare immediatamente la nuova notifica
+    NotificationsCache.clear();
+    
     return notification[0];
   } catch (error) {
     console.error("Errore durante la creazione della notifica di sistema:", error);
