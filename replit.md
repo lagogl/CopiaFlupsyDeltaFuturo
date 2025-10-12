@@ -6,7 +6,14 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (October 10, 2025)
+## Recent Changes (October 12, 2025)
+- **SPREADSHEET OPERATIONS - Validazione Date Corretta** (October 12, 2025): Risolto bug critico che impediva il salvataggio operazioni
+  - **Problema**: Validazione date considerava operazioni di cicli chiusi, bloccando silenziosamente i salvataggi
+  - **Causa Root**: `validateOperationDate()` filtrava TUTTE le operazioni del cestello senza distinguere ciclo attivo da cicli chiusi
+  - **Soluzione 1**: Modificato filtro per considerare solo operazioni del ciclo corrente: `filter(op => op.basketId === basketId && (currentCycleId ? op.cycleId === currentCycleId : true))`
+  - **Soluzione 2**: Aggiunto `currentCycleId` a righe spreadsheet e form di editing per passarlo alla validazione
+  - **File**: `client/src/pages/SpreadsheetOperations.tsx` (righe 233-238, 580, 1153, 297)
+  - **Verifica**: POST a `/api/direct-operations` ora funziona correttamente, operazioni salvate con successo
 - **SISTEMA NOTIFICHE COMPLETAMENTE FUNZIONALE** (October 10, 2025): Sistema di notifiche real-time operativo al 100%
   - **Notifiche Vendita da Vagliature**: Implementata creazione automatica notifiche quando vagliature generano vendite
     - Pattern: `req.app.locals.createSaleNotification(operationId)` chiamato dopo insert operazione con `.returning()` 
