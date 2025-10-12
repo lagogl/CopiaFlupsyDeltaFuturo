@@ -50,8 +50,8 @@ async function getNextAvailableDDTNumber(companyId?: number | null): Promise<num
     
     try {
       if (companyId) {
-        // Ottieni gli ultimi DDT da FIC per questa azienda (tipo delivery_notes - plurale!)
-        const ficResponse = await apiRequest('GET', `/issued_documents?type=delivery_notes&sort=-number&per_page=1`);
+        // Ottieni gli ultimi DDT da FIC per questa azienda (tipo delivery_note - singolare!)
+        const ficResponse = await apiRequest('GET', `/issued_documents?type=delivery_note&sort=-number&per_page=1`);
         
         if (ficResponse.data?.data && ficResponse.data.data.length > 0) {
           numeroFIC = ficResponse.data.data[0].number || 0;
@@ -1529,8 +1529,9 @@ export async function generateDDTPDF(req: Request, res: Response) {
     destinatarioY += 22;
 
     doc.fontSize(10).fillColor('#000').font('Helvetica-Bold');
-    doc.text(ddtData.clienteNome || '', boxRightX + 10, destinatarioY);
-    destinatarioY += 16;
+    const nomeHeight = doc.heightOfString(ddtData.clienteNome || '', { width: boxWidth - 20 });
+    doc.text(ddtData.clienteNome || '', boxRightX + 10, destinatarioY, { width: boxWidth - 20 });
+    destinatarioY += nomeHeight + 2;
     doc.font('Helvetica');
     
     if (ddtData.clienteIndirizzo) {
