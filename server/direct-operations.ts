@@ -332,25 +332,37 @@ export function implementDirectOperationRoute(app: Express) {
       // 3. VALIDAZIONI DATE - Impedire date duplicate e anteriori
       console.log("Validazione date per operazione...");
       
-      // Recupera tutte le operazioni esistenti per questa cesta NELLO STESSO CICLO
-      const existingOperations = await db
-        .select()
-        .from(operations)
-        .where(
-          operationData.cycleId 
-            ? and(
-                eq(operations.basketId, operationData.basketId),
-                eq(operations.cycleId, operationData.cycleId)  // Solo stesso ciclo aperto
-              )
-            : eq(operations.basketId, operationData.basketId)  // Fallback per prima-attivazione senza cycleId
-        )
-        .orderBy(sql`${operations.date} DESC`);
+      // Per prima-attivazione su cestello LIBERO, non validare contro vecchi cicli chiusi
+      let existingOperations = [];
       
-      console.log(`🔍 VALIDAZIONE CICLO: Cercando operazioni per cestello ${operationData.basketId}, cycleId: ${operationData.cycleId}`);
-      console.log(`🔍 VALIDAZIONE CICLO: Trovate ${existingOperations.length} operazioni esistenti per cesta ${operationData.basketId} ${operationData.cycleId ? `nel ciclo ${operationData.cycleId}` : '(tutti i cicli)'}`);
-      
-      if (existingOperations.length > 0) {
-        console.log(`🔍 OPERAZIONI TROVATE:`, existingOperations.map(op => ({ id: op.id, date: op.date, cycleId: op.cycleId, type: op.type })));
+      if (operationData.type === 'prima-attivazione' && !operationData.cycleId) {
+        // Prima-attivazione su cestello libero: controlla solo che il cestello sia disponibile
+        if (basket.state !== 'available') {
+          throw new Error(`Il cestello #${basket.physicalNumber} non è disponibile (stato: ${basket.state}). Non è possibile avviare un nuovo ciclo.`);
+        }
+        console.log(`✅ Prima-attivazione su cestello DISPONIBILE - nessuna validazione date contro cicli precedenti`);
+        // Non recuperare operazioni vecchie - cestello libero può iniziare nuovo ciclo con qualsiasi data
+      } else {
+        // Per tutte le altre operazioni, valida date SOLO nel ciclo corrente
+        existingOperations = await db
+          .select()
+          .from(operations)
+          .where(
+            operationData.cycleId 
+              ? and(
+                  eq(operations.basketId, operationData.basketId),
+                  eq(operations.cycleId, operationData.cycleId)  // Solo stesso ciclo aperto
+                )
+              : eq(operations.basketId, operationData.basketId)  // Fallback generico
+          )
+          .orderBy(sql`${operations.date} DESC`);
+        
+        console.log(`🔍 VALIDAZIONE CICLO: Cercando operazioni per cestello ${operationData.basketId}, cycleId: ${operationData.cycleId}`);
+        console.log(`🔍 VALIDAZIONE CICLO: Trovate ${existingOperations.length} operazioni esistenti per cesta ${operationData.basketId} ${operationData.cycleId ? `nel ciclo ${operationData.cycleId}` : ''}`);
+        
+        if (existingOperations.length > 0) {
+          console.log(`🔍 OPERAZIONI TROVATE:`, existingOperations.map(op => ({ id: op.id, date: op.date, cycleId: op.cycleId, type: op.type })));
+        }
       }
       
       // Converti la data dell'operazione corrente in formato Date per confronti
