@@ -968,6 +968,9 @@ export async function completeSelectionFixed(req: Request, res: Response) {
     }
 
     // TRANSAZIONE CORRETTA
+    // Array per salvare gli ID delle operazioni di vendita create
+    const saleOperationIds: number[] = [];
+    
     await db.transaction(async (tx) => {
       
       // ====== FASE 1: CHIUSURA CESTELLI ORIGINE (TUTTI) ======
@@ -1229,22 +1232,10 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             notes: saleNotes
           }).returning();
           
-          // Crea notifica per l'operazione di vendita
-          if (saleOperation && req.app?.locals?.createSaleNotification) {
-            try {
-              console.log(`📧 Creazione notifica vendita per operazione ${saleOperation.id}...`);
-              req.app.locals.createSaleNotification(saleOperation.id)
-                .then((notification: any) => {
-                  if (notification) {
-                    console.log(`✅ Notifica vendita ${notification.id} creata con successo`);
-                  }
-                })
-                .catch((err: any) => {
-                  console.error(`❌ Errore creazione notifica vendita:`, err);
-                });
-            } catch (err) {
-              console.error(`❌ Errore durante creazione notifica vendita:`, err);
-            }
+          // Salva l'ID dell'operazione di vendita per creare la notifica DOPO il commit
+          if (saleOperation) {
+            saleOperationIds.push(saleOperation.id);
+            console.log(`📧 Operazione vendita ${saleOperation.id} salvata per notifica post-commit`);
           }
 
           // Chiudi ciclo per vendita
@@ -1485,6 +1476,21 @@ export async function completeSelectionFixed(req: Request, res: Response) {
 
       console.log(`✅ VAGLIATURA COMPLETATA CORRETTAMENTE!`);
     });
+
+    // Crea notifiche per le operazioni di vendita DOPO il commit della transazione
+    if (saleOperationIds.length > 0 && req.app?.locals?.createSaleNotification) {
+      console.log(`📧 Creazione ${saleOperationIds.length} notifiche vendita post-commit...`);
+      for (const operationId of saleOperationIds) {
+        try {
+          const notification = await req.app.locals.createSaleNotification(operationId);
+          if (notification) {
+            console.log(`✅ Notifica vendita ${notification.id} creata per operazione ${operationId}`);
+          }
+        } catch (err) {
+          console.error(`❌ Errore creazione notifica vendita per operazione ${operationId}:`, err);
+        }
+      }
+    }
 
     // Invia notifiche WebSocket
     if (typeof (global as any).broadcastUpdate === 'function') {
