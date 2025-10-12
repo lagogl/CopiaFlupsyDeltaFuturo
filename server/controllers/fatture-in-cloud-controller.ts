@@ -373,6 +373,17 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
       let cap = clienteFIC.address_postal_code || '';
       let comune = clienteFIC.address_city || '';
       
+      // Debug specifico per Apollo
+      if (clienteFIC.name && clienteFIC.name.toLowerCase().includes('apollo')) {
+        console.log(`🔍 DEBUG Apollo - Dati grezzi API:`, {
+          name: clienteFIC.name,
+          address_city: clienteFIC.address_city,
+          address_postal_code: clienteFIC.address_postal_code,
+          address_province: clienteFIC.address_province,
+          address_street: clienteFIC.address_street
+        });
+      }
+      
       if (!cap && comune) {
         // Cerca CAP all'inizio della stringa città (5 cifre)
         const capMatch = comune.match(/^(\d{5})\s+(.+)/);
