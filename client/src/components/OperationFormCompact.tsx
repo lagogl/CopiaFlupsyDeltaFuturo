@@ -187,9 +187,9 @@ export default function OperationFormCompact({
       return true;
     }
 
-    // Trova l'ultima operazione per questo cestello e ciclo
+    // Trova l'ultima operazione per questo cestello (filtra per ciclo solo se presente)
     const basketOperations = operations
-      .filter((op: any) => op.basketId === watchBasketId && op.cycleId === watchCycleId)
+      .filter((op: any) => op.basketId === watchBasketId && (watchCycleId ? op.cycleId === watchCycleId : true))
       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     if (basketOperations.length > 0) {
@@ -201,12 +201,13 @@ export default function OperationFormCompact({
       selectedDate.setHours(0, 0, 0, 0);
       lastOperationDate.setHours(0, 0, 0, 0);
 
-      // PERMETTI operazioni nella stessa data - valida solo che non sia PRIMA dell'ultima
-      if (selectedDate < lastOperationDate) {
-        const minValidDateStr = lastOperationDate.toLocaleDateString('it-IT');
+      if (selectedDate <= lastOperationDate) {
+        const nextValidDate = new Date(lastOperationDate);
+        nextValidDate.setDate(nextValidDate.getDate() + 1);
+        const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
         
         setIsDateValid(false);
-        setDateValidationMessage(`La data non può essere precedente all'ultima operazione del ${minValidDateStr}. Usa una data dal ${minValidDateStr} in poi.`);
+        setDateValidationMessage(`La data deve essere successiva all'ultima operazione del ${lastOperationDate.toLocaleDateString('it-IT')}. Usa una data dal ${nextValidDateStr} in poi.`);
         return false;
       }
     }
@@ -515,25 +516,25 @@ export default function OperationFormCompact({
         if (selectedBasket.currentCycleId) {
           console.log("Cestello con ciclo attivo:", selectedBasket.currentCycleId);
           form.setValue('cycleId', selectedBasket.currentCycleId);
-          
-          // Cerca l'ultima operazione per questo cestello/ciclo
-          if (operations && Array.isArray(operations) && operations.length > 0) {
-            const basketOperations = operations.filter((op: any) => 
-              op.basketId === initialBasketId && 
-              op.cycleId === selectedBasket.currentCycleId
-            ).sort((a: any, b: any) => 
-              new Date(b.date).getTime() - new Date(a.date).getTime()
-            );
-            
-            if (basketOperations.length > 0) {
-              const lastOperation = basketOperations[0];
-              console.log("Ultima operazione per questo cestello:", lastOperation);
-              setPrevOperationData(lastOperation);
-            }
-          }
         } else {
           console.log("Cestello senza ciclo attivo");
           form.setValue('cycleId', null);
+        }
+        
+        // Cerca l'ultima operazione per questo cestello (indipendentemente dal ciclo)
+        if (operations && Array.isArray(operations) && operations.length > 0) {
+          const basketOperations = operations.filter((op: any) => 
+            op.basketId === initialBasketId && 
+            (selectedBasket.currentCycleId ? op.cycleId === selectedBasket.currentCycleId : true)
+          ).sort((a: any, b: any) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          
+          if (basketOperations.length > 0) {
+            const lastOperation = basketOperations[0];
+            console.log("Ultima operazione per questo cestello:", lastOperation);
+            setPrevOperationData(lastOperation);
+          }
         }
       }
     }

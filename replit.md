@@ -7,13 +7,16 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 13, 2025)
-- **OPERATION FORM - Validazione Data Corretta** (October 13, 2025): Risolto bug che impediva operazioni multiple nella stessa data
-  - **Problema**: Modulo Operazioni standard bloccava inserimento di operazioni con data uguale all'ultima operazione, mentre Spreadsheet Operazioni funzionava
-  - **Causa Root**: Validazione in `OperationFormCompact.tsx` usava `selectedDate <= lastOperationDate` che bloccava anche date uguali
-  - **Soluzione**: Cambiato in `selectedDate < lastOperationDate` per permettere multiple operazioni nello stesso giorno
-  - **File**: `client/src/components/OperationFormCompact.tsx` (righe 208-214)
-  - **Comportamento Nuovo**: Ora entrambi i moduli (standard e spreadsheet) permettono multiple operazioni nella stessa data
-  - **Verifica**: Operazioni peso con stessa data della prima attivazione ora vengono accettate ✅
+- **OPERATION FORM - Fix Cicli Chiusi** (October 13, 2025): Risolto bug critico identico al fix di Ottobre 12 per SpreadsheetOperations
+  - **Problema**: Modulo Operazioni standard non recuperava ultima operazione da cestelli con solo cicli chiusi (nessun ciclo attivo), impedendo calcoli e disabilitando bottone salvataggio
+  - **Causa Root**: Due filtri in `OperationFormCompact.tsx` filtravano operazioni per `cycleId` senza gestire caso `cycleId = null` (cestello senza ciclo attivo)
+  - **Soluzione**: Applicato pattern `(watchCycleId ? op.cycleId === watchCycleId : true)` per ignorare filtro cycleId quando null
+  - **File**: `client/src/components/OperationFormCompact.tsx` (righe 195, 531)
+  - **Pattern Identico**: Stesso fix già applicato a SpreadsheetOperations il 12 Ottobre (righe 233-238)
+  - **Comportamento Nuovo**: 
+    - Cestello CON ciclo attivo → filtra solo operazioni del ciclo corrente ✅
+    - Cestello SENZA ciclo attivo → considera tutte le operazioni per trovare l'ultima (da cicli chiusi) ✅
+  - **Verifica**: Form ora recupera correttamente `prevOperationData` anche da cicli chiusi, permettendo calcoli e salvataggio
 - **REAL-TIME UPDATES - Eliminati Ritardi di Visualizzazione** (October 13, 2025): Risolto problema di ritardo nella visualizzazione delle operazioni
   - **Problema**: Operazioni create non apparivano immediatamente nel Registro Operazioni e nella Mappa FLUPSY (ritardi di 15-30 minuti)
   - **Causa Root**: TanStack Query configurato con `staleTime` elevati (900000ms = 15 min per operations/baskets/cycles) che impedivano il refetch anche dopo invalidazione cache WebSocket
