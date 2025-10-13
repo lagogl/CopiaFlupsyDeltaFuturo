@@ -1499,7 +1499,7 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       // Recupera info FLUPSY e cestello del primo origine per l'email
       const firstSourceBasket = sourceBaskets[0];
       const basketInfo = await db.select({
-        basketNumber: baskets.number,
+        basketNumber: baskets.physicalNumber,
         flupsyName: flupsys.name
       })
       .from(baskets)
