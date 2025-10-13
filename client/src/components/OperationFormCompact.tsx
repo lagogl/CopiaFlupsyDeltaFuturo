@@ -187,9 +187,9 @@ export default function OperationFormCompact({
       return true;
     }
 
-    // Trova l'ultima operazione per questo cestello (filtra per ciclo solo se presente)
+    // Trova l'ultima operazione per questo cestello E CICLO ATTIVO
     const basketOperations = operations
-      .filter((op: any) => op.basketId === watchBasketId && (watchCycleId ? op.cycleId === watchCycleId : true))
+      .filter((op: any) => op.basketId === watchBasketId && op.cycleId === watchCycleId)
       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     if (basketOperations.length > 0) {
@@ -219,6 +219,12 @@ export default function OperationFormCompact({
 
   // Validazione completa campi obbligatori
   const isFormValid = useMemo(() => {
+    // BLOCCO CRITTICO: Se il cestello non ha ciclo attivo E non è una prima attivazione → BLOCCA
+    if (!watchCycleId && watchType && watchType !== 'prima-attivazione') {
+      console.log('⛔ OPERAZIONE BLOCCATA: Cestello senza ciclo attivo. Solo Prima Attivazione permessa.');
+      return false;
+    }
+    
     // Campi base sempre obbligatori
     if (!watchFlupsyId || !watchBasketId || !watchType || !watchDate || !watchLotId) {
       return false;
@@ -516,25 +522,25 @@ export default function OperationFormCompact({
         if (selectedBasket.currentCycleId) {
           console.log("Cestello con ciclo attivo:", selectedBasket.currentCycleId);
           form.setValue('cycleId', selectedBasket.currentCycleId);
-        } else {
-          console.log("Cestello senza ciclo attivo");
-          form.setValue('cycleId', null);
-        }
-        
-        // Cerca l'ultima operazione per questo cestello (indipendentemente dal ciclo)
-        if (operations && Array.isArray(operations) && operations.length > 0) {
-          const basketOperations = operations.filter((op: any) => 
-            op.basketId === initialBasketId && 
-            (selectedBasket.currentCycleId ? op.cycleId === selectedBasket.currentCycleId : true)
-          ).sort((a: any, b: any) => 
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
           
-          if (basketOperations.length > 0) {
-            const lastOperation = basketOperations[0];
-            console.log("Ultima operazione per questo cestello:", lastOperation);
-            setPrevOperationData(lastOperation);
+          // Cerca l'ultima operazione SOLO per il ciclo attivo
+          if (operations && Array.isArray(operations) && operations.length > 0) {
+            const basketOperations = operations.filter((op: any) => 
+              op.basketId === initialBasketId && 
+              op.cycleId === selectedBasket.currentCycleId
+            ).sort((a: any, b: any) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            
+            if (basketOperations.length > 0) {
+              const lastOperation = basketOperations[0];
+              console.log("Ultima operazione per questo cestello:", lastOperation);
+              setPrevOperationData(lastOperation);
+            }
           }
+        } else {
+          console.log("Cestello senza ciclo attivo - OPERAZIONI NON PERMESSE");
+          form.setValue('cycleId', null);
         }
       }
     }
@@ -582,13 +588,19 @@ export default function OperationFormCompact({
         }
       }
       
-      // AUTO-IMPOSTA IL LOTTO DALLA PRIMA ATTIVAZIONE PER OPERAZIONI SU CICLI ATTIVI
+      // AUTO-IMPOSTA IL LOTTO DALLA PRIMA ATTIVAZIONE SOLO PER CICLI ATTIVI
       if (isActiveWithCycle && operations && Array.isArray(operations) && operations.length > 0) {
         const currentCycleId = form.getValues('cycleId');
+        // BLOCCO: Se non c'è ciclo attivo, NON cercare operazioni da cicli chiusi
+        if (!currentCycleId) {
+          console.log('⛔ Nessun ciclo attivo - auto-lotto disabilitato');
+          return;
+        }
+        
         const firstActivationOp = operations.find((op: any) => 
           op.basketId === watchBasketId && 
           op.type === 'prima-attivazione' &&
-          (currentCycleId ? op.cycleId === currentCycleId : true)
+          op.cycleId === currentCycleId
         );
         
         if (firstActivationOp && form.getValues('lotId') !== firstActivationOp.lotId) {
@@ -2135,6 +2147,18 @@ export default function OperationFormCompact({
                   </FormItem>
                 )}
               />
+              
+              {/* Avviso ciclo chiuso */}
+              {!watchCycleId && watchType && watchType !== 'prima-attivazione' && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-800 font-medium">
+                    ⛔ Questo cestello non ha un ciclo attivo. Le operazioni sono possibili solo su cicli aperti.
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    Per registrare operazioni, crea prima una nuova "Prima Attivazione" per aprire un nuovo ciclo.
+                  </p>
+                </div>
+              )}
               
               {/* Form buttons */}
               <div className="flex gap-3 justify-end mt-4">

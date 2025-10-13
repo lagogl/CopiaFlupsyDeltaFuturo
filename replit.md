@@ -7,21 +7,20 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 13, 2025)
-- **OPERATION FORM - Fix Completo Cicli Chiusi + Auto-Lotto** (October 13, 2025): Risolti 3 bug critici correlati ai filtri per cycleId
-  - **Problema 1**: Modulo Operazioni standard non recuperava ultima operazione da cestelli con solo cicli chiusi → bottone salvataggio disabilitato
-  - **Problema 2**: Auto-popolazione lotto falliva, trovando prima attivazione di cicli chiusi → campo lotto vuoto in duplicazione operazioni
-  - **Causa Root**: TRE filtri in `OperationFormCompact.tsx` non gestivano correttamente `cycleId = null` (cestelli senza ciclo attivo)
-  - **Soluzione**: Applicato pattern `(cycleId ? op.cycleId === cycleId : true)` in 3 punti:
-    1. **Validazione data** (riga 195): filtra operazioni per confronto date
-    2. **Recupero ultima operazione** (riga 531): per prevOperationData e calcoli
-    3. **Auto-lotto da prima attivazione** (riga 594): NEW FIX - cerca prima attivazione del ciclo corretto
-  - **File**: `client/src/components/OperationFormCompact.tsx` (righe 195, 531, 594)
-  - **Pattern Identico**: Stesso fix già applicato a SpreadsheetOperations il 12 Ottobre
-  - **Comportamento Nuovo**: 
-    - Cestello CON ciclo attivo → filtra solo operazioni del ciclo corrente ✅
-    - Cestello SENZA ciclo attivo → considera tutte le operazioni (da cicli chiusi) ✅
-    - Auto-lotto trova prima attivazione del CICLO CORRETTO, non di cicli chiusi ✅
-  - **Verifica**: Form recupera prevOperationData e auto-popola lotto correttamente anche con cicli chiusi
+- **OPERATION FORM - Blocco Operazioni su Cicli Chiusi** (October 13, 2025): Implementato blocco corretto per impedire operazioni su cicli non attivi
+  - **Requisito Business CRITICO**: Cicli chiusi = SOLO visualizzazione, NESSUNA operazione permessa
+  - **Problema**: Form permetteva erroneamente di tentare operazioni su cestelli senza ciclo attivo
+  - **Soluzione Implementata**:
+    1. **Filtri rigorosi per cycleId**: Tutti i filtri richiedono match ESATTO con ciclo attivo (righe 195, 527, 600)
+    2. **Blocco validazione form**: Se `!watchCycleId && tipo != 'prima-attivazione'` → form invalido (riga 226)
+    3. **Messaggio utente chiaro**: Alert rosso visibile spiega perché operazione bloccata (righe 2155-2163)
+    4. **Log esplicito**: Console mostra `⛔ OPERAZIONE BLOCCATA: Cestello senza ciclo attivo`
+  - **File**: `client/src/components/OperationFormCompact.tsx`
+  - **Comportamento Corretto**: 
+    - ✅ Cestello CON ciclo attivo → Operazioni permesse SOLO sul ciclo attivo
+    - ⛔ Cestello SENZA ciclo attivo → SOLO Prima Attivazione permessa (apre nuovo ciclo)
+    - 📋 Cicli chiusi → SOLO visualizzazione storica, zero modifiche
+  - **UI**: Messaggio rosso chiaro: "Questo cestello non ha un ciclo attivo. Per registrare operazioni, crea prima una nuova Prima Attivazione"
 - **REAL-TIME UPDATES - Fix Definitivo Cache Server** (October 13, 2025): Risolto bug critico cache server che causava ritardi nonostante fix frontend
   - **Problema**: Operazioni non apparivano per minuti nonostante `staleTime: 0` frontend
   - **Causa Root Reale**: Backend aveva cache con TTL 60 secondi in `operations-cache-service.ts` → dopo invalidazione WebSocket, frontend faceva refetch ma riceveva dati dalla cache server vecchia di 60 secondi
