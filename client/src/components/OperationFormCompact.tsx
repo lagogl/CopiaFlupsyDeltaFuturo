@@ -591,21 +591,23 @@ export default function OperationFormCompact({
       // AUTO-IMPOSTA IL LOTTO DALLA PRIMA ATTIVAZIONE SOLO PER CICLI ATTIVI
       if (isActiveWithCycle && operations && Array.isArray(operations) && operations.length > 0) {
         const currentCycleId = form.getValues('cycleId');
-        // BLOCCO: Se non c'è ciclo attivo, NON cercare operazioni da cicli chiusi
+        
+        // Se non c'è cycleId, SKIP (non bloccare tutto l'useEffect)
         if (!currentCycleId) {
-          console.log('⛔ Nessun ciclo attivo - auto-lotto disabilitato');
-          return;
-        }
-        
-        const firstActivationOp = operations.find((op: any) => 
-          op.basketId === watchBasketId && 
-          op.type === 'prima-attivazione' &&
-          op.cycleId === currentCycleId
-        );
-        
-        if (firstActivationOp && form.getValues('lotId') !== firstActivationOp.lotId) {
-          console.log('✅ Trovata Prima Attivazione - impostazione lotto:', firstActivationOp);
-          form.setValue('lotId', firstActivationOp.lotId);
+          console.log('⛔ Nessun cycleId disponibile - auto-lotto rimandato');
+          // NON return - lascia continuare l'useEffect
+        } else {
+          // Cerca la prima attivazione del ciclo ATTIVO (non cicli chiusi)
+          const firstActivationOp = operations.find((op: any) => 
+            op.basketId === watchBasketId && 
+            op.type === 'prima-attivazione' &&
+            op.cycleId === currentCycleId
+          );
+          
+          if (firstActivationOp && form.getValues('lotId') !== firstActivationOp.lotId) {
+            console.log('✅ Trovata Prima Attivazione - impostazione lotto:', firstActivationOp);
+            form.setValue('lotId', firstActivationOp.lotId);
+          }
         }
       }
     }
