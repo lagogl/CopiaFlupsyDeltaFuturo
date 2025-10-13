@@ -7,20 +7,22 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 13, 2025)
-- **OPERATION FORM - Blocco Operazioni su Cicli Chiusi** (October 13, 2025): Implementato blocco corretto per impedire operazioni su cicli non attivi
+- **OPERATION FORM - Blocco Operazioni su Cicli Chiusi + Fix Auto-Lotto Duplicazione** (October 13, 2025): Implementato blocco corretto + risolto bug auto-popolazione lotto
   - **Requisito Business CRITICO**: Cicli chiusi = SOLO visualizzazione, NESSUNA operazione permessa
-  - **Problema**: Form permetteva erroneamente di tentare operazioni su cestelli senza ciclo attivo
+  - **Problema 1**: Form permetteva erroneamente di tentare operazioni su cestelli senza ciclo attivo
+  - **Problema 2**: Auto-popolazione lotto falliva in modalità "Duplica Operazione" → campo vuoto bloccava salvataggio
   - **Soluzione Implementata**:
-    1. **Filtri rigorosi per cycleId**: Tutti i filtri richiedono match ESATTO con ciclo attivo (righe 195, 527, 600)
+    1. **Filtri rigorosi per cycleId**: Tutti i filtri richiedono match ESATTO con ciclo attivo (righe 195, 527, 607)
     2. **Blocco validazione form**: Se `!watchCycleId && tipo != 'prima-attivazione'` → form invalido (riga 226)
-    3. **Messaggio utente chiaro**: Alert rosso visibile spiega perché operazione bloccata (righe 2155-2163)
-    4. **Log esplicito**: Console mostra `⛔ OPERAZIONE BLOCCATA: Cestello senza ciclo attivo`
+    3. **Fix auto-lotto duplicazione**: Rimosso `return` che bloccava useEffect quando cycleId non immediatamente disponibile (riga 600-602)
+    4. **Messaggio utente chiaro**: Alert rosso visibile spiega perché operazione bloccata (righe 2155-2163)
   - **File**: `client/src/components/OperationFormCompact.tsx`
   - **Comportamento Corretto**: 
-    - ✅ Cestello CON ciclo attivo → Operazioni permesse SOLO sul ciclo attivo
+    - ✅ Cestello CON ciclo attivo → Operazioni permesse SOLO sul ciclo attivo, lotto auto-popolato
     - ⛔ Cestello SENZA ciclo attivo → SOLO Prima Attivazione permessa (apre nuovo ciclo)
     - 📋 Cicli chiusi → SOLO visualizzazione storica, zero modifiche
-  - **UI**: Messaggio rosso chiaro: "Questo cestello non ha un ciclo attivo. Per registrare operazioni, crea prima una nuova Prima Attivazione"
+    - 🔄 Duplicazione operazioni → Lotto auto-popolato correttamente dopo caricamento cycleId
+  - **UI**: Messaggio rosso chiaro quando bloccato + auto-popolazione lotto funzionante in duplicazione
 - **REAL-TIME UPDATES - Fix Definitivo Cache Server** (October 13, 2025): Risolto bug critico cache server che causava ritardi nonostante fix frontend
   - **Problema**: Operazioni non apparivano per minuti nonostante `staleTime: 0` frontend
   - **Causa Root Reale**: Backend aveva cache con TTL 60 secondi in `operations-cache-service.ts` → dopo invalidazione WebSocket, frontend faceva refetch ma riceveva dati dalla cache server vecchia di 60 secondi
