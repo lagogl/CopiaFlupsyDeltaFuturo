@@ -201,13 +201,12 @@ export default function OperationFormCompact({
       selectedDate.setHours(0, 0, 0, 0);
       lastOperationDate.setHours(0, 0, 0, 0);
 
-      if (selectedDate <= lastOperationDate) {
-        const nextValidDate = new Date(lastOperationDate);
-        nextValidDate.setDate(nextValidDate.getDate() + 1);
-        const nextValidDateStr = nextValidDate.toLocaleDateString('it-IT');
+      // PERMETTI operazioni nella stessa data - valida solo che non sia PRIMA dell'ultima
+      if (selectedDate < lastOperationDate) {
+        const minValidDateStr = lastOperationDate.toLocaleDateString('it-IT');
         
         setIsDateValid(false);
-        setDateValidationMessage(`La data deve essere successiva all'ultima operazione del ${lastOperationDate.toLocaleDateString('it-IT')}. Usa una data dal ${nextValidDateStr} in poi.`);
+        setDateValidationMessage(`La data non può essere precedente all'ultima operazione del ${minValidDateStr}. Usa una data dal ${minValidDateStr} in poi.`);
         return false;
       }
     }

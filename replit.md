@@ -7,6 +7,13 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 13, 2025)
+- **OPERATION FORM - Validazione Data Corretta** (October 13, 2025): Risolto bug che impediva operazioni multiple nella stessa data
+  - **Problema**: Modulo Operazioni standard bloccava inserimento di operazioni con data uguale all'ultima operazione, mentre Spreadsheet Operazioni funzionava
+  - **Causa Root**: Validazione in `OperationFormCompact.tsx` usava `selectedDate <= lastOperationDate` che bloccava anche date uguali
+  - **Soluzione**: Cambiato in `selectedDate < lastOperationDate` per permettere multiple operazioni nello stesso giorno
+  - **File**: `client/src/components/OperationFormCompact.tsx` (righe 208-214)
+  - **Comportamento Nuovo**: Ora entrambi i moduli (standard e spreadsheet) permettono multiple operazioni nella stessa data
+  - **Verifica**: Operazioni peso con stessa data della prima attivazione ora vengono accettate ✅
 - **REAL-TIME UPDATES - Eliminati Ritardi di Visualizzazione** (October 13, 2025): Risolto problema di ritardo nella visualizzazione delle operazioni
   - **Problema**: Operazioni create non apparivano immediatamente nel Registro Operazioni e nella Mappa FLUPSY (ritardi di 15-30 minuti)
   - **Causa Root**: TanStack Query configurato con `staleTime` elevati (900000ms = 15 min per operations/baskets/cycles) che impedivano il refetch anche dopo invalidazione cache WebSocket
