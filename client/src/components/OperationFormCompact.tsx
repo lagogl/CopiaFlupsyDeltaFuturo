@@ -584,9 +584,11 @@ export default function OperationFormCompact({
       
       // AUTO-IMPOSTA IL LOTTO DALLA PRIMA ATTIVAZIONE PER OPERAZIONI SU CICLI ATTIVI
       if (isActiveWithCycle && operations && Array.isArray(operations) && operations.length > 0) {
+        const currentCycleId = form.getValues('cycleId');
         const firstActivationOp = operations.find((op: any) => 
           op.basketId === watchBasketId && 
-          op.type === 'prima-attivazione'
+          op.type === 'prima-attivazione' &&
+          (currentCycleId ? op.cycleId === currentCycleId : true)
         );
         
         if (firstActivationOp && form.getValues('lotId') !== firstActivationOp.lotId) {

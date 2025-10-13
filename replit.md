@@ -7,16 +7,21 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 13, 2025)
-- **OPERATION FORM - Fix Cicli Chiusi** (October 13, 2025): Risolto bug critico identico al fix di Ottobre 12 per SpreadsheetOperations
-  - **Problema**: Modulo Operazioni standard non recuperava ultima operazione da cestelli con solo cicli chiusi (nessun ciclo attivo), impedendo calcoli e disabilitando bottone salvataggio
-  - **Causa Root**: Due filtri in `OperationFormCompact.tsx` filtravano operazioni per `cycleId` senza gestire caso `cycleId = null` (cestello senza ciclo attivo)
-  - **Soluzione**: Applicato pattern `(watchCycleId ? op.cycleId === watchCycleId : true)` per ignorare filtro cycleId quando null
-  - **File**: `client/src/components/OperationFormCompact.tsx` (righe 195, 531)
-  - **Pattern Identico**: Stesso fix già applicato a SpreadsheetOperations il 12 Ottobre (righe 233-238)
+- **OPERATION FORM - Fix Completo Cicli Chiusi + Auto-Lotto** (October 13, 2025): Risolti 3 bug critici correlati ai filtri per cycleId
+  - **Problema 1**: Modulo Operazioni standard non recuperava ultima operazione da cestelli con solo cicli chiusi → bottone salvataggio disabilitato
+  - **Problema 2**: Auto-popolazione lotto falliva, trovando prima attivazione di cicli chiusi → campo lotto vuoto in duplicazione operazioni
+  - **Causa Root**: TRE filtri in `OperationFormCompact.tsx` non gestivano correttamente `cycleId = null` (cestelli senza ciclo attivo)
+  - **Soluzione**: Applicato pattern `(cycleId ? op.cycleId === cycleId : true)` in 3 punti:
+    1. **Validazione data** (riga 195): filtra operazioni per confronto date
+    2. **Recupero ultima operazione** (riga 531): per prevOperationData e calcoli
+    3. **Auto-lotto da prima attivazione** (riga 594): NEW FIX - cerca prima attivazione del ciclo corretto
+  - **File**: `client/src/components/OperationFormCompact.tsx` (righe 195, 531, 594)
+  - **Pattern Identico**: Stesso fix già applicato a SpreadsheetOperations il 12 Ottobre
   - **Comportamento Nuovo**: 
     - Cestello CON ciclo attivo → filtra solo operazioni del ciclo corrente ✅
-    - Cestello SENZA ciclo attivo → considera tutte le operazioni per trovare l'ultima (da cicli chiusi) ✅
-  - **Verifica**: Form ora recupera correttamente `prevOperationData` anche da cicli chiusi, permettendo calcoli e salvataggio
+    - Cestello SENZA ciclo attivo → considera tutte le operazioni (da cicli chiusi) ✅
+    - Auto-lotto trova prima attivazione del CICLO CORRETTO, non di cicli chiusi ✅
+  - **Verifica**: Form recupera prevOperationData e auto-popola lotto correttamente anche con cicli chiusi
 - **REAL-TIME UPDATES - Fix Definitivo Cache Server** (October 13, 2025): Risolto bug critico cache server che causava ritardi nonostante fix frontend
   - **Problema**: Operazioni non apparivano per minuti nonostante `staleTime: 0` frontend
   - **Causa Root Reale**: Backend aveva cache con TTL 60 secondi in `operations-cache-service.ts` → dopo invalidazione WebSocket, frontend faceva refetch ma riceveva dati dalla cache server vecchia di 60 secondi
