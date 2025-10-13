@@ -18,14 +18,16 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
   const [, navigate] = useLocation();
   const [selectedTab, setSelectedTab] = useState<string>("all");
 
-  // Fetch flupsys
+  // Fetch flupsys - aggiornamento real-time
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
     queryKey: ['/api/flupsys', { includeAll: true }],
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
   });
 
-  // Fetch ALL baskets without any filters
+  // Fetch ALL baskets without any filters - aggiornamento real-time
   const { data: allBaskets, isLoading: isLoadingBaskets } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
   });
 
   // Filter baskets client-side based on selectedFlupsyIds
@@ -41,22 +43,22 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     return allBaskets.filter((basket: any) => selectedFlupsyIds.includes(basket.flupsyId));
   }, [allBaskets, selectedFlupsyIds]);
 
-  // Fetch operations for tooltip data - ottimizzata per performance
+  // Fetch operations for tooltip data - aggiornamento real-time via WebSocket
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 100 }],
-    staleTime: 60000, // 1 minute per performance
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
   });
 
   // Fetch cycles for tooltip data
   const { data: cycles, isLoading: isLoadingCycles } = useQuery({
     queryKey: ['/api/cycles', { includeAll: true }],
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
   });
 
   // Fetch lots for tooltip data
   const { data: lots, isLoading: isLoadingLots } = useQuery({
     queryKey: ['/api/lots', { includeAll: true }],
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
   });
 
   // Fetch sizes for tooltip data
