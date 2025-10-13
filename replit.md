@@ -6,7 +6,16 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (October 12, 2025)
+## Recent Changes (October 13, 2025)
+- **REAL-TIME UPDATES - Eliminati Ritardi di Visualizzazione** (October 13, 2025): Risolto problema di ritardo nella visualizzazione delle operazioni
+  - **Problema**: Operazioni create non apparivano immediatamente nel Registro Operazioni e nella Mappa FLUPSY (ritardi di 15-30 minuti)
+  - **Causa Root**: TanStack Query configurato con `staleTime` elevati (900000ms = 15 min per operations/baskets/cycles) che impedivano il refetch anche dopo invalidazione cache WebSocket
+  - **Soluzione**: Impostato `staleTime: 0` per tutte le query critiche in tempo reale
+  - **File Modificati**: 
+    - `client/src/components/dashboard/SimpleFlupsyVisualizer.tsx` (righe 25-63): operations, cycles, lots, baskets, flupsys → staleTime: 0
+    - `client/src/pages/Operations.tsx` (righe 601-649): operations, baskets, cycles, lots, flupsys → staleTime: 0
+  - **Pattern**: WebSocket invalida cache → React Query refetch immediato (staleTime=0) → UI aggiornata istantaneamente
+  - **Verifica**: Creazione operazione → visualizzazione immediata in tutti i componenti ⚡
 - **SPREADSHEET OPERATIONS - Validazione Date Corretta** (October 12, 2025): Risolto bug critico che impediva il salvataggio operazioni
   - **Problema**: Validazione date considerava operazioni di cicli chiusi, bloccando silenziosamente i salvataggi
   - **Causa Root**: `validateOperationDate()` filtrava TUTTE le operazioni del cestello senza distinguere ciclo attivo da cicli chiusi

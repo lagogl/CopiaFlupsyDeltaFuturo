@@ -595,20 +595,18 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // PERFORMANCE OTTIMIZZATA: Cache 15 minuti e pageSize ridotto per performance
+  // AGGIORNAMENTO REAL-TIME: staleTime=0 per refresh immediato via WebSocket
   const { data: operations = [], isLoading: operationsLoading, error: operationsError } = useQuery({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 100 }],
-    staleTime: 900000, // 15 minuti - compromesso perfetto velocità/aggiornamento
-    cacheTime: 1800000, // 30 minuti background
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
     refetchOnWindowFocus: false, // Non rifare richieste quando torni nella pagina
     refetchOnMount: false, // Non rifare richieste al mount se hai dati
   });
 
-  // Query leggere solo quando servono
+  // Query leggere solo quando servono - real-time updates
   const { data: baskets = [] } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
-    staleTime: 900000, // 15 minuti 
-    cacheTime: 1800000, // 30 minuti
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     enabled: operations.length > 0, // Solo se abbiamo operazioni
@@ -616,18 +614,16 @@ export default function Operations() {
 
   const { data: cycles = [] } = useQuery({
     queryKey: ['/api/cycles', { includeAll: true }],
-    staleTime: 900000, // 15 minuti
-    cacheTime: 1800000, // 30 minuti
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     enabled: operations.length > 0, // Solo se abbiamo operazioni
   });
 
-  // Query non essenziali - caricate on-demand
+  // Query non essenziali - caricate on-demand con real-time updates
   const { data: lots = [] } = useQuery({
     queryKey: ['/api/lots'],
-    staleTime: 1800000, // 30 minuti
-    cacheTime: 3600000, // 1 ora
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     enabled: false, // Caricata solo quando serve
@@ -635,8 +631,7 @@ export default function Operations() {
 
   const { data: sizes = [] } = useQuery({
     queryKey: ['/api/sizes'],
-    staleTime: 3600000, // 1 ora (quasi statici)
-    cacheTime: 7200000, // 2 ore
+    staleTime: 3600000, // 1 ora (le taglie cambiano raramente)
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     enabled: false, // Caricata solo quando serve
@@ -644,8 +639,7 @@ export default function Operations() {
 
   const { data: flupsys = [] } = useQuery({
     queryKey: ['/api/flupsys'],
-    staleTime: 1800000, // 30 minuti
-    cacheTime: 3600000, // 1 ora
+    staleTime: 0, // Aggiornamento immediato quando cache invalidata da WebSocket
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     enabled: false, // Caricata solo quando serve
