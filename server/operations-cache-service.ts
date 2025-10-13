@@ -22,8 +22,8 @@ class OperationsCacheService {
 
   constructor() {
     this.cache = new Map();
-    this.ttl = 60; // Cache attiva con TTL di 60 secondi
-    console.log('🚀 Cache operazioni attiva con TTL di 60 secondi');
+    this.ttl = Infinity; // Cache infinita - invalidazione solo esplicita via WebSocket
+    console.log('🚀 Cache operazioni infinita (solo invalidazione esplicita)');
   }
 
   /**

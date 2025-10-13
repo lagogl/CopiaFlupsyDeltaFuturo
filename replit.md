@@ -17,15 +17,17 @@ Preferred communication style: Simple, everyday language.
     - Cestello CON ciclo attivo → filtra solo operazioni del ciclo corrente ✅
     - Cestello SENZA ciclo attivo → considera tutte le operazioni per trovare l'ultima (da cicli chiusi) ✅
   - **Verifica**: Form ora recupera correttamente `prevOperationData` anche da cicli chiusi, permettendo calcoli e salvataggio
-- **REAL-TIME UPDATES - Eliminati Ritardi di Visualizzazione** (October 13, 2025): Risolto problema di ritardo nella visualizzazione delle operazioni
-  - **Problema**: Operazioni create non apparivano immediatamente nel Registro Operazioni e nella Mappa FLUPSY (ritardi di 15-30 minuti)
-  - **Causa Root**: TanStack Query configurato con `staleTime` elevati (900000ms = 15 min per operations/baskets/cycles) che impedivano il refetch anche dopo invalidazione cache WebSocket
-  - **Soluzione**: Impostato `staleTime: 0` per tutte le query critiche in tempo reale
-  - **File Modificati**: 
-    - `client/src/components/dashboard/SimpleFlupsyVisualizer.tsx` (righe 25-63): operations, cycles, lots, baskets, flupsys → staleTime: 0
-    - `client/src/pages/Operations.tsx` (righe 601-649): operations, baskets, cycles, lots, flupsys → staleTime: 0
-  - **Pattern**: WebSocket invalida cache → React Query refetch immediato (staleTime=0) → UI aggiornata istantaneamente
-  - **Verifica**: Creazione operazione → visualizzazione immediata in tutti i componenti ⚡
+- **REAL-TIME UPDATES - Fix Definitivo Cache Server** (October 13, 2025): Risolto bug critico cache server che causava ritardi nonostante fix frontend
+  - **Problema**: Operazioni non apparivano per minuti nonostante `staleTime: 0` frontend
+  - **Causa Root Reale**: Backend aveva cache con TTL 60 secondi in `operations-cache-service.ts` → dopo invalidazione WebSocket, frontend faceva refetch ma riceveva dati dalla cache server vecchia di 60 secondi
+  - **Soluzione Definitiva**: Cambiato TTL da 60 secondi a `Infinity` (riga 28) → cache infinita con solo invalidazione esplicita via `OperationsCache.clear()` chiamato dopo ogni operazione
+  - **File**: `server/operations-cache-service.ts` (riga 28)
+  - **Flusso Corretto**: 
+    1. Operazione salvata → Backend chiama `OperationsCache.clear()`
+    2. WebSocket invalida cache frontend → Frontend fa refetch
+    3. Backend non ha più cache → Query database → Dati freschi ✅
+  - **Pattern Precedente (bug)**: Frontend `staleTime: 0` + Backend cache 60s = ritardi fino a 60 secondi
+  - **Pattern Nuovo (fix)**: Frontend `staleTime: 0` + Backend TTL Infinity con clear esplicito = aggiornamenti istantanei
 - **SPREADSHEET OPERATIONS - Validazione Date Corretta** (October 12, 2025): Risolto bug critico che impediva il salvataggio operazioni
   - **Problema**: Validazione date considerava operazioni di cicli chiusi, bloccando silenziosamente i salvataggi
   - **Causa Root**: `validateOperationDate()` filtrava TUTTE le operazioni del cestello senza distinguere ciclo attivo da cicli chiusi
