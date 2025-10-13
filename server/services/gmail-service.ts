@@ -156,16 +156,30 @@ export async function getEmailRecipients(): Promise<string[]> {
       .where(eq(emailConfig.key, 'email_recipients'));
     
     if (config.length > 0 && config[0].value) {
-      // Prova prima a parsare come JSON array
+      const value = config[0].value;
+      
+      // Caso 1: PostgreSQL array format - es: {"email1","email2"}
+      if (value.startsWith('{') && value.endsWith('}')) {
+        const cleanValue = value.slice(1, -1); // Rimuovi { e }
+        // Split per virgola e rimuovi virgolette doppie
+        const emails = cleanValue.split(',').map(email => 
+          email.trim().replace(/^""|""$/g, '').replace(/^"|"$/g, '')
+        );
+        return emails.filter(email => email && email.length > 0 && email.includes('@'));
+      }
+      
+      // Caso 2: JSON array format - es: ["email1","email2"]
       try {
-        const parsed = JSON.parse(config[0].value);
+        const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) {
-          return parsed.filter(email => email && email.length > 0);
+          return parsed.filter(email => email && email.length > 0 && email.includes('@'));
         }
       } catch {
-        // Fallback: split per virgola (compatibilità legacy)
-        return config[0].value.split(',').map(email => email.trim()).filter(email => email.length > 0);
+        // Non è JSON valido, continua...
       }
+      
+      // Caso 3: Fallback - split per virgola (compatibilità legacy)
+      return value.split(',').map(email => email.trim()).filter(email => email.length > 0 && email.includes('@'));
     }
     
     return [];

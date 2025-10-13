@@ -20,6 +20,45 @@ export function registerIntegrationsRoutes(app: Express) {
   // Configurazione email
   app.get('/api/email/config', EmailController.getEmailConfiguration);
   app.post('/api/email/config', EmailController.saveEmailConfiguration);
+  
+  // Test email Gmail
+  app.post('/api/email/test', async (req, res) => {
+    try {
+      const { sendGmailEmail, getEmailRecipients } = await import('../../services/gmail-service');
+      const recipients = await getEmailRecipients();
+      
+      if (recipients.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Nessun destinatario configurato'
+        });
+      }
+      
+      await sendGmailEmail({
+        to: recipients,
+        subject: '🧪 Test Email Sistema FLUPSY',
+        html: `
+          <h2>Test Email</h2>
+          <p>Questa è un'email di test inviata dal Sistema FLUPSY.</p>
+          <p>Data/ora: ${new Date().toLocaleString('it-IT')}</p>
+          <p>Se ricevi questo messaggio, l'integrazione Gmail funziona correttamente! ✅</p>
+        `
+      });
+      
+      res.json({
+        success: true,
+        message: 'Email di test inviata correttamente',
+        recipients: recipients.length
+      });
+    } catch (error: any) {
+      console.error('❌ Errore test email:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Errore sconosciuto',
+        details: error.stack
+      });
+    }
+  });
 
   // ===== TELEGRAM INTEGRATION =====
   // Invia messaggio Telegram con diario
