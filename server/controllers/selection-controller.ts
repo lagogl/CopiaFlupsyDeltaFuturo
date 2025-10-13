@@ -1500,14 +1500,36 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       const firstSourceBasket = sourceBaskets[0];
       const basketInfo = await db.select({
         basketNumber: baskets.physicalNumber,
-        flupsyName: flupsys.name
+        flupsyName: flupsys.name,
+        flupsyLocation: flupsys.location
       })
       .from(baskets)
       .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
       .where(eq(baskets.id, firstSourceBasket.basketId))
       .limit(1);
       
-      // Recupera info taglie per i risultati
+      // Recupera info dettagliate dei cestelli origine
+      const sourceBasketDetails = await Promise.all(
+        sourceBaskets.map(async (source) => {
+          const basket = await db.select({
+            basketNumber: baskets.physicalNumber,
+            animalCount: sql<number>`${source.animalCount}`,
+            sizeCode: sizes.code
+          })
+          .from(baskets)
+          .leftJoin(sizes, eq(sizes.id, source.sizeId))
+          .where(eq(baskets.id, source.basketId))
+          .limit(1);
+          
+          return {
+            basketNumber: basket[0]?.basketNumber || 'N/A',
+            animalCount: source.animalCount || 0,
+            sizeCode: basket[0]?.sizeCode || 'N/A'
+          };
+        })
+      );
+      
+      // Recupera info taglie per i risultati con destinazione dettagliata
       const resultsWithSizes = await Promise.all(
         destinationBaskets.map(async (dest) => {
           const sizeInfo = dest.sizeId ? await db.select()
@@ -1530,13 +1552,27 @@ export async function completeSelectionFixed(req: Request, res: Response) {
         .filter(d => d.destinationType === 'sale')
         .reduce((sum, d) => sum + (d.animalCount || 0), 0);
       
+      const totalRepositioned = destinationBaskets
+        .filter(d => d.destinationType === 'basket')
+        .reduce((sum, d) => sum + (d.animalCount || 0), 0);
+      
+      const totalDiscarded = destinationBaskets
+        .filter(d => d.destinationType === 'discard')
+        .reduce((sum, d) => sum + (d.animalCount || 0), 0);
+      
       await sendScreeningConfirmationEmail({
         date: selection[0].selectionDate || new Date(),
         flupsyName: basketInfo[0]?.flupsyName || 'N/A',
+        flupsyLocation: basketInfo[0]?.flupsyLocation || 'N/A',
         basketNumber: basketInfo[0]?.basketNumber || 'N/A',
         type: selection[0].type || 'normal',
+        sourceBaskets: sourceBasketDetails,
         results: resultsWithSizes,
         totalSold,
+        totalRepositioned,
+        totalDiscarded,
+        totalOrigin: totalAnimalsOrigin,
+        mortality: mortality,
         notes: selection[0].notes || ''
       });
       
