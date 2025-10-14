@@ -64,11 +64,32 @@ interface MortalityRecord {
 }
 
 interface InventoryData {
+  // Legacy fields (per compatibilità)
   initialCount: number;
   currentCount: number;
   soldCount: number;
   mortalityCount: number;
   mortalityPercentage: number;
+  
+  // Dual Tracking fields
+  storage?: {
+    available: number;
+    activatedTotal: number;
+  };
+  cultivation?: {
+    active: number;
+    immessi: number;
+    mortality: number;
+    sold: number;
+  };
+  balance?: {
+    initial: number;
+    storageAvailable: number;
+    inCultivation: number;
+    totalSold: number;
+    totalMortality: number;
+    verified: boolean;
+  };
 }
 
 // Componente principale per il pannello dell'inventario dei lotti
@@ -150,6 +171,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
     const translations: Record<string, string> = {
       "arrivo-lotto": "Arrivo lotto",
       "in": "Ingresso",
+      "activation": "Prima Attivazione",
       "vendita": "Vendita",
       "sale": "Vendita",
       "trasferimento": "Trasferimento",
@@ -208,56 +230,98 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
               </div>
             ) : (
               <div className="space-y-6 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Conteggio iniziale</Label>
-                    <div className="text-2xl font-bold">
-                      {formatNumber(inventoryQuery.data?.initialCount)}
+                {/* SEZIONE A: STOCCAGGIO LOTTO */}
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                  <h3 className="text-lg font-semibold">📦 Stoccaggio Lotto</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-sm text-muted-foreground">Conteggio iniziale</Label>
+                      <div className="text-2xl font-bold">
+                        {formatNumber(inventoryQuery.data?.balance?.initial || inventoryQuery.data?.initialCount)}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-muted-foreground">Disponibile nel lotto</Label>
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {formatNumber(inventoryQuery.data?.storage?.available || 0)}
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Conteggio attuale</Label>
-                    <div className="text-2xl font-bold">
-                      {formatNumber(inventoryQuery.data?.currentCount)}
+                  <div className="text-sm text-muted-foreground">
+                    Immessi in allevamento: <span className="font-semibold">{formatNumber(inventoryQuery.data?.storage?.activatedTotal || 0)}</span> animali
+                  </div>
+                </div>
+
+                {/* SEZIONE B: IN ALLEVAMENTO */}
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                  <h3 className="text-lg font-semibold">🌊 In Allevamento</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-sm text-muted-foreground">Totale immesso</Label>
+                      <div className="text-xl font-semibold">
+                        {formatNumber(inventoryQuery.data?.cultivation?.immessi || 0)}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-muted-foreground">Attualmente in coltura</Label>
+                      <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                        {formatNumber(inventoryQuery.data?.cultivation?.active || inventoryQuery.data?.currentCount)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      Mortalità in allevamento: <span className="font-semibold text-red-600 dark:text-red-400">
+                        {formatNumber(inventoryQuery.data?.cultivation?.mortality || 0)}
+                      </span>
+                    </div>
+                    <div>
+                      Vendite da selezioni: <span className="font-semibold">
+                        {formatNumber(inventoryQuery.data?.cultivation?.sold || 0)}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Venduti</Label>
-                    <div className="text-xl">
-                      {formatNumber(inventoryQuery.data?.soldCount)}
-                    </div>
+                {/* SEZIONE C: BILANCIO COMPLESSIVO */}
+                <div className="space-y-3 p-4 border-2 rounded-lg bg-primary/5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">📊 Bilancio Complessivo</h3>
+                    {inventoryQuery.data?.balance?.verified && (
+                      <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30">
+                        ✓ Verificato
+                      </Badge>
+                    )}
                   </div>
-                  <div className="space-y-2">
-                    <Label>Mortalità</Label>
-                    <div className="text-xl">
-                      {formatNumber(inventoryQuery.data?.mortalityCount)}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Conteggio iniziale:</span>
+                      <span className="font-semibold">{formatNumber(inventoryQuery.data?.balance?.initial || inventoryQuery.data?.initialCount)}</span>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Percentuale mortalità</Label>
-                    <div className="text-xl">
-                      {formatPercentage(inventoryQuery.data?.mortalityPercentage)}%
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Disponibile lotto:</span>
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">{formatNumber(inventoryQuery.data?.balance?.storageAvailable || 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">In allevamento:</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">{formatNumber(inventoryQuery.data?.balance?.inCultivation || 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Venduto totale:</span>
+                      <span className="font-semibold">{formatNumber(inventoryQuery.data?.balance?.totalSold || inventoryQuery.data?.soldCount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Mortalità totale:</span>
+                      <span className="font-semibold text-red-600 dark:text-red-400">{formatNumber(inventoryQuery.data?.balance?.totalMortality || inventoryQuery.data?.mortalityCount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Percentuale mortalità:</span>
+                      <span className="font-semibold">{formatPercentage(inventoryQuery.data?.mortalityPercentage)}%</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Tasso di mortalità</Label>
-                  <Progress 
-                    value={typeof inventoryQuery.data?.mortalityPercentage === 'string'
-                      ? parseFloat(inventoryQuery.data?.mortalityPercentage || '0') 
-                      : typeof inventoryQuery.data?.mortalityPercentage === 'number'
-                        ? inventoryQuery.data?.mortalityPercentage || 0
-                        : 0} 
-                    max={100} 
-                    className="h-4"
-                  />
-                </div>
-
-                <div className="space-y-2 pt-4">
+                <div className="space-y-2 pt-2">
                   <Label htmlFor="mortality-notes">Note (opzionale)</Label>
                   <Textarea
                     id="mortality-notes"
