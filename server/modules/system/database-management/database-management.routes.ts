@@ -27,8 +27,8 @@ databaseManagementRoutes.get('/export/giacenze', async (req: Request, res: Respo
     const fornitore = req.query.fornitore as string || undefined;
     const dataEsportazione = req.query.data ? new Date(req.query.data as string) : undefined;
     
-    // Genera il JSON di esportazione
-    const giacenzeJson = await generateExportGiacenze(storage, {
+    // Genera il JSON di esportazione (passa storage con cast)
+    const giacenzeJson = await generateExportGiacenze(storage as any, {
       fornitore,
       dataEsportazione
     });
