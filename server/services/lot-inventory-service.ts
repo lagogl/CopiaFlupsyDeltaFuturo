@@ -30,7 +30,7 @@ export class LotInventoryService {
               WHERE lot_id = ${lotId} AND type = 'sale'`
         );
         const soldResult = soldData.rows?.[0] || soldData[0];
-        const soldCount = Number(soldResult?.sold_count || 0);
+        const soldCount = Math.abs(Number(soldResult?.sold_count || 0));
         
         // Calcola la mortalità dal ledger
         const mortalityData = await db.execute(
@@ -41,8 +41,9 @@ export class LotInventoryService {
         const mortalityCount = Math.abs(Number(mortalityResult?.mortality_count || 0));
         
         // Calcola il totale di tutte le transazioni (escluso ingresso che è già nel conteggio iniziale)
+        // I valori nel ledger sono già con il segno corretto (negativi per vendite e mortalità)
         const transactionsData = await db.execute(
-          sql`SELECT COALESCE(SUM(CASE WHEN type = 'mortality' THEN -quantity WHEN type = 'sale' THEN -quantity ELSE 0 END), 0) as total_change FROM lot_ledger 
+          sql`SELECT COALESCE(SUM(quantity), 0) as total_change FROM lot_ledger 
               WHERE lot_id = ${lotId} AND type != 'in'`
         );
         const transactionsResult = transactionsData.rows?.[0] || transactionsData[0];
