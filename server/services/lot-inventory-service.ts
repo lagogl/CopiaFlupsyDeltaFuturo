@@ -25,24 +25,27 @@ export class LotInventoryService {
       // 2. Calcola il conteggio attuale in base alle transazioni dal ledger
       try {
         // Calcola le vendite dal ledger
-        const [soldResult] = await db.execute(
+        const soldData = await db.execute(
           sql`SELECT COALESCE(SUM(quantity), 0) as sold_count FROM lot_ledger 
               WHERE lot_id = ${lotId} AND type = 'sale'`
         );
+        const soldResult = soldData.rows?.[0] || soldData[0];
         const soldCount = Number(soldResult?.sold_count || 0);
         
         // Calcola la mortalità dal ledger
-        const [mortalityResult] = await db.execute(
+        const mortalityData = await db.execute(
           sql`SELECT COALESCE(SUM(quantity), 0) as mortality_count FROM lot_ledger 
               WHERE lot_id = ${lotId} AND type = 'mortality'`
         );
+        const mortalityResult = mortalityData.rows?.[0] || mortalityData[0];
         const mortalityCount = Math.abs(Number(mortalityResult?.mortality_count || 0));
         
         // Calcola il totale di tutte le transazioni (escluso ingresso che è già nel conteggio iniziale)
-        const [transactionsResult] = await db.execute(
+        const transactionsData = await db.execute(
           sql`SELECT COALESCE(SUM(CASE WHEN type = 'mortality' THEN -quantity WHEN type = 'sale' THEN -quantity ELSE 0 END), 0) as total_change FROM lot_ledger 
               WHERE lot_id = ${lotId} AND type != 'in'`
         );
+        const transactionsResult = transactionsData.rows?.[0] || transactionsData[0];
         const totalChange = Number(transactionsResult?.total_change || 0);
         
         // Calcolo finale
@@ -87,7 +90,7 @@ export class LotInventoryService {
       }
 
       // Crea la transazione
-      const [result] = await db.execute(
+      const resultData = await db.execute(
         sql`INSERT INTO lot_inventory_transactions 
             (lot_id, transaction_type, date, animal_count, notes, created_at) 
             VALUES 
@@ -95,7 +98,8 @@ export class LotInventoryService {
              ${transaction.notes || null}, NOW())
             RETURNING *`
       );
-
+      
+      const result = resultData.rows?.[0] || resultData[0];
       return result;
     } catch (error) {
       console.error("Errore durante la creazione della transazione:", error);
@@ -115,7 +119,7 @@ export class LotInventoryService {
       const inventory = await this.calculateCurrentInventory(lotId);
       
       // Crea un record di mortalità
-      const [result] = await db.execute(
+      const resultData = await db.execute(
         sql`INSERT INTO lot_mortality_records 
             (lot_id, calculation_date, initial_count, current_count, sold_count, 
              mortality_count, mortality_percentage, notes, created_at) 
@@ -126,6 +130,7 @@ export class LotInventoryService {
             RETURNING *`
       );
       
+      const result = resultData.rows?.[0] || resultData[0];
       return result;
     } catch (error) {
       console.error("Errore durante la registrazione del calcolo di mortalità:", error);
@@ -141,12 +146,14 @@ export class LotInventoryService {
   async getLotTransactions(lotId: number) {
     try {
       // Ottieni le transazioni dal ledger ordinate per data
-      const results = await db.execute(
+      const resultsData = await db.execute(
         sql`SELECT id, date, lot_id, type, quantity, notes
             FROM lot_ledger 
             WHERE lot_id = ${lotId} 
             ORDER BY date DESC`
       );
+      
+      const results = resultsData.rows || resultsData || [];
       
       // Trasforma i dati per il frontend
       return results.map((row: any) => ({
@@ -173,11 +180,13 @@ export class LotInventoryService {
   async getMortalityHistory(lotId: number) {
     try {
       // Ottieni la cronologia dei calcoli di mortalità
-      const results = await db.execute(
+      const resultsData = await db.execute(
         sql`SELECT * FROM lot_mortality_records 
             WHERE lot_id = ${lotId}
             ORDER BY calculation_date DESC`
       );
+      
+      const results = resultsData.rows || resultsData || [];
       
       // Trasforma i dati per il frontend (snake_case -> camelCase)
       return results.map((row: any) => ({
