@@ -7,9 +7,10 @@ import { lotInventoryTransactions, lotMortalityRecords, lots } from "@shared/sch
  */
 export class LotInventoryService {
   /**
-   * Calcola lo stato attuale dell'inventario di un lotto
+   * Calcola lo stato attuale dell'inventario di un lotto con DUAL TRACKING
+   * Separa: Stoccaggio Lotto vs In Allevamento
    * @param lotId - ID del lotto
-   * @returns Dati di inventario calcolati
+   * @returns Dati di inventario separati per stoccaggio e allevamento
    */
   async calculateCurrentInventory(lotId: number) {
     try {
@@ -22,17 +23,22 @@ export class LotInventoryService {
 
       const initialCount = lot.animalCount || 0;
       
-      // 2. Calcola il conteggio attuale in base alle transazioni dal ledger
+      // 2. Calcola separatamente: STOCCAGGIO vs ALLEVAMENTO
       try {
-        // Calcola le vendite dal ledger
-        const soldData = await db.execute(
-          sql`SELECT COALESCE(SUM(quantity), 0) as sold_count FROM lot_ledger 
-              WHERE lot_id = ${lotId} AND type = 'sale'`
+        // A) STOCCAGGIO LOTTO (animali disponibili nel lotto)
+        const activationsData = await db.execute(
+          sql`SELECT COALESCE(SUM(quantity), 0) as activation_total FROM lot_ledger 
+              WHERE lot_id = ${lotId} AND type = 'activation'`
         );
-        const soldResult = soldData.rows?.[0] || soldData[0];
-        const soldCount = Math.abs(Number(soldResult?.sold_count || 0));
+        const activationsResult = activationsData.rows?.[0] || activationsData[0];
+        const activationsTotal = Number(activationsResult?.activation_total || 0); // Già negativo
         
-        // Calcola la mortalità dal ledger
+        const storageAvailable = initialCount + activationsTotal; // Sottrae le attivazioni
+        
+        // B) IN ALLEVAMENTO (animali immessi in coltura)
+        const immessi = Math.abs(activationsTotal); // Valore assoluto delle attivazioni
+        
+        // Mortalità in allevamento
         const mortalityData = await db.execute(
           sql`SELECT COALESCE(SUM(quantity), 0) as mortality_count FROM lot_ledger 
               WHERE lot_id = ${lotId} AND type = 'mortality'`
@@ -40,25 +46,49 @@ export class LotInventoryService {
         const mortalityResult = mortalityData.rows?.[0] || mortalityData[0];
         const mortalityCount = Math.abs(Number(mortalityResult?.mortality_count || 0));
         
-        // Calcola il totale di tutte le transazioni (escluso ingresso che è già nel conteggio iniziale)
-        // I valori nel ledger sono già con il segno corretto (negativi per vendite e mortalità)
-        const transactionsData = await db.execute(
-          sql`SELECT COALESCE(SUM(quantity), 0) as total_change FROM lot_ledger 
-              WHERE lot_id = ${lotId} AND type != 'in'`
+        // Vendite dall'allevamento
+        const soldData = await db.execute(
+          sql`SELECT COALESCE(SUM(quantity), 0) as sold_count FROM lot_ledger 
+              WHERE lot_id = ${lotId} AND type = 'sale'`
         );
-        const transactionsResult = transactionsData.rows?.[0] || transactionsData[0];
-        const totalChange = Number(transactionsResult?.total_change || 0);
+        const soldResult = soldData.rows?.[0] || soldData[0];
+        const soldCount = Math.abs(Number(soldResult?.sold_count || 0));
         
-        // Calcolo finale
-        const currentCount = initialCount + totalChange;
+        const inCultivation = immessi - mortalityCount - soldCount;
+        
+        // C) BILANCIO COMPLESSIVO
         const mortalityPercentage = initialCount > 0 ? (mortalityCount / initialCount) * 100 : 0;
         
+        // Verifica: Iniziale = Disponibile + In Coltura + Venduti + Morti
+        const balanceCheck = storageAvailable + inCultivation + soldCount + mortalityCount;
+        
         return {
+          // Legacy (per compatibilità)
           initialCount,
-          currentCount,
+          currentCount: inCultivation, // Backward compatibility: mostra gli animali in allevamento
           soldCount,
           mortalityCount,
-          mortalityPercentage
+          mortalityPercentage,
+          
+          // NUOVO: Dual Tracking
+          storage: {
+            available: storageAvailable,
+            activatedTotal: immessi
+          },
+          cultivation: {
+            active: inCultivation,
+            immessi: immessi,
+            mortality: mortalityCount,
+            sold: soldCount
+          },
+          balance: {
+            initial: initialCount,
+            storageAvailable,
+            inCultivation,
+            totalSold: soldCount,
+            totalMortality: mortalityCount,
+            verified: balanceCheck === initialCount
+          }
         };
       } catch (error) {
         console.error("Errore durante il calcolo delle transazioni:", error);
@@ -69,7 +99,25 @@ export class LotInventoryService {
           currentCount: initialCount,
           soldCount: 0,
           mortalityCount: 0,
-          mortalityPercentage: 0
+          mortalityPercentage: 0,
+          storage: {
+            available: initialCount,
+            activatedTotal: 0
+          },
+          cultivation: {
+            active: 0,
+            immessi: 0,
+            mortality: 0,
+            sold: 0
+          },
+          balance: {
+            initial: initialCount,
+            storageAvailable: initialCount,
+            inCultivation: 0,
+            totalSold: 0,
+            totalMortality: 0,
+            verified: true
+          }
         };
       }
     } catch (error) {
