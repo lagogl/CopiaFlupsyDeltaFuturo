@@ -4574,7 +4574,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step18 = "📄 Eliminazione dati Fatture in Cloud...";
           console.log(step18);
           broadcastMessage("database_reset_progress", { message: step18, step: 18 });
-          // Prima elimina DDT (che hanno FK verso clienti), poi i clienti
+          // Ordine corretto: prima righe DDT, poi DDT, poi clienti (per rispettare le FK)
+          await tx.execute(sql`DELETE FROM ddt_righe`);
           await tx.execute(sql`DELETE FROM ddt`);
           await tx.execute(sql`DELETE FROM clienti`);
           // Tabella clients non esiste (usa clienti), sync_log_fatture_in_cloud rimossa - skip
@@ -4626,6 +4627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS sale_operations_ref_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS clienti_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS ddt_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS ddt_righe_id_seq RESTART WITH 1`);
           
           console.log("✅ Tutte le sequenze ID resettate a 1");
           
