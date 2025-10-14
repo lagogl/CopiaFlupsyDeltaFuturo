@@ -428,22 +428,22 @@ export class ScreeningService {
 
       const allocations = balancedRounding(destBasket.animalCount, percentagesMap);
 
-      for (const allocation of allocations.lots) {
-        if (allocation.quantity > 0) {
+      for (const allocation of allocations.allocations) {
+        if (allocation.roundedQuantity > 0) {
           const lotInfo = aggregatedComposition.find(l => l.lotId === allocation.lotId);
           
           await db.insert(lotLedger).values({
             date: result.date,
             lotId: allocation.lotId,
             type: 'activation',
-            quantity: (-allocation.quantity).toString(),
+            quantity: (-allocation.roundedQuantity).toString(),
             selectionId: id,
             basketId: destBasket.basketId,
             allocationMethod: 'proportional',
-            notes: `Screening #${result.screeningNumber} - Lotto ${allocation.lotId} (${lotInfo?.percentage.toFixed(1)}%): ${allocation.quantity} animali`
+            notes: `Screening #${result.screeningNumber} - Lotto ${allocation.lotId} (${lotInfo?.percentage.toFixed(1)}%): ${allocation.roundedQuantity} animali`
           });
 
-          console.log(`  ✅ Lot ledger: Lotto ${allocation.lotId} -> Cesto ${destBasket.basketId}: ${allocation.quantity} animali`);
+          console.log(`  ✅ Lot ledger: Lotto ${allocation.lotId} -> Cesto ${destBasket.basketId}: ${allocation.roundedQuantity} animali`);
         }
       }
       

@@ -120,22 +120,22 @@ export async function distributeCompositionToDestinations(
 
     const allocations = balancedRounding(destAnimalCount, percentagesMap);
 
-    for (const allocation of allocations.lots) {
-      if (allocation.quantity > 0) {
+    for (const allocation of allocations.allocations) {
+      if (allocation.roundedQuantity > 0) {
         // Calcola percentuale EFFETTIVA post-rounding per questo basket
-        const actualPercentage = (allocation.quantity / destAnimalCount) * 100;
+        const actualPercentage = (allocation.roundedQuantity / destAnimalCount) * 100;
 
         await db.insert(basketLotComposition).values({
           basketId: destination.basketId,
           cycleId: destination.cycleId,
           lotId: allocation.lotId,
-          animalCount: allocation.quantity,
+          animalCount: allocation.roundedQuantity,
           percentage: actualPercentage,
           sourceSelectionId: operationType === 'vagliatura' ? operationId : null,
           notes: `${operationType === 'vagliatura' ? 'Vagliatura' : 'Screening'} #${operationId} - ${actualPercentage.toFixed(2)}% del cestello`
         });
 
-        console.log(`  ├── Lotto ${allocation.lotId}: ${allocation.quantity} animali (${actualPercentage.toFixed(2)}% del cestello)`);
+        console.log(`  ├── Lotto ${allocation.lotId}: ${allocation.roundedQuantity} animali (${actualPercentage.toFixed(2)}% del cestello)`);
       }
     }
 
@@ -171,20 +171,20 @@ export async function calculateAndRegisterMortality(
 
   const allocations = balancedRounding(totalMortality, percentagesMap);
 
-  for (const allocation of allocations.lots) {
-    if (allocation.quantity > 0) {
+  for (const allocation of allocations.allocations) {
+    if (allocation.roundedQuantity > 0) {
       // Calcola percentuale EFFETTIVA post-rounding della mortalità
-      const actualMortalityPercentage = (allocation.quantity / totalMortality) * 100;
+      const actualMortalityPercentage = (allocation.roundedQuantity / totalMortality) * 100;
       
       await db.update(lots)
         .set({ 
-          totalMortality: sql`COALESCE(total_mortality, 0) + ${allocation.quantity}`,
+          totalMortality: sql`COALESCE(total_mortality, 0) + ${allocation.roundedQuantity}`,
           lastMortalityDate: operationDate,
-          mortalityNotes: sql`COALESCE(mortality_notes, '') || ${`${operationType === 'vagliatura' ? 'Vagliatura' : 'Screening'} #${operationId}: -${allocation.quantity} animali (${actualMortalityPercentage.toFixed(2)}% della mortalità). `}`
+          mortalityNotes: sql`COALESCE(mortality_notes, '') || ${`${operationType === 'vagliatura' ? 'Vagliatura' : 'Screening'} #${operationId}: -${allocation.roundedQuantity} animali (${actualMortalityPercentage.toFixed(2)}% della mortalità). `}`
         })
         .where(eq(lots.id, allocation.lotId));
 
-      console.log(`  💀 Lotto ${allocation.lotId}: -${allocation.quantity} animali (${actualMortalityPercentage.toFixed(2)}% della mortalità)`);
+      console.log(`  💀 Lotto ${allocation.lotId}: -${allocation.roundedQuantity} animali (${actualMortalityPercentage.toFixed(2)}% della mortalità)`);
     }
   }
 
