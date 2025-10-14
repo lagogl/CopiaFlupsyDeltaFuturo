@@ -2269,7 +2269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Formatta i dati per la transazione
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear().toString().substring(2);
-        const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`);
+        const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
         const formattedDate = format(date, 'yyyy-MM-dd');
         
         console.log("🔍 STEP 4: Avvio transazione atomica per prima-attivazione");
