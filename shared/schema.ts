@@ -327,7 +327,7 @@ export const lotLedger = pgTable("lot_ledger", {
   date: date("date").notNull(), // Data del movimento
   lotId: integer("lot_id").notNull(), // Reference al lotto
   type: text("type", { 
-    enum: ["in", "transfer_out", "transfer_in", "sale", "mortality"] 
+    enum: ["in", "activation", "transfer_out", "transfer_in", "sale", "mortality"] 
   }).notNull(), // Tipo di movimento
   quantity: numeric("quantity", { precision: 18, scale: 3 }).notNull(), // Quantità animali (con decimali per precisione)
   sourceCycleId: integer("source_cycle_id"), // Ciclo origine (per transfer_out)
