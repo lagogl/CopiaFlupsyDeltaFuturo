@@ -671,12 +671,14 @@ export async function addSourceBaskets(req: Request, res: Response) {
     
     // Inserisci tutti i cestelli origine
     for (const sourceBasket of sourceBaskets) {
-      // Prima ottieni il ciclo corrente del cestello
+      // Prima ottieni il ciclo corrente del cestello E il suo lotto
       const [basketData] = await db.select({
         currentCycleId: baskets.currentCycleId,
-        physicalNumber: baskets.physicalNumber
+        physicalNumber: baskets.physicalNumber,
+        lotId: cycles.lotId
       })
       .from(baskets)
+      .leftJoin(cycles, eq(baskets.currentCycleId, cycles.id))
       .where(eq(baskets.id, sourceBasket.basketId))
       .limit(1);
       
@@ -716,7 +718,7 @@ export async function addSourceBaskets(req: Request, res: Response) {
         totalWeight: sourceBasket.totalWeight || null,
         animalsPerKg: sourceBasket.animalsPerKg || null,
         sizeId: sourceBasket.sizeId || null,
-        lotId: sourceBasket.lotId, // ✅ RIMOSSO || null - deve essere presente
+        lotId: basketData.lotId, // ✅ Recuperato automaticamente dal ciclo
         notes: sourceBasket.notes || null
       };
       
