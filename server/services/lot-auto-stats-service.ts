@@ -118,8 +118,9 @@ export class LotAutoStatsService {
 
       switch (operation.type) {
         case 'prima-attivazione':
-          ledgerType = 'in';
-          quantity = operation.animalCount || 0;
+          // Prima attivazione = USCITA dal lotto verso allevamento
+          ledgerType = 'activation';
+          quantity = -(operation.animalCount || 0); // Negativo perché escono dal lotto
           break;
         case 'vendita':
         case 'selezione-vendita':
