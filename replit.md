@@ -6,6 +6,23 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (October 14, 2025)
+- **DATABASE RESET MODULES - Fix Bug ddt_righe + Analisi Completa** (October 14, 2025): Risolto bug critico e completata analisi moduli reset
+  - **Bug Critico Risolto**: Aggiunta cancellazione `ddt_righe` nel modulo reset-operations
+    - **Problema**: La tabella `ddt` veniva cancellata ma le righe dettaglio (`ddt_righe`) restavano → dati orfani
+    - **Fix**: Aggiunto `DELETE FROM ddt_righe` prima di `DELETE FROM ddt` (riga 4581)
+    - **Sequenza corretta**: ddt_righe → ddt → clienti (rispetta FK)
+  - **Analisi Completa Database**: Sistema ha **43 tabelle totali** (non 42)
+    - Tabella #43: `operators` (legacy, non in schema TypeScript) → PRESERVATA (non cancellata)
+    - Struttura: id, operator_id, name, password, is_active, created_at, updated_at
+  - **Tabella sync_status**: Tabella di controllo sincronizzazione database esterni
+    - Traccia stato sync per: external_customers_sync, external_sales_sync, external_deliveries_sync
+    - Campi: table_name, lastSyncAt, lastSyncSuccess, syncInProgress, recordCount, errorMessage
+    - Non cancellata ma solo aggiornata (UPDATE) per mantenere storico sincronizzazioni
+  - **Moduli Reset Verificati**: 4 moduli disponibili (reset-operations, reset-screening, reset-selections, reset-lots)
+    - Reset-operations: cancella 31 tabelle (inclusa ora ddt_righe)
+    - Tabelle mai cancellate: users, email_config, flupsys, sizes, sgr, lots, lot_ledger, configurazione, fatture_in_cloud_config, notification_settings, sync_status, operators
+
 ## Recent Changes (October 13, 2025)
 - **OPERATION FORM - Blocco Operazioni su Cicli Chiusi + Fix Auto-Lotto Duplicazione** (October 13, 2025): Implementato blocco corretto + risolto bug auto-popolazione lotto
   - **Requisito Business CRITICO**: Cicli chiusi = SOLO visualizzazione, NESSUNA operazione permessa
