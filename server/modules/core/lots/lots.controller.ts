@@ -89,15 +89,24 @@ export class LotsController {
 
   /**
    * GET /api/lots/timeline
-   * Get lots timeline ordered by arrival date
+   * Get lot ledger timeline with filters
    */
   async getTimeline(req: Request, res: Response) {
     try {
-      const lots = await lotsService.getLotTimeline();
-      res.json(lots);
+      const filters = {
+        page: req.query.page ? parseInt(req.query.page as string) : 1,
+        pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string) : 50,
+        lotId: req.query.lotId ? parseInt(req.query.lotId as string) : undefined,
+        type: req.query.type as string | undefined,
+        startDate: req.query.startDate as string | undefined,
+        endDate: req.query.endDate as string | undefined
+      };
+
+      const timeline = await lotsService.getLotTimeline(filters);
+      res.json(timeline);
     } catch (error) {
-      console.error("Error fetching lots timeline:", error);
-      res.status(500).json({ message: "Failed to fetch lots timeline" });
+      console.error("Error fetching lot timeline:", error);
+      res.status(500).json({ message: "Failed to fetch lot timeline" });
     }
   }
 

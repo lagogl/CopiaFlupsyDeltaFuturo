@@ -147,15 +147,80 @@ export class LotsService {
   }
 
   /**
-   * Get lot timeline
+   * Get lot timeline from lot_ledger
    */
-  async getLotTimeline() {
-    const allLots = await db
-      .select()
-      .from(lots)
-      .orderBy(desc(lots.arrivalDate));
+  async getLotTimeline(filters?: {
+    page?: number;
+    pageSize?: number;
+    lotId?: number;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const { lotLedger } = await import("@shared/schema");
+    const { and, gte, lte, eq, desc } = await import("drizzle-orm");
 
-    return allLots;
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 50;
+    
+    const conditions = [];
+    
+    if (filters?.lotId) {
+      conditions.push(eq(lotLedger.lotId, filters.lotId));
+    }
+    
+    if (filters?.type && filters.type !== 'all') {
+      conditions.push(eq(lotLedger.type, filters.type));
+    }
+    
+    if (filters?.startDate) {
+      conditions.push(gte(lotLedger.date, filters.startDate));
+    }
+    
+    if (filters?.endDate) {
+      conditions.push(lte(lotLedger.date, filters.endDate));
+    }
+
+    // Get total count
+    const allRecords = await db
+      .select()
+      .from(lotLedger)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(lotLedger.date));
+      
+    const totalCount = allRecords.length;
+    
+    // Paginate
+    const startIndex = (page - 1) * pageSize;
+    const paginatedRecords = allRecords.slice(startIndex, startIndex + pageSize);
+
+    // Enrich with lot info
+    const enrichedTimeline = await Promise.all(
+      paginatedRecords.map(async (record) => {
+        const lot = await storage.getLot(record.lotId);
+        return {
+          id: record.id,
+          date: record.date,
+          lotId: record.lotId,
+          lotSupplierNumber: lot?.supplierLotNumber || '',
+          lotSupplier: lot?.supplier || '',
+          type: record.type,
+          quantity: Math.abs(Number(record.quantity)),
+          notes: record.notes,
+          createdAt: record.createdAt
+        };
+      })
+    );
+
+    return {
+      timeline: enrichedTimeline,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize)
+      }
+    };
   }
 
   /**
