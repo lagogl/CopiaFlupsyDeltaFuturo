@@ -29,14 +29,14 @@ interface LotLedgerEntry {
   lotId: number;
   lotSupplierNumber: string;
   lotSupplier: string;
-  type: 'in' | 'transfer_out' | 'transfer_in' | 'sale' | 'mortality';
+  type: 'in' | 'activation' | 'transfer_out' | 'transfer_in' | 'sale' | 'mortality';
   quantity: number;
   sourceCycleId?: number;
   destCycleId?: number;
   selectionId?: number;
   operationId?: number;
   basketId?: number;
-  allocationMethod: string;
+  allocationMethod?: string;
   notes?: string;
   createdAt: string;
 }
@@ -90,6 +90,7 @@ interface LotStats {
 
 const MOVEMENT_COLORS = {
   'in': '#10b981',           // Verde per ingressi
+  'activation': '#8b5cf6',   // Viola per attivazioni
   'transfer_in': '#3b82f6',  // Blu per trasferimenti in entrata
   'transfer_out': '#f59e0b', // Arancione per trasferimenti in uscita
   'sale': '#06d6a0',         // Verde acqua per vendite
@@ -98,6 +99,7 @@ const MOVEMENT_COLORS = {
 
 const MOVEMENT_LABELS = {
   'in': 'Ingresso',
+  'activation': 'Attivazione',
   'transfer_in': 'Trasf. Entrata',
   'transfer_out': 'Trasf. Uscita',
   'sale': 'Vendita',
@@ -256,6 +258,7 @@ export default function LotLedgerStatistics() {
                       <SelectContent>
                         <SelectItem value="all">Tutti i tipi</SelectItem>
                         <SelectItem value="in">Ingresso</SelectItem>
+                        <SelectItem value="activation">Attivazione</SelectItem>
                         <SelectItem value="transfer_in">Trasferimento Entrata</SelectItem>
                         <SelectItem value="transfer_out">Trasferimento Uscita</SelectItem>
                         <SelectItem value="sale">Vendita</SelectItem>
