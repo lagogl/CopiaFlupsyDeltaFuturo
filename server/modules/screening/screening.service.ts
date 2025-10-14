@@ -14,6 +14,14 @@ import {
 } from '../../../shared/schema';
 import { eq, and, desc, asc, sql, inArray } from 'drizzle-orm';
 import NodeCache from 'node-cache';
+import {
+  calculateAggregatedComposition,
+  distributeCompositionToDestinations,
+  calculateAndRegisterMortality,
+  type SourceBasket,
+  type DestinationBasket
+} from '../operations/shared/allocation';
+import { balancedRounding } from '../../utils/balanced-rounding';
 
 /**
  * Cache per le operazioni di screening
@@ -338,9 +346,11 @@ export class ScreeningService {
   /**
    * POST /api/screening/operations/:id/complete
    * Completa un'operazione di screening
-   * Registra automaticamente i movimenti nel lot_ledger
+   * REFACTORED: Supporta allocazione proporzionale multi-lotto
    */
   async completeScreeningOperation(id: number) {
+    console.log(`🔄 AVVIO COMPLETAMENTO SCREENING - ID: ${id}`);
+    
     // 1. Aggiorna lo status a completed
     const [result] = await db
       .update(screeningOperations)
@@ -350,38 +360,97 @@ export class ScreeningService {
 
     // 2. Recupera source baskets per ottenere i lotti di origine
     const sourceBaskets = await db
-      .select()
+      .select({
+        basketId: screeningSourceBaskets.basketId,
+        cycleId: screeningSourceBaskets.cycleId,
+        animalCount: screeningSourceBaskets.animalCount,
+        lotId: screeningSourceBaskets.lotId
+      })
       .from(screeningSourceBaskets)
       .where(eq(screeningSourceBaskets.screeningId, id));
 
     // 3. Recupera destination baskets per questa screening
     const destinationBaskets = await db
-      .select()
+      .select({
+        basketId: screeningDestinationBaskets.basketId,
+        cycleId: screeningDestinationBaskets.cycleId,
+        animalCount: screeningDestinationBaskets.animalCount
+      })
       .from(screeningDestinationBaskets)
       .where(eq(screeningDestinationBaskets.screeningId, id));
 
-    // 4. Per ogni destination basket, crea entry nel lot_ledger
-    // Usa il lotto del source basket (assunzione: una screening ha un unico source basket)
-    const sourceLotId = sourceBaskets.length > 0 ? sourceBaskets[0].lotId : null;
+    console.log(`📊 Source baskets: ${sourceBaskets.length}, Destination baskets: ${destinationBaskets.length}`);
 
+    // 4. Calcola composizione aggregata multi-lotto
+    const { aggregatedComposition, totalSourceAnimals } = await calculateAggregatedComposition(sourceBaskets as SourceBasket[]);
+    
+    console.log(`🧮 Composizione aggregata: ${aggregatedComposition.length} lotti, ${totalSourceAnimals} animali totali`);
+
+    // 5. Distribuisce la composizione nei cestelli destinazione
+    await distributeCompositionToDestinations(
+      destinationBaskets as DestinationBasket[],
+      aggregatedComposition,
+      id,
+      'screening'
+    );
+
+    // 6. Calcola mortalità totale
+    const totalDestinationAnimals = destinationBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+    
+    console.log(`📊 Animali origine: ${totalSourceAnimals}, Animali destinazione: ${totalDestinationAnimals}`);
+
+    // 7. Registra mortalità proporzionale per lotto
+    await calculateAndRegisterMortality(
+      aggregatedComposition,
+      totalSourceAnimals,
+      totalDestinationAnimals,
+      result.date,
+      id,
+      'screening'
+    );
+
+    // 8. Registra movimenti lot_ledger con balanced rounding
+    console.log(`📝 FASE 8: Registrazione lot_ledger per tracciabilità`);
     for (const destBasket of destinationBaskets) {
-      if (sourceLotId && destBasket.animalCount) {
-        // Registra il movimento nel lot_ledger come "activation"
-        // (negativo perché gli animali escono dal lotto verso l'allevamento)
-        await db.insert(lotLedger).values({
-          date: result.date,
-          lotId: sourceLotId,
-          type: 'activation',
-          quantity: (-destBasket.animalCount).toString(),
-          selectionId: id,
-          basketId: destBasket.basketId,
-          allocationMethod: 'measured',
-          notes: `Vagliatura #${result.screeningNumber} - ${destBasket.category} (${destBasket.animalCount} animali)`
-        });
-
-        console.log(`📝 LOT LEDGER: Registrato movimento activation per lotto ${sourceLotId} da screening ${id}`);
+      if (!destBasket.cycleId) continue;
+      
+      // Skip basket con 0 animali (balancedRounding richiede totalQuantity > 0)
+      if (!destBasket.animalCount || destBasket.animalCount <= 0) {
+        console.log(`  ⚠️ Basket ${destBasket.basketId}: 0 animali - skip lot_ledger`);
+        continue;
       }
+
+      // Usa balanced rounding per garantire totali corretti
+      const percentagesMap = new Map<number, number>();
+      for (const lot of aggregatedComposition) {
+        percentagesMap.set(lot.lotId, lot.percentage / 100);
+      }
+
+      const allocations = balancedRounding(destBasket.animalCount, percentagesMap);
+
+      for (const allocation of allocations.lots) {
+        if (allocation.quantity > 0) {
+          const lotInfo = aggregatedComposition.find(l => l.lotId === allocation.lotId);
+          
+          await db.insert(lotLedger).values({
+            date: result.date,
+            lotId: allocation.lotId,
+            type: 'activation',
+            quantity: (-allocation.quantity).toString(),
+            selectionId: id,
+            basketId: destBasket.basketId,
+            allocationMethod: 'proportional',
+            notes: `Screening #${result.screeningNumber} - Lotto ${allocation.lotId} (${lotInfo?.percentage.toFixed(1)}%): ${allocation.quantity} animali`
+          });
+
+          console.log(`  ✅ Lot ledger: Lotto ${allocation.lotId} -> Cesto ${destBasket.basketId}: ${allocation.quantity} animali`);
+        }
+      }
+      
+      console.log(`  ✅ Totale registrato: ${allocations.totalAllocated} / ${destBasket.animalCount} animali`);
     }
+
+    console.log(`✅ SCREENING COMPLETATO CON ALLOCAZIONE MULTI-LOTTO!`);
 
     this.clearCache();
     return result;

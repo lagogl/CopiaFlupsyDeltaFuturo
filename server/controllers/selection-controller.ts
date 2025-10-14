@@ -29,6 +29,13 @@ import {
   generateIdempotencyKey, 
   createAllocationBasis 
 } from "../utils/balanced-rounding";
+import {
+  calculateAggregatedComposition as calculateComposition,
+  distributeCompositionToDestinations as distributeComposition,
+  calculateAndRegisterMortality as registerMortality,
+  type SourceBasket,
+  type DestinationBasket
+} from "../modules/operations/shared/allocation";
 
 // =============== COMPOSIZIONE LOTTI ===============
 
@@ -113,6 +120,7 @@ async function getBasketLotComposition(basketId: number, cycleId: number) {
 
 /**
  * Calcola la composizione aggregata di tutti i cestelli origine
+ * REFACTORED: usa servizio condiviso
  */
 async function calculateAggregatedComposition(selectionId: number) {
   // Ottieni tutti i cestelli origine con i loro dati
@@ -127,46 +135,13 @@ async function calculateAggregatedComposition(selectionId: number) {
 
   console.log(`🧩 Cestelli origine per selezione ${selectionId}:`, sourceBaskets);
 
-  // Accumula la composizione totale
-  const totalComposition = new Map<number, number>(); // lotId -> totalAnimals
-  let grandTotal = 0;
-
-  for (const source of sourceBaskets) {
-    // Verifica se il cestello ha già una composizione registrata
-    const existingComposition = await getBasketLotComposition(source.basketId, source.cycleId);
-    
-    if (existingComposition.length > 0) {
-      // Cestello con composizione mista - somma tutti i lotti
-      for (const comp of existingComposition) {
-        const current = totalComposition.get(comp.lotId) || 0;
-        totalComposition.set(comp.lotId, current + comp.animalCount);
-        grandTotal += comp.animalCount;
-      }
-      console.log(`📦 Cestello ${source.basketId} (composizione mista):`, existingComposition);
-    } else {
-      // Cestello puro - usa il lotto dalle operazioni
-      if (source.lotId && source.animalCount) {
-        const current = totalComposition.get(source.lotId) || 0;
-        totalComposition.set(source.lotId, current + source.animalCount);
-        grandTotal += source.animalCount;
-        console.log(`📦 Cestello ${source.basketId} (puro) - Lotto ${source.lotId}: ${source.animalCount} animali`);
-      }
-    }
-  }
-
-  // Converti in array con percentuali
-  const aggregatedComposition = Array.from(totalComposition.entries()).map(([lotId, animalCount]) => ({
-    lotId,
-    animalCount,
-    percentage: grandTotal > 0 ? (animalCount / grandTotal) * 100 : 0
-  }));
-
-  console.log(`🧮 Composizione aggregata (${grandTotal} animali totali):`, aggregatedComposition);
-  return { aggregatedComposition, totalSourceAnimals: grandTotal };
+  // Usa il servizio condiviso
+  return await calculateComposition(sourceBaskets as SourceBasket[]);
 }
 
 /**
  * Distribuisce la composizione nei cestelli destinazione
+ * REFACTORED: usa servizio condiviso
  */
 async function distributeCompositionToDestinations(selectionId: number, aggregatedComposition: Array<{lotId: number, animalCount: number, percentage: number}>, totalSourceAnimals: number) {
   // Ottieni cestelli destinazione
@@ -178,65 +153,29 @@ async function distributeCompositionToDestinations(selectionId: number, aggregat
   .from(selectionDestinationBaskets)
   .where(eq(selectionDestinationBaskets.selectionId, selectionId));
 
-  console.log(`🎯 Distribuzione composizione in ${destinationBaskets.length} cestelli destinazione`);
-
-  for (const destination of destinationBaskets) {
-    if (!destination.cycleId) {
-      console.log(`⚠️ Cestello ${destination.basketId} senza cycleId - skip`);
-      continue;
-    }
-
-    const destAnimalCount = destination.animalCount || 0;
-    console.log(`📦 Cestello destinazione ${destination.basketId}: ${destAnimalCount} animali`);
-
-    for (const lot of aggregatedComposition) {
-      const animalCount = Math.round(destAnimalCount * (lot.percentage / 100));
-      
-      if (animalCount > 0) {
-        await db.insert(basketLotComposition).values({
-          basketId: destination.basketId,
-          cycleId: destination.cycleId,
-          lotId: lot.lotId,
-          animalCount: animalCount,
-          percentage: lot.percentage,
-          sourceSelectionId: selectionId,
-          notes: `Vagliatura #${selectionId} - ${lot.percentage.toFixed(2)}% del totale`
-        });
-
-        console.log(`  ├── Lotto ${lot.lotId}: ${animalCount} animali (${lot.percentage.toFixed(2)}%)`);
-      }
-    }
-  }
+  // Usa il servizio condiviso
+  await distributeComposition(
+    destinationBaskets as DestinationBasket[],
+    aggregatedComposition,
+    selectionId,
+    'vagliatura'
+  );
 }
 
 /**
  * Calcola e registra la mortalità per ogni lotto
+ * REFACTORED: usa servizio condiviso
  */
 async function calculateAndRegisterMortality(selectionId: number, aggregatedComposition: Array<{lotId: number, animalCount: number, percentage: number}>, totalSourceAnimals: number, totalDestinationAnimals: number, selectionDate: string) {
-  const totalMortality = totalSourceAnimals - totalDestinationAnimals;
-  
-  if (totalMortality <= 0) {
-    console.log(`✅ Nessuna mortalità registrata (differenza: ${totalMortality})`);
-    return;
-  }
-
-  console.log(`💀 MORTALITÀ TOTALE: ${totalMortality} animali da distribuire`);
-
-  for (const lot of aggregatedComposition) {
-    const lotMortality = Math.round(totalMortality * (lot.percentage / 100));
-    
-    if (lotMortality > 0) {
-      await db.update(lots)
-        .set({ 
-          totalMortality: sql`COALESCE(total_mortality, 0) + ${lotMortality}`,
-          lastMortalityDate: selectionDate,
-          mortalityNotes: sql`COALESCE(mortality_notes, '') || ${`Vagliatura #${selectionId}: -${lotMortality} animali (${lot.percentage.toFixed(2)}%). `}`
-        })
-        .where(eq(lots.id, lot.lotId));
-
-      console.log(`  💀 Lotto ${lot.lotId}: -${lotMortality} animali (${lot.percentage.toFixed(2)}%)`);
-    }
-  }
+  // Usa il servizio condiviso
+  await registerMortality(
+    aggregatedComposition,
+    totalSourceAnimals,
+    totalDestinationAnimals,
+    selectionDate,
+    selectionId,
+    'vagliatura'
+  );
 }
 
 /**
