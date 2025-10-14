@@ -9,7 +9,8 @@ import {
   cycles,
   lots,
   sizes,
-  flupsys
+  flupsys,
+  lotLedger
 } from '../../../shared/schema';
 import { eq, and, desc, asc, sql, inArray } from 'drizzle-orm';
 import NodeCache from 'node-cache';
@@ -337,13 +338,50 @@ export class ScreeningService {
   /**
    * POST /api/screening/operations/:id/complete
    * Completa un'operazione di screening
+   * Registra automaticamente i movimenti nel lot_ledger
    */
   async completeScreeningOperation(id: number) {
+    // 1. Aggiorna lo status a completed
     const [result] = await db
       .update(screeningOperations)
       .set({ status: 'completed' })
       .where(eq(screeningOperations.id, id))
       .returning();
+
+    // 2. Recupera source baskets per ottenere i lotti di origine
+    const sourceBaskets = await db
+      .select()
+      .from(screeningSourceBaskets)
+      .where(eq(screeningSourceBaskets.screeningId, id));
+
+    // 3. Recupera destination baskets per questa screening
+    const destinationBaskets = await db
+      .select()
+      .from(screeningDestinationBaskets)
+      .where(eq(screeningDestinationBaskets.screeningId, id));
+
+    // 4. Per ogni destination basket, crea entry nel lot_ledger
+    // Usa il lotto del source basket (assunzione: una screening ha un unico source basket)
+    const sourceLotId = sourceBaskets.length > 0 ? sourceBaskets[0].lotId : null;
+
+    for (const destBasket of destinationBaskets) {
+      if (sourceLotId && destBasket.animalCount) {
+        // Registra il movimento nel lot_ledger come "activation"
+        // (negativo perché gli animali escono dal lotto verso l'allevamento)
+        await db.insert(lotLedger).values({
+          date: result.date,
+          lotId: sourceLotId,
+          type: 'activation',
+          quantity: (-destBasket.animalCount).toString(),
+          selectionId: id,
+          basketId: destBasket.basketId,
+          allocationMethod: 'measured',
+          notes: `Vagliatura #${result.screeningNumber} - ${destBasket.category} (${destBasket.animalCount} animali)`
+        });
+
+        console.log(`📝 LOT LEDGER: Registrato movimento activation per lotto ${sourceLotId} da screening ${id}`);
+      }
+    }
 
     this.clearCache();
     return result;
