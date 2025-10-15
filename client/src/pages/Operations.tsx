@@ -2395,7 +2395,7 @@ export default function Operations() {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           <div>
-                            <span className="font-bold text-green-700">
+                            <span className="font-bold text-red-600 text-lg">
                               #{op.basket?.physicalNumber || op.basketId}
                             </span>
                             {op.basket?.row && op.basket?.position && (
