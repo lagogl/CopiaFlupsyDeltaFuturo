@@ -1601,14 +1601,40 @@ export async function generatePDFReport(req: Request, res: Response) {
       });
     }
     
-    // Recupera cestelli origine
-    const sourceBaskets = await db.select()
+    // Recupera cestelli origine con dettagli
+    const sourceBaskets = await db.select({
+      id: selectionSourceBaskets.id,
+      basketId: selectionSourceBaskets.basketId,
+      cycleId: selectionSourceBaskets.cycleId,
+      animalCount: selectionSourceBaskets.animalCount,
+      totalWeight: selectionSourceBaskets.totalWeight,
+      animalsPerKg: selectionSourceBaskets.animalsPerKg,
+      dismissed: selectionSourceBaskets.dismissed,
+      flupsyName: flupsys.name
+    })
     .from(selectionSourceBaskets)
+    .leftJoin(baskets, eq(selectionSourceBaskets.basketId, baskets.id))
+    .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
     .where(eq(selectionSourceBaskets.selectionId, Number(id)));
     
-    // Recupera cestelli destinazione
-    const destBaskets = await db.select()
+    // Recupera cestelli destinazione con dettagli
+    const destBaskets = await db.select({
+      id: selectionDestinationBaskets.id,
+      basketId: selectionDestinationBaskets.basketId,
+      cycleId: selectionDestinationBaskets.cycleId,
+      category: selectionDestinationBaskets.category,
+      animalCount: selectionDestinationBaskets.animalCount,
+      totalWeight: selectionDestinationBaskets.totalWeight,
+      animalsPerKg: selectionDestinationBaskets.animalsPerKg,
+      position: selectionDestinationBaskets.position,
+      flupsyName: flupsys.name,
+      sizeId: selectionDestinationBaskets.sizeId,
+      sizeCode: sizes.code
+    })
     .from(selectionDestinationBaskets)
+    .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
+    .leftJoin(flupsys, eq(selectionDestinationBaskets.flupsyId, flupsys.id))
+    .leftJoin(sizes, eq(selectionDestinationBaskets.sizeId, sizes.id))
     .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
     
     // Calcola totali
@@ -1616,6 +1642,25 @@ export async function generatePDFReport(req: Request, res: Response) {
     const totalDestAnimals = destBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
     const mortality = Math.max(0, totalSourceAnimals - totalDestAnimals);
     const mortalityPercent = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0';
+    
+    // Calcola totalizzatori per taglia
+    const sizeStats: Record<string, { total: number; sold: number; repositioned: number }> = {};
+    for (const basket of destBaskets) {
+      if (basket.sizeCode && basket.animalCount) {
+        if (!sizeStats[basket.sizeCode]) {
+          sizeStats[basket.sizeCode] = { total: 0, sold: 0, repositioned: 0 };
+        }
+        sizeStats[basket.sizeCode].total += basket.animalCount;
+        
+        if (basket.category === 'Venduta') {
+          sizeStats[basket.sizeCode].sold += basket.animalCount;
+        } else if (basket.category === 'Riposizionata') {
+          sizeStats[basket.sizeCode].repositioned += basket.animalCount;
+        }
+      }
+    }
+    
+    const sortedSizes = Object.entries(sizeStats).sort((a, b) => a[0].localeCompare(b[0]));
     
     // Genera HTML
     const html = `
@@ -1629,7 +1674,7 @@ export async function generatePDFReport(req: Request, res: Response) {
         body {
             font-family: Arial, sans-serif;
             padding: 40px;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
         }
         h1 {
@@ -1658,15 +1703,30 @@ export async function generatePDFReport(req: Request, res: Response) {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            font-size: 11px;
         }
         th, td {
-            padding: 12px;
+            padding: 10px 8px;
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
         }
         th {
             background: #f3f4f6;
             font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .category-sold {
+            color: #ea580c;
+            font-weight: 600;
+        }
+        .category-repositioned {
+            color: #16a34a;
+            font-weight: 600;
         }
         .summary {
             background: #fef3c7;
@@ -1677,6 +1737,35 @@ export async function generatePDFReport(req: Request, res: Response) {
         .mortality {
             color: #dc2626;
             font-weight: bold;
+        }
+        .size-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .size-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .size-card h4 {
+            margin: 0 0 8px 0;
+            color: #1e40af;
+            font-size: 13px;
+        }
+        .size-card .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-size: 11px;
+        }
+        .stat-sold {
+            color: #ea580c;
+        }
+        .stat-repositioned {
+            color: #16a34a;
         }
         @media print {
             body {
@@ -1699,23 +1788,56 @@ export async function generatePDFReport(req: Request, res: Response) {
         </div>
     </div>
     
+    ${sortedSizes.length > 0 ? `
+    <h2>Totalizzatori per Taglia</h2>
+    <div class="size-stats">
+        ${sortedSizes.map(([sizeCode, stats]) => `
+            <div class="size-card">
+                <h4>${sizeCode}</h4>
+                <div class="stat-row">
+                    <span>Totale:</span>
+                    <strong>${stats.total.toLocaleString('it-IT')}</strong>
+                </div>
+                ${stats.sold > 0 ? `
+                <div class="stat-row stat-sold">
+                    <span>Venduti:</span>
+                    <strong>${stats.sold.toLocaleString('it-IT')}</strong>
+                </div>
+                ` : ''}
+                ${stats.repositioned > 0 ? `
+                <div class="stat-row stat-repositioned">
+                    <span>Ripos.:</span>
+                    <strong>${stats.repositioned.toLocaleString('it-IT')}</strong>
+                </div>
+                ` : ''}
+            </div>
+        `).join('')}
+    </div>
+    ` : ''}
+    
     <h2>Cestelli Origine (${sourceBaskets.length})</h2>
     <table>
         <thead>
             <tr>
                 <th>Cestello ID</th>
-                <th>Animali</th>
-                <th>Peso (kg)</th>
-                <th>Animali/kg</th>
+                <th>Ciclo ID</th>
+                <th>FLUPSY</th>
+                <th class="text-right">Animali</th>
+                <th class="text-right">Peso (kg)</th>
+                <th class="text-right">Animali/kg</th>
+                <th class="text-center">Dismisso</th>
             </tr>
         </thead>
         <tbody>
             ${sourceBaskets.map(b => `
                 <tr>
                     <td>#${b.basketId}</td>
-                    <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
-                    <td>${(b.totalWeight || 0).toFixed(2)}</td>
-                    <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                    <td>${b.cycleId || '-'}</td>
+                    <td>${b.flupsyName || '-'}</td>
+                    <td class="text-right">${(b.animalCount || 0).toLocaleString('it-IT')}</td>
+                    <td class="text-right">${(b.totalWeight || 0).toFixed(2)}</td>
+                    <td class="text-right">${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                    <td class="text-center">${b.dismissed ? 'Sì' : 'No'}</td>
                 </tr>
             `).join('')}
         </tbody>
@@ -1726,20 +1848,32 @@ export async function generatePDFReport(req: Request, res: Response) {
         <thead>
             <tr>
                 <th>Cestello ID</th>
-                <th>Animali</th>
-                <th>Peso (kg)</th>
-                <th>Animali/kg</th>
+                <th>Ciclo ID</th>
+                <th>Categoria</th>
+                <th>FLUPSY</th>
+                <th class="text-right">Animali</th>
+                <th class="text-right">Peso (kg)</th>
+                <th class="text-right">Animali/kg</th>
+                <th>Posizione</th>
             </tr>
         </thead>
         <tbody>
-            ${destBaskets.map(b => `
+            ${destBaskets.map(b => {
+                const category = b.category || (b.position ? 'Riposizionata' : 'Venduta');
+                const categoryClass = category === 'Venduta' ? 'category-sold' : 'category-repositioned';
+                return `
                 <tr>
                     <td>#${b.basketId}</td>
-                    <td>${(b.animalCount || 0).toLocaleString('it-IT')}</td>
-                    <td>${(b.totalWeight || 0).toFixed(2)}</td>
-                    <td>${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                    <td>${b.cycleId || '-'}</td>
+                    <td class="${categoryClass}">${category}</td>
+                    <td>${b.flupsyName || '-'}</td>
+                    <td class="text-right">${(b.animalCount || 0).toLocaleString('it-IT')}</td>
+                    <td class="text-right">${(b.totalWeight || 0).toFixed(2)}</td>
+                    <td class="text-right">${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
+                    <td>${b.position || '-'}</td>
                 </tr>
-            `).join('')}
+                `;
+            }).join('')}
         </tbody>
     </table>
     
