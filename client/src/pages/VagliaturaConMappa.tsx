@@ -166,10 +166,11 @@ export default function VagliaturaConMappa() {
       if (mode === 'source') {
         return b.currentCycleId !== null; // Solo cestelli con ciclo attivo
       } else {
-        // In destination: mostra cestelli disponibili O cestelli origine (che possono ricevere sotto-vaglio)
-        const isAvailable = b.currentCycleId === null && b.state === 'available';
+        // In destination: mostra TUTTI i cestelli senza ciclo attivo (indipendentemente dallo stato manuale)
+        // oppure i cestelli origine (che possono ricevere sotto-vaglio)
+        const isAvailableForDestination = b.currentCycleId === null; // Solo controlla assenza ciclo, non lo stato
         const isSourceBasket = sourceBaskets.some(sb => sb.basketId === b.id);
-        return isAvailable || isSourceBasket;
+        return isAvailableForDestination || isSourceBasket;
       }
     });
     
