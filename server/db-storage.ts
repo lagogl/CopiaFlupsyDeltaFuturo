@@ -1883,9 +1883,22 @@ export class DbStorage implements IStorage {
   
   async addScreeningDestinationBasket(basket: InsertScreeningDestinationBasket): Promise<any> {
     const now = new Date();
+    
+    // Traduce destinationType in category italiana
+    let category = basket.category;
+    if (!category && (basket as any).destinationType) {
+      const destType = (basket as any).destinationType;
+      if (destType === 'sold') {
+        category = 'Venduta';
+      } else if (destType === 'placed') {
+        category = 'Riposizionata';
+      }
+    }
+    
     const results = await db.insert(screeningDestinationBaskets)
       .values({
         ...basket,
+        category,
         createdAt: now,
         updatedAt: now
       })
@@ -1896,9 +1909,21 @@ export class DbStorage implements IStorage {
   
   async updateScreeningDestinationBasket(id: number, basket: Partial<ScreeningDestinationBasket>): Promise<ScreeningDestinationBasket | undefined> {
     const now = new Date();
+    
+    // Traduce destinationType in category italiana se presente
+    let updateData = { ...basket };
+    if (!updateData.category && (basket as any).destinationType) {
+      const destType = (basket as any).destinationType;
+      if (destType === 'sold') {
+        updateData.category = 'Venduta';
+      } else if (destType === 'placed') {
+        updateData.category = 'Riposizionata';
+      }
+    }
+    
     const results = await db.update(screeningDestinationBaskets)
       .set({
-        ...basket,
+        ...updateData,
         updatedAt: now
       })
       .where(eq(screeningDestinationBaskets.id, id))

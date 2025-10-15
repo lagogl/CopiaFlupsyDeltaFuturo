@@ -301,26 +301,35 @@ export default function ScreeningDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(screening.destinationBaskets || []).map((basket) => (
-                <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
-                  <TableCell>{basket.basketId}</TableCell>
-                  <TableCell>{basket.cycleId}</TableCell>
-                  <TableCell>{basket.category || '-'}</TableCell>
-                  <TableCell>{basket.flupsyName || '-'}</TableCell>
-                  <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
-                  <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
-                  <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
-                  <TableCell>
-                    {basket.positionAssigned ? (
-                      <Badge variant="outline">
-                        {basket.row}{basket.position}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Non assegnata</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {(screening.destinationBaskets || []).map((basket) => {
+                // Fallback per dedurre la categoria se non presente
+                let category = basket.category;
+                if (!category) {
+                  // Se ha una posizione assegnata, è riposizionato, altrimenti venduto
+                  category = basket.positionAssigned ? 'Riposizionata' : 'Venduta';
+                }
+                
+                return (
+                  <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
+                    <TableCell>{basket.basketId}</TableCell>
+                    <TableCell>{basket.cycleId}</TableCell>
+                    <TableCell>{category}</TableCell>
+                    <TableCell>{basket.flupsyName || '-'}</TableCell>
+                    <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
+                    <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
+                    <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
+                    <TableCell>
+                      {basket.positionAssigned ? (
+                        <Badge variant="outline">
+                          {basket.row}{basket.position}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Non assegnata</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
