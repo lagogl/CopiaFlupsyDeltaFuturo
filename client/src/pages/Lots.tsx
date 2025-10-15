@@ -1034,7 +1034,7 @@ export default function Lots() {
       {/* View Lot Details Dialog */}
       {selectedLot && (
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[700px]">
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Dettagli Lotto #{selectedLot.id}</DialogTitle>
               <DialogDescription>
@@ -1042,7 +1042,7 @@ export default function Lots() {
               </DialogDescription>
             </DialogHeader>
             
-            <Tabs defaultValue="info" className="w-full">
+            <Tabs defaultValue="info" className="w-full overflow-y-auto flex-1">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="info">Informazioni Generali</TabsTrigger>
                 <TabsTrigger value="inventory">
