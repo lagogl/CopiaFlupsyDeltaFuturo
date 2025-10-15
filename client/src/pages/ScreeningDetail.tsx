@@ -313,7 +313,11 @@ export default function ScreeningDetail() {
                   <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
                     <TableCell>{basket.basketId}</TableCell>
                     <TableCell>{basket.cycleId}</TableCell>
-                    <TableCell>{category}</TableCell>
+                    <TableCell className={
+                      category === 'Venduta' 
+                        ? 'text-orange-600 dark:text-orange-400 font-semibold' 
+                        : 'text-green-600 dark:text-green-400 font-semibold'
+                    }>{category}</TableCell>
                     <TableCell>{basket.flupsyName || '-'}</TableCell>
                     <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
                     <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
