@@ -18,14 +18,18 @@ export async function detectAndFixDatabaseInconsistencies() {
 
   try {
     // 1. Verifica cestelli con currentCycleId che puntano a cicli inesistenti
-    const orphanedBaskets = await db
+    // Usa query separata più semplice per evitare timeout
+    const allBaskets = await db
       .select()
       .from(baskets)
-      .leftJoin(cycles, eq(baskets.currentCycleId, cycles.id))
-      .where(and(
-        isNotNull(baskets.currentCycleId),
-        isNull(cycles.id)
-      ));
+      .where(isNotNull(baskets.currentCycleId));
+    
+    const allCycles = await db
+      .select({ id: cycles.id })
+      .from(cycles);
+    
+    const cycleIds = new Set(allCycles.map(c => c.id));
+    const orphanedBaskets = allBaskets.filter(b => b.currentCycleId && !cycleIds.has(b.currentCycleId));
 
     if (orphanedBaskets.length > 0) {
       console.log(`⚠️ TROVATI ${orphanedBaskets.length} cestelli con riferimenti a cicli inesistenti`);
@@ -43,7 +47,7 @@ export async function detectAndFixDatabaseInconsistencies() {
             currentCycleId: null,
             state: 'available'
           })
-          .where(eq(baskets.id, item.baskets.id));
+          .where(eq(baskets.id, item.id));
       }
 
       fixedIssues += orphanedBaskets.length;
