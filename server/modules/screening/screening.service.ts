@@ -555,6 +555,15 @@ export class ScreeningService {
 
     console.log(`✅ SCREENING COMPLETATO CON ALLOCAZIONE MULTI-LOTTO!`);
 
+    // Invalida cache operazioni per mostrare le nuove operazioni di prima attivazione
+    try {
+      const { OperationsCache } = await import('../../operations-cache-service');
+      OperationsCache.clear();
+      console.log('🗑️ Cache operazioni invalidata dopo screening');
+    } catch (error) {
+      console.error('⚠️ Errore durante invalidazione cache operazioni:', error);
+    }
+
     this.clearCache();
     return result;
   }
