@@ -277,11 +277,11 @@ export default function ScreeningDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(screening.sourceBaskets || []).map((basket) => (
+              {(screening.sourceBaskets || []).map((basket: any) => (
                 <TableRow key={basket.id} data-testid={`row-source-${basket.id}`}>
                   <TableCell>{basket.basketId}</TableCell>
-                  <TableCell>{basket.cycleId}</TableCell>
-                  <TableCell>{basket.flupsyName || '-'}</TableCell>
+                  <TableCell>{basket.cycleId || '-'}</TableCell>
+                  <TableCell>{basket.flupsy?.name || '-'}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
@@ -318,26 +318,31 @@ export default function ScreeningDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(screening.destinationBaskets || []).map((basket) => (
-                <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
-                  <TableCell>{basket.basketId}</TableCell>
-                  <TableCell>{basket.cycleId}</TableCell>
-                  <TableCell>{basket.category || '-'}</TableCell>
-                  <TableCell>{basket.flupsyName || '-'}</TableCell>
-                  <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
-                  <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
-                  <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
-                  <TableCell>
-                    {basket.positionAssigned ? (
-                      <Badge variant="outline">
-                        {basket.row}{basket.position}
+              {(screening.destinationBaskets || []).map((basket: any) => {
+                const isVendita = !basket.flupsyId;
+                const categoria = isVendita ? `Vendita ${basket.category}` : `Riposizionamento ${basket.category}`;
+                const posizione = basket.row && basket.position ? `${basket.row}${basket.position}` : 
+                                 (isVendita ? 'VENDITA' : 'Non assegnata');
+                
+                return (
+                  <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
+                    <TableCell>{basket.basketId}</TableCell>
+                    <TableCell>{basket.cycleId || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant={isVendita ? 'default' : 'secondary'}>
+                        {categoria}
                       </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Non assegnata</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>{basket.flupsy?.name || '-'}</TableCell>
+                    <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
+                    <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
+                    <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{posizione}</Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
