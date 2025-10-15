@@ -13,6 +13,9 @@ export function registerScreeningRoutes(app: Express) {
   // Dettaglio completo screening
   app.get("/api/screenings/:id", screeningController.getScreeningById.bind(screeningController));
 
+  // Report PDF screening
+  app.get("/api/screenings/:id/report.pdf", screeningController.generatePDFReport.bind(screeningController));
+
   // ===== SCREENING OPERATIONS =====
   // Lista operazioni di screening
   app.get("/api/screening/operations", screeningController.getScreeningOperations.bind(screeningController));

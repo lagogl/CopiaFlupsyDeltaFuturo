@@ -143,7 +143,7 @@ export default function ScreeningDetail() {
             Indietro
           </Button>
           <Button
-            onClick={() => window.open(`/api/selections/${screening.id}/report.pdf`, '_blank')}
+            onClick={() => window.open(`/api/screenings/${screening.id}/report.pdf`, '_blank')}
             data-testid="button-print-pdf"
           >
             <Download className="h-4 w-4 mr-2" />

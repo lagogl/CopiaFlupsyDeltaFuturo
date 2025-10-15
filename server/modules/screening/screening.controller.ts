@@ -401,6 +401,58 @@ export class ScreeningController {
       res.status(500).json({ message: "Failed to create lot reference" });
     }
   }
+
+  /**
+   * GET /api/screenings/:id/report.pdf
+   * Genera report PDF per screening
+   */
+  async generatePDFReport(req: Request, res: Response) {
+    try {
+      // Validazione stretta: solo numeri positivi
+      const idStr = req.params.id;
+      if (!/^\d+$/.test(idStr)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Invalid screening ID" 
+        });
+      }
+      
+      const id = parseInt(idStr);
+      if (id <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Invalid screening ID" 
+        });
+      }
+      
+      const pdfBuffer = await screeningService.generatePDFReport(id);
+      
+      // Recupera screening number per nome file
+      const screening = await screeningService.getScreeningById(id);
+      const screeningNumber = screening?.screening?.screeningNumber || id;
+      
+      // Invia PDF al client
+      res.status(200);
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="screening-${screeningNumber}.pdf"`,
+        'Content-Length': pdfBuffer.length
+      });
+      res.end(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      if (error instanceof Error && error.message.includes('not found')) {
+        return res.status(404).json({ 
+          success: false, 
+          error: error.message 
+        });
+      }
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to generate PDF report" 
+      });
+    }
+  }
 }
 
 export const screeningController = new ScreeningController();
