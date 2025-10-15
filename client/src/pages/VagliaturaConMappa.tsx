@@ -352,6 +352,9 @@ export default function VagliaturaConMappa() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/selections'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
       navigate('/');
     },
     onError: (error: any) => {
@@ -956,6 +959,7 @@ export default function VagliaturaConMappa() {
       queryClient.invalidateQueries({ queryKey: ['/api/selections'] });
       queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
       
       // Naviga alla dashboard dopo un breve ritardo per mostrare il successo
       setTimeout(() => {
