@@ -1606,25 +1606,10 @@ export async function generatePDFReport(req: Request, res: Response) {
       .from(selectionSourceBaskets)
       .where(eq(selectionSourceBaskets.selectionId, Number(id)));
     
-    // Recupera cestelli destinazione con dettagli
-    const destBaskets = await db.select({
-      id: selectionDestinationBaskets.id,
-      basketId: selectionDestinationBaskets.basketId,
-      cycleId: selectionDestinationBaskets.cycleId,
-      category: selectionDestinationBaskets.category,
-      animalCount: selectionDestinationBaskets.animalCount,
-      totalWeight: selectionDestinationBaskets.totalWeight,
-      animalsPerKg: selectionDestinationBaskets.animalsPerKg,
-      position: selectionDestinationBaskets.position,
-      flupsyName: flupsys.name,
-      sizeId: selectionDestinationBaskets.sizeId,
-      sizeCode: sizes.code
-    })
-    .from(selectionDestinationBaskets)
-    .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
-    .leftJoin(flupsys, eq(selectionDestinationBaskets.flupsyId, flupsys.id))
-    .leftJoin(sizes, eq(selectionDestinationBaskets.sizeId, sizes.id))
-    .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
+    // Recupera cestelli destinazione (senza join per evitare errori)
+    const destBaskets = await db.select()
+      .from(selectionDestinationBaskets)
+      .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
     
     // Calcola totali
     const totalSourceAnimals = sourceBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
@@ -1632,16 +1617,39 @@ export async function generatePDFReport(req: Request, res: Response) {
     const mortality = Math.max(0, totalSourceAnimals - totalDestAnimals);
     const mortalityPercent = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0';
     
-    // Arricchisci destBaskets con dati taglie (se sizeId è presente)
+    // Arricchisci source baskets con dati FLUPSY
+    const enrichedSourceBaskets = await Promise.all(sourceBaskets.map(async (basket: any) => {
+      if (basket.flupsyId) {
+        const flupsyInfo = await db.select({ name: flupsys.name })
+          .from(flupsys)
+          .where(eq(flupsys.id, basket.flupsyId))
+          .limit(1);
+        return { ...basket, flupsyName: flupsyInfo[0]?.name || null };
+      }
+      return { ...basket, flupsyName: null };
+    }));
+    
+    // Arricchisci destBaskets con dati taglie e FLUPSY
     const enrichedDestBaskets = await Promise.all(destBaskets.map(async (basket: any) => {
+      let enriched = { ...basket, sizeCode: null, flupsyName: null };
+      
       if (basket.sizeId) {
         const sizeInfo = await db.select({ code: sizes.code })
           .from(sizes)
           .where(eq(sizes.id, basket.sizeId))
           .limit(1);
-        return { ...basket, sizeCode: sizeInfo[0]?.code || null };
+        enriched.sizeCode = sizeInfo[0]?.code || null;
       }
-      return { ...basket, sizeCode: null };
+      
+      if (basket.flupsyId) {
+        const flupsyInfo = await db.select({ name: flupsys.name })
+          .from(flupsys)
+          .where(eq(flupsys.id, basket.flupsyId))
+          .limit(1);
+        enriched.flupsyName = flupsyInfo[0]?.name || null;
+      }
+      
+      return enriched;
     }));
     
     // Calcola totalizzatori per taglia
@@ -1830,11 +1838,11 @@ export async function generatePDFReport(req: Request, res: Response) {
             </tr>
         </thead>
         <tbody>
-            ${sourceBaskets.map(b => `
+            ${enrichedSourceBaskets.map(b => `
                 <tr>
                     <td>#${b.basketId}</td>
                     <td>${b.cycleId || '-'}</td>
-                    <td>-</td>
+                    <td>${b.flupsyName || '-'}</td>
                     <td class="text-right">${(b.animalCount || 0).toLocaleString('it-IT')}</td>
                     <td class="text-right">${(b.totalWeight || 0).toFixed(2)}</td>
                     <td class="text-right">${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
@@ -1867,7 +1875,7 @@ export async function generatePDFReport(req: Request, res: Response) {
                     <td>#${b.basketId}</td>
                     <td>${b.cycleId || '-'}</td>
                     <td class="${categoryClass}">${category}</td>
-                    <td>-</td>
+                    <td>${b.flupsyName || '-'}</td>
                     <td class="text-right">${(b.animalCount || 0).toLocaleString('it-IT')}</td>
                     <td class="text-right">${(b.totalWeight || 0).toFixed(2)}</td>
                     <td class="text-right">${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
