@@ -1617,31 +1617,56 @@ export default function Operations() {
             onClick={async () => {
               try {
                 setIsRefreshingData(true);
-                console.log('🔄 REFRESH: Invalidando tutte le cache...');
+                console.log('🔄 REFRESH: Invalidando cache backend...');
                 
-                // Invalida tutte le cache prima di fare il refetch
-                queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
-                queryClient.invalidateQueries({ queryKey: ['/api/operations-unified'] });
-                queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-                queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-                queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+                // 1. Invalida cache backend PRIMA e controlla il risultato
+                const response = await fetch('/api/operations-cache-clear', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                  throw new Error(`Errore backend: ${response.status} ${response.statusText}`);
+                }
+                
+                console.log('🔄 REFRESH: Cache backend invalidata, ricarico dati attivi...');
+                
+                // 2. Refetch delle query ATTIVE (operations, cycles, baskets)
+                await Promise.all([
+                  queryClient.refetchQueries({ 
+                    queryKey: ['/api/operations'],
+                    type: 'active'
+                  }),
+                  queryClient.refetchQueries({ 
+                    queryKey: ['/api/operations-unified'],
+                    type: 'all' // Questa è usata dalla pagina, forza il refetch
+                  }),
+                  queryClient.refetchQueries({ 
+                    queryKey: ['/api/cycles'],
+                    type: 'active'
+                  }),
+                  queryClient.refetchQueries({ 
+                    queryKey: ['/api/baskets'],
+                    type: 'active'
+                  })
+                ]);
+                
+                // 3. Invalida query secondarie (verranno ricaricate quando servono)
                 queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
                 
-                // Aspetta che le invalidazioni si propaghino
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                console.log('🔄 REFRESH: Cache invalidate e dati aggiornati');
+                console.log('🔄 REFRESH: Dati attivi ricaricati, cache secondarie invalidate');
                 
                 toast({
                   title: "Aggiornamento completato",
-                  description: "Il registro operazioni è stato aggiornato con i dati più recenti",
+                  description: "Operazioni, cicli e cestelli aggiornati dal database",
                   variant: "default"
                 });
               } catch (error) {
                 console.error('🔄 REFRESH: Errore durante aggiornamento:', error);
                 toast({
                   title: "Errore durante l'aggiornamento",
-                  description: "Si è verificato un problema durante l'aggiornamento dei dati",
+                  description: error instanceof Error ? error.message : "Si è verificato un problema durante l'aggiornamento dei dati",
                   variant: "destructive"
                 });
               } finally {
