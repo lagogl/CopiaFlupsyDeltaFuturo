@@ -228,6 +228,7 @@ export class LotsService {
    */
   async createLot(lotData: any) {
     this.invalidateCache();
+    storage.invalidateLotsCache();
     return await storage.createLot(lotData);
   }
 
@@ -236,6 +237,7 @@ export class LotsService {
    */
   async updateLot(id: number, updateData: any) {
     this.invalidateCache();
+    storage.invalidateLotsCache();
     return await storage.updateLot(id, updateData);
   }
 
@@ -244,6 +246,7 @@ export class LotsService {
    */
   async deleteLot(id: number) {
     this.invalidateCache();
+    storage.invalidateLotsCache();
     return await storage.deleteLot(id);
   }
 
@@ -252,6 +255,8 @@ export class LotsService {
    */
   refreshCache() {
     this.invalidateCache();
+    // Invalida anche la cache del DbStorage
+    storage.invalidateLotsCache();
     return { success: true, message: "Lots cache cleared" };
   }
 
