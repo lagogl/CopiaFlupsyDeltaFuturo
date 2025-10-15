@@ -2395,7 +2395,9 @@ export default function Operations() {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           <div>
-                            #{op.basket?.physicalNumber || op.basketId}
+                            <span className="font-bold text-green-700">
+                              #{op.basket?.physicalNumber || op.basketId}
+                            </span>
                             {op.basket?.row && op.basket?.position && (
                               <span className="text-xs block text-indigo-600 mt-1">
                                 Posizione: {op.basket.row} - {op.basket.position}
