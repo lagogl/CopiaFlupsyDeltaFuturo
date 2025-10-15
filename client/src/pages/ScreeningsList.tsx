@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 
 interface SelectionListItem {
   id: number;
-  selectionNumber: number;
+  selectionNumber?: number;
+  screeningNumber?: number;
   date: string;
   purpose: string | null;
   screeningType: string | null;
@@ -35,8 +36,9 @@ interface SelectionListItem {
 }
 
 interface SelectionsResponse {
-  success: boolean;
-  selections: SelectionListItem[];
+  success?: boolean;
+  selections?: SelectionListItem[];
+  screenings?: SelectionListItem[];
   pagination?: {
     page: number;
     pageSize: number;
@@ -63,15 +65,15 @@ export default function ScreeningsList() {
   if (dateTo) queryParams.set('dateTo', dateTo);
 
   const { data: response, isLoading } = useQuery<SelectionsResponse>({
-    queryKey: ['/api/selections', page, pageSize, screeningNumber, dateFrom, dateTo],
+    queryKey: ['/api/screenings', page, pageSize, screeningNumber, dateFrom, dateTo],
     queryFn: async () => {
-      const res = await fetch(`/api/selections?${queryParams.toString()}`);
-      if (!res.ok) throw new Error('Failed to fetch selections');
+      const res = await fetch(`/api/screenings?${queryParams.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch screenings');
       return res.json();
     },
   });
 
-  const screenings = response?.selections || [];
+  const screenings = response?.screenings || [];
   const pagination = response?.pagination;
 
   const formatNumber = (num: number) => num.toLocaleString('it-IT');
@@ -191,7 +193,7 @@ export default function ScreeningsList() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {screenings.map((screening) => {
+                    {screenings.map((screening: SelectionListItem) => {
                       const totalSource = screening.totalSourceAnimals ?? 0;
                       const mortality = screening.mortalityAnimals ?? 0;
                       const mortalityPercent = totalSource > 0
@@ -201,7 +203,7 @@ export default function ScreeningsList() {
                       return (
                         <TableRow key={screening.id} data-testid={`row-screening-${screening.id}`}>
                           <TableCell className="font-medium" data-testid={`text-number-${screening.id}`}>
-                            #{screening.selectionNumber}
+                            #{screening.selectionNumber || screening.screeningNumber}
                           </TableCell>
                           <TableCell data-testid={`text-date-${screening.id}`}>
                             {formatDate(screening.date)}
