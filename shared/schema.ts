@@ -184,6 +184,7 @@ export const selectionDestinationBaskets = pgTable("selection_destination_basket
   basketId: integer("basket_id").notNull(), // Riferimento alla nuova cesta
   cycleId: integer("cycle_id"), // Riferimento al nuovo ciclo (può essere null se non ancora creato)
   destinationType: text("destination_type", { enum: ["sold", "placed"] }).notNull(), // Venduta o collocata
+  category: text("category"), // Categoria in italiano: "Venduta" o "Riposizionata"
   flupsyId: integer("flupsy_id"), // FLUPSY assegnato se collocata
   position: text("position"), // Posizione nel FLUPSY se collocata
   // Dati della nuova cesta

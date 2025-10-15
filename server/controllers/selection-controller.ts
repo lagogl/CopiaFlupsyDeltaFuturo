@@ -705,11 +705,17 @@ export async function addDestinationBaskets(req: Request, res: Response) {
     
     // Inserisci tutti i cestelli destinazione
     for (const destBasket of destinationBaskets) {
+      const destinationType = destBasket.destinationType || 'positioned';
+      
+      // Traduce automaticamente destinationType in categoria italiana
+      const category = destinationType === 'sold' ? 'Venduta' : 'Riposizionata';
+      
       await db.insert(selectionDestinationBaskets).values({
         selectionId: Number(id),
         basketId: destBasket.basketId,
         cycleId: null, // Sarà creato al completamento
-        destinationType: destBasket.destinationType || 'positioned',
+        destinationType: destinationType,
+        category: category,
         flupsyId: destBasket.flupsyId || null,
         position: destBasket.position || null,
         animalCount: destBasket.animalCount,
@@ -724,7 +730,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
         notes: destBasket.notes || null
       });
       
-      console.log(`✅ Cestello destinazione ${destBasket.basketId} aggiunto (${destBasket.animalCount} animali)`);
+      console.log(`✅ Cestello destinazione ${destBasket.basketId} aggiunto (${destBasket.animalCount} animali) - ${category}`);
     }
     
     return res.status(200).json({

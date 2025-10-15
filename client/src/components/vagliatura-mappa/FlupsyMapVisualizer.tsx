@@ -82,8 +82,13 @@ export default function FlupsyMapVisualizer({
   // Trova i cestelli del FLUPSY selezionato
   const flupsyBaskets = baskets.filter(b => b.flupsyId === Number(flupsyId));
   
-  // Default: 10 posizioni per FLUPSY (5 per riga)
-  const positionsPerRow = 5;
+  // Calcola dinamicamente il numero di posizioni per riga in base ai cestelli effettivi
+  const maxPositionPerRow = flupsyBaskets.reduce((max, basket) => {
+    const pos = basket.position || 0;
+    return Math.max(max, pos);
+  }, 5); // Minimo 5 posizioni
+  
+  const positionsPerRow = maxPositionPerRow;
   
   // Definizione delle file del FLUPSY (default: DX e SX)
   const rows = ['DX', 'SX'];
