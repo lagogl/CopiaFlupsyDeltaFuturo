@@ -48,29 +48,12 @@ export default function ScreeningDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
 
-  const { data, isLoading } = useQuery<{
-    screening: {
-      id: number;
-      screeningNumber: number;
-      date: string;
-      purpose: string | null;
-      status: string;
-      notes: string | null;
-      createdAt: string;
-      referenceSize?: { code: string; name: string } | null;
-    };
-    sourceBaskets: Array<any>;
-    destinationBaskets: Array<any>;
-  }>({
-    queryKey: [`/api/screenings/${id}`],
+  const { data, isLoading } = useQuery<{success: boolean; selection: ScreeningDetail}>({
+    queryKey: [`/api/selections/${id}`],
     enabled: !!id
   });
 
-  const screening = data ? {
-    ...data.screening,
-    sourceBaskets: data.sourceBaskets || [],
-    destinationBaskets: data.destinationBaskets || []
-  } : undefined;
+  const screening = data?.selection;
 
   const formatNumber = (num: number | null) => 
     num !== null ? num.toLocaleString('it-IT') : '-';
@@ -143,7 +126,7 @@ export default function ScreeningDetail() {
             Indietro
           </Button>
           <Button
-            onClick={() => window.open(`/api/screenings/${screening.id}/report.pdf`, '_blank')}
+            onClick={() => window.open(`/api/selections/${screening.id}/report.pdf`, '_blank')}
             data-testid="button-print-pdf"
           >
             <Download className="h-4 w-4 mr-2" />
@@ -277,11 +260,11 @@ export default function ScreeningDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(screening.sourceBaskets || []).map((basket: any) => (
+              {(screening.sourceBaskets || []).map((basket) => (
                 <TableRow key={basket.id} data-testid={`row-source-${basket.id}`}>
                   <TableCell>{basket.basketId}</TableCell>
-                  <TableCell>{basket.cycleId || '-'}</TableCell>
-                  <TableCell>{basket.flupsy?.name || '-'}</TableCell>
+                  <TableCell>{basket.cycleId}</TableCell>
+                  <TableCell>{basket.flupsyName || '-'}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
                   <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
@@ -318,31 +301,26 @@ export default function ScreeningDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(screening.destinationBaskets || []).map((basket: any) => {
-                const isVendita = !basket.flupsyId;
-                const categoria = isVendita ? `Vendita ${basket.category}` : `Riposizionamento ${basket.category}`;
-                const posizione = basket.row && basket.position ? `${basket.row}${basket.position}` : 
-                                 (isVendita ? 'VENDITA' : 'Non assegnata');
-                
-                return (
-                  <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
-                    <TableCell>{basket.basketId}</TableCell>
-                    <TableCell>{basket.cycleId || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant={isVendita ? 'default' : 'secondary'}>
-                        {categoria}
+              {(screening.destinationBaskets || []).map((basket) => (
+                <TableRow key={basket.id} data-testid={`row-dest-${basket.id}`}>
+                  <TableCell>{basket.basketId}</TableCell>
+                  <TableCell>{basket.cycleId}</TableCell>
+                  <TableCell>{basket.category || '-'}</TableCell>
+                  <TableCell>{basket.flupsyName || '-'}</TableCell>
+                  <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
+                  <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
+                  <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
+                  <TableCell>
+                    {basket.positionAssigned ? (
+                      <Badge variant="outline">
+                        {basket.row}{basket.position}
                       </Badge>
-                    </TableCell>
-                    <TableCell>{basket.flupsy?.name || '-'}</TableCell>
-                    <TableCell className="text-right">{formatNumber(basket.animalCount)}</TableCell>
-                    <TableCell className="text-right">{formatNumber(basket.totalWeight)}</TableCell>
-                    <TableCell className="text-right">{formatNumber(basket.animalsPerKg)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{posizione}</Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Non assegnata</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>
