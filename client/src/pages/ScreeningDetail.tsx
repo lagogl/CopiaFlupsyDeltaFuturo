@@ -48,12 +48,29 @@ export default function ScreeningDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
 
-  const { data, isLoading } = useQuery<{success: boolean; screening: ScreeningDetail}>({
+  const { data, isLoading } = useQuery<{
+    screening: {
+      id: number;
+      screeningNumber: number;
+      date: string;
+      purpose: string | null;
+      status: string;
+      notes: string | null;
+      createdAt: string;
+      referenceSize?: { code: string; name: string } | null;
+    };
+    sourceBaskets: Array<any>;
+    destinationBaskets: Array<any>;
+  }>({
     queryKey: [`/api/screenings/${id}`],
     enabled: !!id
   });
 
-  const screening = data?.screening;
+  const screening = data ? {
+    ...data.screening,
+    sourceBaskets: data.sourceBaskets || [],
+    destinationBaskets: data.destinationBaskets || []
+  } : undefined;
 
   const formatNumber = (num: number | null) => 
     num !== null ? num.toLocaleString('it-IT') : '-';
