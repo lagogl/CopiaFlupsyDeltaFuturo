@@ -2325,6 +2325,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         OperationsCache.clear();
         console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
         
+        // Invalida cache cestelli per aggiornamento mappa
+        const { BasketsCache } = await import('./baskets-cache-service');
+        BasketsCache.clear();
+        console.log('🗑️ Cache cestelli invalidata per aggiornamento mappa FLUPSY');
+        
         // Controlla in tempo reale se il cestello ha raggiunto una taglia target
         if (operation.operation && operation.operation.id) {
           checkOperationForTargetSize(operation.operation.id)
@@ -2524,6 +2529,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           OperationsCache.clear();
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
           
+          // Invalida cache cestelli per aggiornamento mappa
+          const { BasketsCache } = await import('./baskets-cache-service');
+          BasketsCache.clear();
+          console.log('🗑️ Cache cestelli invalidata per aggiornamento mappa FLUPSY');
+          
           // Controlla in tempo reale se il cestello ha raggiunto una taglia target
           if (newOperation && newOperation.id) {
             checkOperationForTargetSize(newOperation.id)
@@ -2585,6 +2595,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { OperationsCache } = await import('./operations-cache-service');
           OperationsCache.clear();
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
+          
+          // Invalida cache cestelli per aggiornamento mappa
+          const { BasketsCache } = await import('./baskets-cache-service');
+          BasketsCache.clear();
+          console.log('🗑️ Cache cestelli invalidata per aggiornamento mappa FLUPSY');
           
           // Controlla in tempo reale se il cestello ha raggiunto una taglia target
           if (newOperation && newOperation.id) {
