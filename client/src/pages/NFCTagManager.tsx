@@ -39,7 +39,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
-import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon, UsbIcon, WifiIcon, AlertTriangleIcon, BluetoothIcon } from 'lucide-react';
+import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon, UsbIcon, WifiIcon, AlertTriangleIcon, BluetoothIcon, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { nfcService } from '@/nfc-features/utils/nfcService';
 import BluetoothNFCGuide from '@/components/BluetoothNFCGuide';
@@ -182,6 +182,45 @@ export default function NFCTagManager() {
       toast({
         title: "Errore",
         description: "Si è verificato un errore durante l'aggiornamento della posizione. Riprova.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation per cambiare lo stato del cestello
+  const toggleBasketState = useMutation({
+    mutationFn: async (data: { basketId: number, currentState: string }) => {
+      const newState = data.currentState === 'available' ? 'active' : 'available';
+      
+      const response = await fetch(`/api/baskets/${data.basketId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          state: newState
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Errore durante il cambio stato');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      
+      toast({
+        title: "Stato aggiornato",
+        description: "Lo stato del cestello è stato modificato con successo.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante il cambio stato.",
         variant: "destructive",
       });
     }
@@ -555,16 +594,6 @@ export default function NFCTagManager() {
               <p className="text-sm font-medium">
                 {nfcSupportInfo.recommended}
               </p>
-              {nfcSupportInfo.type === 'none' && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-3"
-                  onClick={activateSimulation}
-                >
-                  Attiva Modalità Simulazione
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
@@ -686,7 +715,26 @@ export default function NFCTagManager() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex gap-2 justify-end flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleBasketState.mutate({ 
+                                basketId: basket.id, 
+                                currentState: basket.state 
+                              })}
+                              disabled={toggleBasketState.isPending}
+                              className={basket.state === 'available' 
+                                ? "bg-green-50 hover:bg-green-100 border-green-300" 
+                                : "bg-orange-50 hover:bg-orange-100 border-orange-300"}
+                              title={basket.state === 'available' ? 'Segna come in uso' : 'Segna come disponibile'}
+                            >
+                              {basket.state === 'available' ? (
+                                <ToggleRight className="h-4 w-4" />
+                              ) : (
+                                <ToggleLeft className="h-4 w-4" />
+                              )}
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
