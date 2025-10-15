@@ -179,6 +179,13 @@ class OperationsService {
       const compositionsMap = new Map<string, any[]>();
       
       if (basketCyclePairs.length > 0) {
+        // Ottimizzazione: usa IN invece di OR multipli
+        const uniqueBasketIds = [...new Set(basketCyclePairs.map(p => p.basketId))];
+        const uniqueCycleIds = [...new Set(basketCyclePairs.map(p => p.cycleId))];
+        
+        // Crea un Set delle coppie valide per filtro rapido
+        const validPairs = new Set(basketCyclePairs.map(p => `${p.basketId}-${p.cycleId}`));
+        
         const allCompositions = await db
           .select({
             basketId: basketLotComposition.basketId,
@@ -198,21 +205,22 @@ class OperationsService {
           .from(basketLotComposition)
           .leftJoin(lots, eq(basketLotComposition.lotId, lots.id))
           .where(
-            or(...basketCyclePairs.map(pair => 
-              and(
-                eq(basketLotComposition.basketId, pair.basketId),
-                eq(basketLotComposition.cycleId, pair.cycleId)
-              )
-            ))
+            and(
+              inArray(basketLotComposition.basketId, uniqueBasketIds),
+              inArray(basketLotComposition.cycleId, uniqueCycleIds)
+            )
           )
           .orderBy(desc(basketLotComposition.percentage));
         
+        // Filtra solo le coppie valide (in memoria)
         for (const comp of allCompositions) {
           const key = `${comp.basketId}-${comp.cycleId}`;
-          if (!compositionsMap.has(key)) {
-            compositionsMap.set(key, []);
+          if (validPairs.has(key)) {
+            if (!compositionsMap.has(key)) {
+              compositionsMap.set(key, []);
+            }
+            compositionsMap.get(key)!.push(comp);
           }
-          compositionsMap.get(key)!.push(comp);
         }
       }
       
