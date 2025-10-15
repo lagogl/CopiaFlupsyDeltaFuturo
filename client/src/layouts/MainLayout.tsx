@@ -109,7 +109,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Table className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.spreadsheetOperations, path: "/spreadsheet-operations" },
         { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.screeningWithMap, path: "/vagliatura-con-mappa" },
         { icon: <History className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.screeningHistory || "Storico Vagliature", path: "/screenings" },
-        { icon: <Smartphone className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.nfcFirstActivation, path: "/nfc-prima-attivazione" },
+        { icon: <Tag className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.nfcTagManagement, path: "/nfc-tags" },
         { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.flupsyScanMobile, path: "/nfc-scan" }
       ]
     },
@@ -170,7 +170,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       icon: <SettingsIcon className="h-5 w-5" />,
       color: 'text-gray-600',
       items: [
-        { icon: <Tag className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.nfcTagManagement, path: "/nfc-tags" },
         { icon: <SettingsIcon className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.settings, path: "/settings" },
         { icon: <Bell className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.notificationManagement, path: "/notification-settings" },
         { icon: <CloudIcon className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.invoicesInCloud, path: "/fatture-in-cloud" },
