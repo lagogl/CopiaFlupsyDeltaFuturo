@@ -48,12 +48,12 @@ export default function ScreeningDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
 
-  const { data, isLoading } = useQuery<{success: boolean; selection: ScreeningDetail}>({
-    queryKey: [`/api/selections/${id}`],
+  const { data, isLoading } = useQuery<{success: boolean; screening: ScreeningDetail}>({
+    queryKey: [`/api/screenings/${id}`],
     enabled: !!id
   });
 
-  const screening = data?.selection;
+  const screening = data?.screening;
 
   const formatNumber = (num: number | null) => 
     num !== null ? num.toLocaleString('it-IT') : '-';
