@@ -1601,21 +1601,10 @@ export async function generatePDFReport(req: Request, res: Response) {
       });
     }
     
-    // Recupera cestelli origine con dettagli
-    const sourceBaskets = await db.select({
-      id: selectionSourceBaskets.id,
-      basketId: selectionSourceBaskets.basketId,
-      cycleId: selectionSourceBaskets.cycleId,
-      animalCount: selectionSourceBaskets.animalCount,
-      totalWeight: selectionSourceBaskets.totalWeight,
-      animalsPerKg: selectionSourceBaskets.animalsPerKg,
-      dismissed: selectionSourceBaskets.dismissed,
-      flupsyName: flupsys.name
-    })
-    .from(selectionSourceBaskets)
-    .leftJoin(baskets, eq(selectionSourceBaskets.basketId, baskets.id))
-    .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
-    .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+    // Recupera cestelli origine (senza join per evitare errori)
+    const sourceBaskets = await db.select()
+      .from(selectionSourceBaskets)
+      .where(eq(selectionSourceBaskets.selectionId, Number(id)));
     
     // Recupera cestelli destinazione con dettagli
     const destBaskets = await db.select({
@@ -1643,9 +1632,21 @@ export async function generatePDFReport(req: Request, res: Response) {
     const mortality = Math.max(0, totalSourceAnimals - totalDestAnimals);
     const mortalityPercent = totalSourceAnimals > 0 ? ((mortality / totalSourceAnimals) * 100).toFixed(2) : '0';
     
+    // Arricchisci destBaskets con dati taglie (se sizeId è presente)
+    const enrichedDestBaskets = await Promise.all(destBaskets.map(async (basket: any) => {
+      if (basket.sizeId) {
+        const sizeInfo = await db.select({ code: sizes.code })
+          .from(sizes)
+          .where(eq(sizes.id, basket.sizeId))
+          .limit(1);
+        return { ...basket, sizeCode: sizeInfo[0]?.code || null };
+      }
+      return { ...basket, sizeCode: null };
+    }));
+    
     // Calcola totalizzatori per taglia
     const sizeStats: Record<string, { total: number; sold: number; repositioned: number }> = {};
-    for (const basket of destBaskets) {
+    for (const basket of enrichedDestBaskets) {
       if (basket.sizeCode && basket.animalCount) {
         if (!sizeStats[basket.sizeCode]) {
           sizeStats[basket.sizeCode] = { total: 0, sold: 0, repositioned: 0 };
@@ -1833,7 +1834,7 @@ export async function generatePDFReport(req: Request, res: Response) {
                 <tr>
                     <td>#${b.basketId}</td>
                     <td>${b.cycleId || '-'}</td>
-                    <td>${b.flupsyName || '-'}</td>
+                    <td>-</td>
                     <td class="text-right">${(b.animalCount || 0).toLocaleString('it-IT')}</td>
                     <td class="text-right">${(b.totalWeight || 0).toFixed(2)}</td>
                     <td class="text-right">${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
@@ -1858,7 +1859,7 @@ export async function generatePDFReport(req: Request, res: Response) {
             </tr>
         </thead>
         <tbody>
-            ${destBaskets.map(b => {
+            ${enrichedDestBaskets.map(b => {
                 const category = b.category || (b.position ? 'Riposizionata' : 'Venduta');
                 const categoryClass = category === 'Venduta' ? 'category-sold' : 'category-repositioned';
                 return `
@@ -1866,7 +1867,7 @@ export async function generatePDFReport(req: Request, res: Response) {
                     <td>#${b.basketId}</td>
                     <td>${b.cycleId || '-'}</td>
                     <td class="${categoryClass}">${category}</td>
-                    <td>${b.flupsyName || '-'}</td>
+                    <td>-</td>
                     <td class="text-right">${(b.animalCount || 0).toLocaleString('it-IT')}</td>
                     <td class="text-right">${(b.totalWeight || 0).toFixed(2)}</td>
                     <td class="text-right">${(b.animalsPerKg || 0).toLocaleString('it-IT')}</td>
