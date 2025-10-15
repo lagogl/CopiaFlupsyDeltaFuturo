@@ -31,10 +31,53 @@ export class FlupsyService {
     let basketsWithAnimals = 0;
     const sizeDistribution: Record<string, number> = {};
 
+    // OTTIMIZZAZIONE: Raccoglie tutti i cycleId in una volta
+    const activeCycleIds = baskets
+      .filter(b => b.currentCycleId !== null)
+      .map(b => b.currentCycleId as number);
+
+    if (activeCycleIds.length === 0) {
+      const avgAnimalDensity = 0;
+      const activeBasketPercentage = maxPositions > 0 ? Math.round((activeBaskets / maxPositions) * 100) : 0;
+
+      return {
+        totalBaskets,
+        activeBaskets,
+        availableBaskets,
+        maxPositions,
+        freePositions,
+        totalAnimals,
+        avgAnimalDensity,
+        activeBasketPercentage,
+        sizeDistribution
+      };
+    }
+
+    // OTTIMIZZAZIONE: Query singola per ottenere tutte le operazioni di tutti i cicli attivi
+    const allOperationsPromises = activeCycleIds.map(cycleId => 
+      storage.getOperationsByCycle(cycleId)
+    );
+    const allOperationsArrays = await Promise.all(allOperationsPromises);
+    const allOperations = allOperationsArrays.flat();
+
+    // OTTIMIZZAZIONE: Raccoglie tutti i sizeId unici
+    const uniqueSizeIds = [...new Set(
+      allOperations
+        .filter(op => op.sizeId !== null)
+        .map(op => op.sizeId as number)
+    )];
+
+    // OTTIMIZZAZIONE: Query singola per ottenere tutte le taglie
+    const sizesPromises = uniqueSizeIds.map(sizeId => storage.getSize(sizeId));
+    const sizesArray = await Promise.all(sizesPromises);
+    const sizesMap = new Map(sizesArray.filter(s => s !== null).map(s => [s!.id, s!]));
+
+    // Elabora i dati raggruppati
     for (const basket of baskets.filter(b => b.currentCycleId !== null)) {
       if (basket.currentCycleId) {
-        const cycleOperations = await storage.getOperationsByCycle(basket.currentCycleId);
-        const operations = cycleOperations.filter(op => op.basketId === basket.id);
+        const operations = allOperations.filter(op => 
+          op.basketId === basket.id && op.cycleId === basket.currentCycleId
+        );
         
         const operationsWithCount = operations
           .filter(op => op.animalCount !== null)
@@ -47,7 +90,7 @@ export class FlupsyService {
             basketsWithAnimals++;
 
             if (lastOperation.sizeId) {
-              const size = await storage.getSize(lastOperation.sizeId);
+              const size = sizesMap.get(lastOperation.sizeId);
               if (size) {
                 const sizeCode = size.code;
                 if (!sizeDistribution[sizeCode]) {

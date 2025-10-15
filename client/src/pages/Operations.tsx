@@ -1408,16 +1408,20 @@ export default function Operations() {
       }
 
       // Filtro per stato del ciclo
-      if (filters.cycleStateFilter !== 'all' && cycles) {
+      if (filters.cycleStateFilter !== 'all' && cycles && cycles.length > 0) {
         const operationCycle = cycles.find((c: any) => c.id === op.cycleId);
-        if (!operationCycle) return false;
         
-        if (filters.cycleStateFilter === 'active' && operationCycle.state !== 'active') {
-          return false;
+        // Se i cicli sono caricati ma l'operazione non ha un ciclo corrispondente,
+        // consenti comunque la visualizzazione (potrebbe essere un ciclo appena creato)
+        if (operationCycle) {
+          if (filters.cycleStateFilter === 'active' && operationCycle.state !== 'active') {
+            return false;
+          }
+          if (filters.cycleStateFilter === 'closed' && operationCycle.state !== 'closed') {
+            return false;
+          }
         }
-        if (filters.cycleStateFilter === 'closed' && operationCycle.state !== 'closed') {
-          return false;
-        }
+        // Se il ciclo non è trovato, passa comunque (non escludere)
       }
 
       return true;
