@@ -192,14 +192,18 @@ export default function NFCTagManager() {
     mutationFn: async (data: { basketId: number, currentState: string }) => {
       const newState = data.currentState === 'available' ? 'active' : 'available';
       
+      // Se si sta impostando lo stato a "available", rimuovi anche il currentCycleId
+      const updateData: any = { state: newState };
+      if (newState === 'available') {
+        updateData.currentCycleId = null;
+      }
+      
       const response = await fetch(`/api/baskets/${data.basketId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          state: newState
-        }),
+        body: JSON.stringify(updateData),
       });
       
       if (!response.ok) {
