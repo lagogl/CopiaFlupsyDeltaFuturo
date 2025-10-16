@@ -104,9 +104,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       setIsScanning(false);
 
     } catch (error: any) {
-      console.error('Errore durante la programmazione NFC:', error);
-      setError(error.message || 'Errore durante la programmazione del tag NFC');
-      setIsScanning(false);
+      await reportError(error, 'startWriting');
     }
   };
 
@@ -166,9 +164,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         throw new Error(result.error || 'Errore WeChat bridge');
       }
     } catch (err: any) {
-      console.error("Errore WeChat NFC:", err);
-      setError(err.message || 'Errore durante la scrittura WeChat NFC.');
-      setIsScanning(false);
+      await reportError(err, 'writeViaWeChatBridge');
     }
   };
 
@@ -259,23 +255,17 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           }, 1500);
           
         } catch (err: any) {
-          console.error("Errore durante la scrittura NFC:", err);
-          setError(err.message || 'Errore durante la scrittura del tag NFC.');
-          setIsScanning(false);
+          await reportError(err, 'handleNativeNFC - reading event');
         }
       });
       
       // Gestisce errori durante la scansione
-      ndef.addEventListener("error", (error: any) => {
-        console.error("Errore NFC:", error);
-        setError(error.message || 'Errore di comunicazione NFC.');
-        setIsScanning(false);
+      ndef.addEventListener("error", async (error: any) => {
+        await reportError(error, 'handleNativeNFC - error event');
       });
       
     } catch (err: any) {
-      console.error("Errore nell'avvio della scrittura NFC:", err);
-      setError(err.message || 'Impossibile avviare la funzionalità NFC.');
-      setIsScanning(false);
+      await reportError(err, 'handleNativeNFC - initialization');
     }
   };
 
@@ -310,9 +300,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       }, 1500);
 
     } catch (error: any) {
-      console.error("Errore simulazione:", error);
-      setError(error.message || 'Errore durante la simulazione NFC.');
-      setIsScanning(false);
+      await reportError(error, 'handleSimulationFallback');
     }
   };
   
@@ -342,8 +330,8 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     return (
       <div className="py-6 flex flex-col items-center justify-center space-y-4">
         <DialogHeader>
-          <DialogTitle className="text-center">Si è verificato un errore</DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle className="text-center text-red-600">Si è verificato un errore</DialogTitle>
+          <DialogDescription className="text-center text-lg font-medium">
             {error}
           </DialogDescription>
         </DialogHeader>
@@ -351,6 +339,31 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         <div className="flex items-center justify-center p-4">
           <AlertCircle className="h-16 w-16 text-red-500" />
         </div>
+        
+        {/* Dettagli dell'errore per debugging da mobile */}
+        {errorDetails && (
+          <div className="w-full bg-red-50 dark:bg-red-950 p-4 rounded-lg border border-red-200 dark:border-red-800 space-y-3">
+            <h3 className="font-bold text-sm text-red-900 dark:text-red-100">📋 Dettagli Errore (copia e invia allo sviluppatore):</h3>
+            
+            <div className="text-xs font-mono bg-white dark:bg-gray-900 p-3 rounded border border-red-200 dark:border-red-700 break-all space-y-2">
+              <div><strong>Messaggio:</strong> {errorDetails.message}</div>
+              {errorDetails.code && <div><strong>Codice:</strong> {errorDetails.code}</div>}
+              <div><strong>Contesto:</strong> {errorDetails.context}</div>
+              <div><strong>Timestamp:</strong> {new Date(errorDetails.timestamp).toLocaleString('it-IT')}</div>
+              <div><strong>Browser:</strong> {errorDetails.userAgent.substring(0, 60)}...</div>
+              {errorDetails.stack && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-red-600 dark:text-red-400 font-semibold">Stack Trace</summary>
+                  <pre className="mt-2 text-xs whitespace-pre-wrap">{errorDetails.stack}</pre>
+                </details>
+              )}
+            </div>
+            
+            <p className="text-xs text-red-700 dark:text-red-300">
+              ℹ️ Questo errore è stato automaticamente inviato al server per l'analisi.
+            </p>
+          </div>
+        )}
         
         <div className="flex space-x-4">
           <Button variant="ghost" onClick={cancelScanning}>

@@ -1779,6 +1779,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint per ricevere errori NFC da mobile (debugging)
+  app.post("/api/nfc-debug", async (req, res) => {
+    try {
+      const { basketId, basketNumber, error } = req.body;
+      
+      console.log("\n🔴 ========== ERRORE NFC DA MOBILE ==========");
+      console.log("📱 Cestello:", `#${basketNumber} (ID: ${basketId})`);
+      console.log("⚠️  Messaggio:", error.message);
+      console.log("📍 Contesto:", error.context);
+      console.log("🕐 Timestamp:", error.timestamp);
+      console.log("🌐 User Agent:", error.userAgent);
+      if (error.code) console.log("🔢 Codice Errore:", error.code);
+      if (error.stack) {
+        console.log("📚 Stack Trace:");
+        console.log(error.stack);
+      }
+      console.log("🔴 =========================================\n");
+      
+      res.json({ success: true, message: "Errore NFC ricevuto e loggato" });
+    } catch (err) {
+      console.error("❌ Errore nel processare debug NFC:", err);
+      res.status(500).json({ success: false, message: "Errore nel salvare debug info" });
+    }
+  });
+
   // SOLUZIONE FINALE - ENDPOINT OPERAZIONI SEMPLIFICATO SENZA RETURNING
   app.post("/api/create-operation", async (req, res) => {
     console.log("🚀 CREATE-OPERATION - Richiesta ricevuta");
