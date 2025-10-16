@@ -35,6 +35,9 @@ Preferred communication style: Simple, everyday language.
 - **DDT System**: Generates transport documents for advanced sales with three-state tracking, immutable customer data snapshots, traceability, subtotals by size, and integration with Fatture in Cloud API. Includes sale reversal functionality.
 - **Dynamic Logo System**: Automated company logo integration in all PDF reports based on Fatture in Cloud Company ID.
 - **NFC Tag Management**: Comprehensive NFC tag programming system with manual basket state override. Operators can toggle basket state between "available" and "in use" via visual toggle buttons (green/orange color-coded), complementing automatic state management during operations.
+  - **NFC Data Storage v2.0**: Database `nfcData` field stores unique basket identifier (`basket-${basketId}-${timestamp}`) instead of physical tag serialNumber to prevent duplicate values when reusing tags.
+  - **Tag Structure**: Physical tag contains JSON with basketId, physicalNumber, currentCycleId, flupsyId, position, redirectTo URL, and physical serialNumber.
+  - **Tag Reading**: System reads basketId from tag's JSON payload for basket lookup, ensuring reliable identification regardless of tag reuse.
 - **Spreadsheet Operations Module**: Mobile-first, editable cell interface for rapid data entry, real-time validation, auto-save, batch operations, dynamic size calculation, intelligent performance-based sorting, and visual performance indicators.
 - **Operation Workflow**: Validated user operations are processed server-side, trigger WebSocket notifications, and update inventory calculations.
 - **Query Optimization Pattern**: Utilizes simple separate queries, application-side data aggregation with `reduce()`, and `Promise.all()` for parallel enrichment in Drizzle ORM to avoid complex SQL subqueries.
