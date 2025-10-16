@@ -13,11 +13,53 @@ interface NFCWriterProps {
   onCancel: () => void;
 }
 
+interface ErrorDetails {
+  message: string;
+  code?: string;
+  stack?: string;
+  context: string;
+  userAgent: string;
+  timestamp: string;
+}
+
 export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel }: NFCWriterProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
   const [success, setSuccess] = useState(false);
   const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
+  
+  // Helper per catturare e riportare errori con dettagli completi
+  const reportError = async (err: unknown, context: string) => {
+    const details: ErrorDetails = {
+      message: err instanceof Error ? err.message : String(err),
+      code: (err as any)?.code,
+      stack: err instanceof Error ? err.stack : undefined,
+      context,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Mostra nell'UI
+    setError(details.message);
+    setErrorDetails(details);
+    setIsScanning(false);
+    
+    // Invia al server per il log
+    try {
+      await apiRequest({
+        url: '/api/nfc-debug',
+        method: 'POST',
+        body: { 
+          basketId, 
+          basketNumber, 
+          error: details 
+        }
+      });
+    } catch (logError) {
+      console.error('Impossibile inviare errore al server:', logError);
+    }
+  };
   
   useEffect(() => {
     // Verifica se NFC è supportato (Web NFC, WeChat Bridge o Bluetooth)
