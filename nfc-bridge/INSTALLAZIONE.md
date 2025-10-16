@@ -8,7 +8,37 @@ Guida rapida per collegare il tuo **NFC Tool Pro USB** all'app FLUPSY.
 - ✅ Python 3.7 o superiore
 - ✅ Driver del lettore installati (già fatto se funziona in Windows)
 
-## 🚀 Installazione Rapida
+---
+
+## ⚡ METODO VELOCE - Doppio Click (CONSIGLIATO)
+
+### 1️⃣ Installa Python (se non ce l'hai)
+
+1. Scarica Python da: **https://www.python.org/downloads/**
+2. Durante l'installazione, **SPUNTA "Add Python to PATH"** ✓
+3. Clicca "Install Now"
+
+### 2️⃣ Scarica i file necessari
+
+Scarica questi file dal progetto e salvali in una cartella (es. `C:\nfc-bridge\`):
+- `AVVIA_NFC_BRIDGE.bat` ⭐ (script di avvio automatico)
+- `nfc_usb_bridge.py`
+- `requirements.txt`
+
+### 3️⃣ Avvia con un doppio click
+
+1. **Doppio click su `AVVIA_NFC_BRIDGE.bat`**
+2. Lo script farà tutto automaticamente:
+   - ✅ Verifica Python
+   - ✅ Installa dipendenze
+   - ✅ Avvia il server
+3. Mantieni la finestra aperta mentre usi l'app
+
+✅ **Fatto!** Ora puoi programmare i tag dall'app web.
+
+---
+
+## 🚀 Installazione Manuale (opzionale)
 
 ### 1️⃣ Installa Python (se non ce l'hai)
 
