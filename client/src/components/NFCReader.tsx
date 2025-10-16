@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { wechatNFCBridge } from '@/nfc-features/utils/wechatNFCBridge';
+import { useNFCBridge } from '@/hooks/useNFCBridge';
 
 interface NFCReaderProps {
   onRead: (message: any) => void;
@@ -7,24 +8,44 @@ interface NFCReaderProps {
 }
 
 export default function NFCReader({ onRead, onError }: NFCReaderProps) {
+  // Bridge USB per lettori desktop (auto-connessione)
+  const usbBridge = useNFCBridge(
+    (serialNumber) => {
+      // Tag rilevato da lettore USB
+      console.log('📱 Tag USB rilevato:', serialNumber);
+      const records = [{
+        recordType: 'text',
+        data: JSON.stringify({ serialNumber })
+      }];
+      onRead(records);
+    },
+    true // auto-connect
+  );
+
   useEffect(() => {
     const startNFCReading = async () => {
       try {
-        // 1. Prova WeChat NFC Bridge se disponibile (stessa logica di NFCWriter che funziona)
+        // 1. Bridge USB già attivo in background (useNFCBridge hook)
+        if (usbBridge.isConnected) {
+          console.log('🔌 Lettore USB NFC attivo');
+          return; // Callback già configurato
+        }
+
+        // 2. Prova WeChat NFC Bridge se disponibile
         if (wechatNFCBridge.isWeChatAvailable()) {
           console.log('🔄 NFCReader usando WeChat NFC Bridge per lettura...');
           await readViaWeChatBridge();
           return;
         }
 
-        // 2. Usa Web NFC API standard se disponibile
+        // 3. Usa Web NFC API standard se disponibile (smartphone)
         if (typeof window !== 'undefined' && 'NDEFReader' in window) {
           await startNativeNFCReader();
           return;
         }
 
-        // 3. Nessun lettore disponibile
-        onError('Nessun lettore NFC disponibile su questo dispositivo.');
+        // 4. Nessun lettore disponibile
+        onError('Nessun lettore NFC disponibile. Avvia il bridge USB o usa smartphone.');
         
       } catch (error: any) {
         console.error('Errore durante l\'avvio lettura NFC:', error);
@@ -33,7 +54,7 @@ export default function NFCReader({ onRead, onError }: NFCReaderProps) {
     };
 
     startNFCReading();
-  }, [onRead, onError]);
+  }, [onRead, onError, usbBridge.isConnected]);
 
   const readViaWeChatBridge = async () => {
     try {

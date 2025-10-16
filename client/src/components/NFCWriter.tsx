@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertCircle, CheckCircle, XCircle, WifiIcon, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, WifiIcon, AlertTriangle, Usb } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { nfcService } from '@/nfc-features/utils/nfcService';
 import { wechatNFCBridge } from '@/nfc-features/utils/wechatNFCBridge';
+import { useNFCBridge } from '@/hooks/useNFCBridge';
 
 interface NFCWriterProps {
   basketId: number;
@@ -28,6 +29,9 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
   const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
   const [success, setSuccess] = useState(false);
   const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
+  
+  // Bridge USB per lettori desktop (auto-connessione attiva)
+  const usbBridge = useNFCBridge(undefined, true); // Auto-connect per essere sempre pronto
   
   // Helper per catturare e riportare errori con dettagli completi
   const reportError = async (err: unknown, context: string) => {
@@ -62,9 +66,10 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
   };
   
   useEffect(() => {
-    // Verifica se NFC è supportato (Web NFC, WeChat Bridge o Bluetooth)
+    // Verifica se NFC è supportato (Web NFC, WeChat Bridge, USB Bridge o Bluetooth)
     const isSupported = 'NDEFReader' in window || 
                        wechatNFCBridge.isWeChatAvailable() || 
+                       usbBridge.isConnected ||
                        nfcService.isSupported();
     setNfcSupported(isSupported);
 
@@ -72,19 +77,11 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     if (wechatNFCBridge.isWeChatAvailable()) {
       wechatNFCBridge.initialize();
     }
-  }, []);
+  }, [usbBridge.isConnected]);
   
   const startWriting = async () => {
-    if (!nfcSupported) {
-      setError('NFC non è supportato su questo dispositivo.');
-      return;
-    }
-    
-    // Controlla se siamo su PC - NFC non disponibile su desktop
-    const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isDesktop) {
-      setError('⚠️ Funzione NFC non disponibile su PC. Utilizza un dispositivo mobile con NFC integrato per programmare i tag.');
+    if (!nfcSupported && !usbBridge.isConnected) {
+      setError('NFC non è supportato. Avvia il bridge USB o usa smartphone.');
       return;
     }
     
@@ -92,15 +89,22 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     setError(null);
     
     try {
-      // Usa Web NFC API nativa del dispositivo mobile
+      // 1. Bridge USB (priorità se connesso)
+      if (usbBridge.isConnected) {
+        console.log('🔌 Usando lettore USB NFC...');
+        await handleUSBNFC();
+        return;
+      }
+
+      // 2. Web NFC API (smartphone Android)
       if ('NDEFReader' in window) {
         console.log('📱 Usando lettore NFC integrato del dispositivo...');
         await handleNativeNFC();
         return;
       }
 
-      // Fallback se Web NFC non disponibile
-      setError('NFC non è disponibile su questo dispositivo. Assicurati che il NFC sia attivo nelle impostazioni.');
+      // 3. Fallback
+      setError('NFC non disponibile. Avvia il bridge USB o usa smartphone con NFC.');
       setIsScanning(false);
 
     } catch (error: any) {
@@ -280,6 +284,86 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     }
   };
 
+  const handleUSBNFC = async () => {
+    try {
+      console.log('🔌 Scrittura tramite lettore USB NFC...');
+      
+      // Ottieni dettagli cestello
+      const basketDetails = await apiRequest({
+        url: `/api/baskets/details/${basketId}`,
+        method: 'GET'
+      }) as any;
+      
+      // Prepara URL di redirect
+      const baseUrl = window.location.origin;
+      let redirectPath;
+      
+      if (basketDetails?.currentCycleId) {
+        redirectPath = `${baseUrl}/cycles/${basketDetails.currentCycleId}`;
+      } else {
+        redirectPath = `${baseUrl}/nfc-scan/basket/${basketId}`;
+      }
+      
+      // Struttura NFC v2.0 COMPATTA (ottimizzata per tag NTAG)
+      const basketData = {
+        id: basketId,
+        num: basketDetails?.physicalNumber || basketNumber,
+        cid: basketDetails?.currentCycleId || null,
+        fid: basketDetails?.flupsyId || 570,
+        url: redirectPath,
+        v: '2.0'
+      };
+      
+      // Verifica dimensione payload (max 144 bytes per NTAG212)
+      const jsonData = JSON.stringify(basketData);
+      const dataSize = new TextEncoder().encode(jsonData).length;
+      
+      if (dataSize > 140) { // Margine sicurezza
+        throw new Error(`Payload troppo grande (${dataSize} bytes, max 140). Riduci dati o usa tag più capiente.`);
+      }
+      
+      console.log(`📏 Dimensione payload: ${dataSize} bytes (OK per NTAG)`);
+      
+      // Invia al bridge USB per scrittura (AWAIT Promise!)
+      const result = await usbBridge.writeTag(basketData);
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      
+      console.log(`✅ Tag scritto via USB: ${result.message}`);
+      
+      // Aggiorna database
+      const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
+      await apiRequest({
+        url: `/api/baskets/${basketId}`,
+        method: 'PATCH',
+        body: { 
+          nfcData: uniqueNfcId,
+          state: 'active'
+        }
+      });
+      
+      console.log(`✅ Cestello #${basketNumber} programmato via USB - nfcData: ${uniqueNfcId}`);
+      
+      // Invalida cache
+      await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+      
+      // Feedback visivo
+      setSuccess(true);
+      setIsScanning(false);
+      
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
+      
+    } catch (err: any) {
+      setIsScanning(false); // Importante: resetta UI in caso di errore
+      await reportError(err, 'handleUSBNFC');
+    }
+  };
+
   const handleSimulationFallback = async () => {
     try {
       console.log('🔄 Fallback su modalità simulazione NFC...');
@@ -433,9 +517,11 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         <DialogHeader>
           <DialogTitle className="text-center">Programmazione tag NFC in corso...</DialogTitle>
           <DialogDescription className="text-center">
-            {wechatNFCBridge.isWeChatAvailable() 
-              ? "Utilizzo WeChat bridge per NFC Tool Pro. Avvicina il tag al lettore."
-              : "Avvicina il tag NFC al dispositivo per programmarlo."
+            {usbBridge.isConnected 
+              ? "🔌 Usando lettore USB NFC. Avvicina il tag al lettore."
+              : wechatNFCBridge.isWeChatAvailable() 
+                ? "Utilizzo WeChat bridge per NFC Tool Pro. Avvicina il tag al lettore."
+                : "📱 Avvicina il tag NFC al dispositivo per programmarlo."
             }
           </DialogDescription>
         </DialogHeader>
@@ -443,7 +529,11 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         <div className="flex items-center justify-center p-4">
           <div className="relative">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
-            <WifiIcon className="absolute inset-0 m-auto h-8 w-8 text-primary" />
+            {usbBridge.isConnected ? (
+              <Usb className="absolute inset-0 m-auto h-8 w-8 text-primary" />
+            ) : (
+              <WifiIcon className="absolute inset-0 m-auto h-8 w-8 text-primary" />
+            )}
           </div>
         </div>
         
@@ -460,16 +550,30 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         <DialogTitle className="text-center">Programmazione Tag NFC</DialogTitle>
         <DialogDescription className="text-center">
           Stai per programmare un tag NFC per il cestello #{basketNumber}.
-          {wechatNFCBridge.isWeChatAvailable() && (
+          {usbBridge.isConnected && (
+            <span className="block mt-2 text-green-600 font-medium">
+              🔌 Lettore USB connesso - NFC Tool Pro pronto
+            </span>
+          )}
+          {!usbBridge.isConnected && wechatNFCBridge.isWeChatAvailable() && (
             <span className="block mt-2 text-blue-600 font-medium">
               WeChat bridge rilevato - Supporto NFC Tool Pro attivo
+            </span>
+          )}
+          {!usbBridge.isConnected && !wechatNFCBridge.isWeChatAvailable() && (
+            <span className="block mt-2 text-gray-600 text-sm">
+              📱 Usa smartphone con NFC o avvia bridge USB
             </span>
           )}
         </DialogDescription>
       </DialogHeader>
       
       <div className="flex items-center justify-center p-4">
-        <WifiIcon className="h-16 w-16 text-gray-400" />
+        {usbBridge.isConnected ? (
+          <Usb className="h-16 w-16 text-green-600" />
+        ) : (
+          <WifiIcon className="h-16 w-16 text-gray-400" />
+        )}
       </div>
       
       <div className="flex space-x-4">
