@@ -703,9 +703,14 @@ export default function NFCTagManager() {
                         <TableCell>{getFlupsyName(basket.flupsyId)}</TableCell>
                         <TableCell>{getBasketPosition(basket)}</TableCell>
                         <TableCell>
-                          <Badge variant={basket.state === 'available' ? 'outline' : 'default'}>
-                            {basket.state === 'available' ? 'Disponibile' : 'In uso'}
-                          </Badge>
+                          {(() => {
+                            const isInUse = basket.state === 'active' || basket.currentCycleId !== null;
+                            return (
+                              <Badge variant={isInUse ? 'default' : 'outline'}>
+                                {isInUse ? 'In uso' : 'Disponibile'}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {basket.nfcData ? (
@@ -720,25 +725,30 @@ export default function NFCTagManager() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end flex-wrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleBasketState.mutate({ 
-                                basketId: basket.id, 
-                                currentState: basket.state 
-                              })}
-                              disabled={toggleBasketState.isPending}
-                              className={basket.state === 'available' 
-                                ? "bg-green-50 hover:bg-green-100 border-green-300" 
-                                : "bg-orange-50 hover:bg-orange-100 border-orange-300"}
-                              title={basket.state === 'available' ? 'Segna come in uso' : 'Segna come disponibile'}
-                            >
-                              {basket.state === 'available' ? (
-                                <ToggleRight className="h-4 w-4" />
-                              ) : (
-                                <ToggleLeft className="h-4 w-4" />
-                              )}
-                            </Button>
+                            {(() => {
+                              const isInUse = basket.state === 'active' || basket.currentCycleId !== null;
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toggleBasketState.mutate({ 
+                                    basketId: basket.id, 
+                                    currentState: isInUse ? 'active' : 'available'
+                                  })}
+                                  disabled={toggleBasketState.isPending}
+                                  className={isInUse 
+                                    ? "bg-orange-50 hover:bg-orange-100 border-orange-300" 
+                                    : "bg-green-50 hover:bg-green-100 border-green-300"}
+                                  title={isInUse ? 'Segna come disponibile' : 'Segna come in uso'}
+                                >
+                                  {isInUse ? (
+                                    <ToggleLeft className="h-4 w-4" />
+                                  ) : (
+                                    <ToggleRight className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              );
+                            })()}
                             <Button
                               variant="outline"
                               size="sm"
