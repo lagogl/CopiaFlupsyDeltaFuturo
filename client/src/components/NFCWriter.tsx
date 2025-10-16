@@ -77,16 +77,6 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         method: 'GET'
       }) as any;
 
-      // Verifica che il cestello sia attivo per avere un ciclo valido
-      if (basketDetails.state !== 'active') {
-        throw new Error(`Il cestello #${basketDetails.physicalNumber} non è attivo (stato: ${basketDetails.state}). Solo i cestelli attivi possono essere programmati con un ciclo.`);
-      }
-
-      // Verifica che abbia un ciclo corrente
-      if (!basketDetails.currentCycleId) {
-        throw new Error(`Il cestello #${basketDetails.physicalNumber} non ha un ciclo attivo. Impossibile programmare il tag NFC.`);
-      }
-
       // Prepara URL di redirect
       const baseUrl = window.location.origin;
       let redirectPath;
@@ -113,11 +103,14 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       });
 
       if (result.success) {
-        // Aggiorna il cestello nel database
+        // Aggiorna il cestello nel database: imposta nfcData E stato "active"
         await apiRequest({
           url: `/api/baskets/${basketId}`,
           method: 'PATCH',
-          body: { nfcData: result.data?.tagId || `wechat-${Date.now()}` }
+          body: { 
+            nfcData: result.data?.tagId || `wechat-${Date.now()}`,
+            state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
+          }
         });
         
         queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
@@ -146,23 +139,13 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       // Gestisce l'evento di lettura per Web NFC API
       ndef.addEventListener("reading", async ({ message, serialNumber }: any) => {
         try {
-          // Prima otteniamo i dettagli del cestello per verificare se ha un ciclo attivo
+          // Prima otteniamo i dettagli del cestello
           console.log("Recupero dettagli cestello per ID:", basketId);
           const basketDetails = await apiRequest({
             url: `/api/baskets/details/${basketId}`,
             method: 'GET'
           }) as any;
           console.log("Dettagli cestello ricevuti:", basketDetails);
-
-          // Verifica che il cestello sia attivo per avere un ciclo valido
-          if (basketDetails.state !== 'active') {
-            throw new Error(`Il cestello #${basketDetails.physicalNumber} non è attivo (stato: ${basketDetails.state}). Solo i cestelli attivi possono essere programmati con un ciclo.`);
-          }
-
-          // Verifica che abbia un ciclo corrente
-          if (!basketDetails.currentCycleId) {
-            throw new Error(`Il cestello #${basketDetails.physicalNumber} non ha un ciclo attivo. Impossibile programmare il tag NFC.`);
-          }
           
           // Prepara i dati da scrivere con tutte le informazioni necessarie
           // Se il cestello ha un ciclo attivo, reindirizza direttamente alla pagina del ciclo
@@ -211,11 +194,14 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           });
           console.log("Scrittura tag NFC completata con successo");
           
-          // Aggiorna il cestello nel database per salvare il numero di serie NFC
+          // Aggiorna il cestello nel database: imposta nfcData E stato "active"
           await apiRequest({
             url: `/api/baskets/${basketId}`,
             method: 'PATCH',
-            body: { nfcData: serialNumber }
+            body: { 
+              nfcData: serialNumber,
+              state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
+            }
           });
           
           // Invalida la cache
@@ -267,7 +253,10 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       await apiRequest({
         url: `/api/baskets/${basketId}`,
         method: 'PATCH',
-        body: { nfcData: simulatedTagId }
+        body: { 
+          nfcData: simulatedTagId,
+          state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
+        }
       });
       
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });

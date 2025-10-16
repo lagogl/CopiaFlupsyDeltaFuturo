@@ -39,7 +39,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
-import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon, UsbIcon, WifiIcon, AlertTriangleIcon, BluetoothIcon, ToggleLeft, ToggleRight } from 'lucide-react';
+import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon, UsbIcon, WifiIcon, AlertTriangleIcon, BluetoothIcon, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { nfcService } from '@/nfc-features/utils/nfcService';
 import BluetoothNFCGuide from '@/components/BluetoothNFCGuide';
@@ -187,16 +187,14 @@ export default function NFCTagManager() {
     }
   });
 
-  // Mutation per cambiare lo stato del cestello
-  const toggleBasketState = useMutation({
-    mutationFn: async (data: { basketId: number, currentState: string }) => {
-      const newState = data.currentState === 'available' ? 'active' : 'available';
-      
-      // Se si sta impostando lo stato a "available", rimuovi anche il currentCycleId
-      const updateData: any = { state: newState };
-      if (newState === 'available') {
-        updateData.currentCycleId = null;
-      }
+  // Mutation per forzare lo stato a "disponibile" (solo override manuale)
+  const forceAvailableState = useMutation({
+    mutationFn: async (data: { basketId: number }) => {
+      // Forza sempre a "available" e rimuovi il currentCycleId
+      const updateData = { 
+        state: 'available',
+        currentCycleId: null
+      };
       
       const response = await fetch(`/api/baskets/${data.basketId}`, {
         method: 'PATCH',
@@ -217,8 +215,8 @@ export default function NFCTagManager() {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       
       toast({
-        title: "Stato aggiornato",
-        description: "Lo stato del cestello è stato modificato con successo.",
+        title: "Cestello forzato a disponibile",
+        description: "Il cestello è stato forzato manualmente allo stato disponibile.",
       });
     },
     onError: (error: Error) => {
@@ -727,27 +725,20 @@ export default function NFCTagManager() {
                           <div className="flex gap-2 justify-end flex-wrap">
                             {(() => {
                               const isInUse = basket.state === 'active' || basket.currentCycleId !== null;
-                              return (
+                              // Mostra il pulsante SOLO se il cestello è "in uso" (per forzare "disponibile")
+                              return isInUse ? (
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => toggleBasketState.mutate({ 
-                                    basketId: basket.id, 
-                                    currentState: isInUse ? 'active' : 'available'
-                                  })}
-                                  disabled={toggleBasketState.isPending}
-                                  className={isInUse 
-                                    ? "bg-orange-50 hover:bg-orange-100 border-orange-300" 
-                                    : "bg-green-50 hover:bg-green-100 border-green-300"}
-                                  title={isInUse ? 'Segna come disponibile' : 'Segna come in uso'}
+                                  onClick={() => forceAvailableState.mutate({ basketId: basket.id })}
+                                  disabled={forceAvailableState.isPending}
+                                  className="bg-orange-50 hover:bg-orange-100 border-orange-300"
+                                  title="Forza manualmente lo stato a disponibile (override)"
                                 >
-                                  {isInUse ? (
-                                    <ToggleLeft className="h-4 w-4" />
-                                  ) : (
-                                    <ToggleRight className="h-4 w-4" />
-                                  )}
+                                  <AlertCircle className="h-4 w-4 mr-1" />
+                                  Forza disponibile
                                 </Button>
-                              );
+                              ) : null;
                             })()}
                             <Button
                               variant="outline"
