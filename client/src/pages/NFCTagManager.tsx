@@ -255,12 +255,13 @@ export default function NFCTagManager() {
   };
 
   // Gestisce il completamento della scrittura
-  const handleWriteSuccess = () => {
+  const handleWriteSuccess = async () => {
     setIsWriterOpen(false);
     setSelectedBasketId(null);
     
-    // Invalida la cache per ricaricare i cestelli
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    // Invalida e ricarica immediatamente per refresh rapido
+    await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
     setLastRefreshTime(Date.now());
     
     // Mostra una notifica di successo

@@ -144,16 +144,22 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
 
       if (result.success) {
         // Aggiorna il cestello nel database: imposta nfcData E stato "active"
+        const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
         await apiRequest({
           url: `/api/baskets/${basketId}`,
           method: 'PATCH',
           body: { 
-            nfcData: result.data?.tagId || `wechat-${Date.now()}`,
+            nfcData: uniqueNfcId,
             state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
           }
         });
         
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        console.log(`✅ Cestello #${basketNumber} programmato via WeChat - nfcData: ${uniqueNfcId}`);
+        
+        // Invalida e ricarica immediatamente per refresh rapido
+        await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+        
         setSuccess(true);
         setIsScanning(false);
         
@@ -233,17 +239,22 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           console.log("Scrittura tag NFC completata con successo");
           
           // Aggiorna il cestello nel database: imposta nfcData E stato "active"
+          // nfcData ora contiene un ID univoco per il cestello, NON il serialNumber del tag fisico
+          const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
           await apiRequest({
             url: `/api/baskets/${basketId}`,
             method: 'PATCH',
             body: { 
-              nfcData: serialNumber,
+              nfcData: uniqueNfcId,
               state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
             }
           });
           
-          // Invalida la cache
-          queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+          console.log(`✅ Cestello #${basketNumber} programmato - nfcData: ${uniqueNfcId}, serialNumber tag: ${serialNumber}`);
+          
+          // Invalida la cache immediatamente per refresh rapido
+          await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+          await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
           
           // Feedback visivo
           setSuccess(true);
@@ -280,18 +291,23 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         method: 'GET'
       }) as any;
 
-      const simulatedTagId = `sim-${basketId}-${Date.now()}`;
+      const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
 
       await apiRequest({
         url: `/api/baskets/${basketId}`,
         method: 'PATCH',
         body: { 
-          nfcData: simulatedTagId,
+          nfcData: uniqueNfcId,
           state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
         }
       });
       
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      console.log(`✅ Cestello #${basketNumber} programmato (simulazione) - nfcData: ${uniqueNfcId}`);
+      
+      // Invalida e ricarica immediatamente per refresh rapido
+      await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+      
       setSuccess(true);
       setIsScanning(false);
       
