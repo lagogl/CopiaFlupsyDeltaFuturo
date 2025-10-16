@@ -190,10 +190,11 @@ export default function NFCTagManager() {
   // Mutation per forzare lo stato a "disponibile" (solo override manuale)
   const forceAvailableState = useMutation({
     mutationFn: async (data: { basketId: number }) => {
-      // Forza sempre a "available" e rimuovi il currentCycleId
+      // Forza sempre a "available" e rimuovi currentCycleId e tag NFC
       const updateData = { 
         state: 'available',
-        currentCycleId: null
+        currentCycleId: null,
+        nfcData: null  // Cancella anche l'associazione con il tag NFC
       };
       
       const response = await fetch(`/api/baskets/${data.basketId}`, {
@@ -216,7 +217,7 @@ export default function NFCTagManager() {
       
       toast({
         title: "Cestello forzato a disponibile",
-        description: "Il cestello è stato forzato manualmente allo stato disponibile.",
+        description: "Il cestello è stato forzato allo stato disponibile e il tag NFC è stato rimosso.",
       });
     },
     onError: (error: Error) => {

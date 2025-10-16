@@ -528,7 +528,7 @@ export class BasketsService {
 
     // Invalida cache cestelli
     try {
-      const { basketCache } = await import('../../../basket-cache-service');
+      const { basketCache } = await import('../../../baskets-cache-service');
       await basketCache.invalidateAll();
     } catch (error) {
       console.error('Errore nell\'invalidazione cache cestelli:', error);
