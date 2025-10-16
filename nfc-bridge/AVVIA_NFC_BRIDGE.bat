@@ -59,10 +59,9 @@ echo.
 REM Avvia il bridge Python
 python nfc_usb_bridge.py
 
-REM Se il programma termina con errore
-if errorlevel 1 (
-    echo.
-    echo ❌ Il bridge si è arrestato con errori
-    echo.
-    pause
-)
+REM Pausa sempre alla fine per vedere eventuali errori
+echo.
+echo ============================================
+echo    Bridge terminato
+echo ============================================
+pause
