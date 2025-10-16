@@ -526,6 +526,14 @@ export class BasketsService {
     // Ottieni il cestello completo
     const completeBasket = await storage.getBasket(id);
 
+    // Invalida cache cestelli
+    try {
+      const { basketCache } = await import('../../../basket-cache-service');
+      await basketCache.invalidateAll();
+    } catch (error) {
+      console.error('Errore nell\'invalidazione cache cestelli:', error);
+    }
+
     // Broadcast via WebSocket
     if (typeof (global as any).broadcastUpdate === 'function' && completeBasket) {
       (global as any).broadcastUpdate('basket_updated', {
