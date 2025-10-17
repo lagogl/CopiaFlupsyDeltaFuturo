@@ -159,6 +159,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           method: 'PATCH',
           body: { 
             nfcData: uniqueNfcId,
+            nfcLastProgrammedAt: new Date().toISOString(),
             state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
           }
         });
@@ -260,6 +261,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         method: 'PATCH',
         body: { 
           nfcData: uniqueNfcId,
+          nfcLastProgrammedAt: new Date().toISOString(),
           state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
         }
       });
@@ -344,6 +346,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         method: 'PATCH',
         body: { 
           nfcData: uniqueNfcId,
+          nfcLastProgrammedAt: new Date().toISOString(),
           state: 'active'
         }
       });
@@ -385,6 +388,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         method: 'PATCH',
         body: { 
           nfcData: uniqueNfcId,
+          nfcLastProgrammedAt: new Date().toISOString(),
           state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
         }
       });
