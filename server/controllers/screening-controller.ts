@@ -327,7 +327,8 @@ export async function executeScreeningOperation(req: Request, res: Response) {
           animalsPerKg: safeAnimalsPerKg,
           sizeId: safeSizeId,
           mortalityRate: safeMortalityRate,
-          notes: notes || null
+          notes: notes || null,
+          source: 'desktop_manager' // Operazione da gestionale desktop
         }).returning();
         
         return operation;
@@ -353,7 +354,8 @@ export async function executeScreeningOperation(req: Request, res: Response) {
           notes: destBasket.notes || notes || null,
           // Add sale fields support
           saleClient: destBasket.saleClient || null,
-          saleDate: destBasket.saleDate || null
+          saleDate: destBasket.saleDate || null,
+          source: 'desktop_manager' // Operazione da gestionale desktop
         };
         
         const [operation] = await tx.insert(operations).values(operationData).returning();

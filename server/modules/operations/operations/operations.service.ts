@@ -419,7 +419,10 @@ class OperationsService {
   async createOperation(data: any) {
     const [newOperation] = await db
       .insert(operations)
-      .values(data)
+      .values({
+        ...data,
+        source: data.source || 'desktop_manager' // Imposta source predefinito se non specificato
+      })
       .returning();
     
     // Invalida cache

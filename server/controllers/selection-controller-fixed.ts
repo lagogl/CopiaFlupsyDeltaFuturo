@@ -158,7 +158,8 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             cycleId: basketInfo[0].currentCycleId,
             animalCount: sourceBasket.animalCount,
             notes: `Chiusura per vagliatura #${selection[0].selectionNumber} del ${selection[0].date}. ` +
-                   `Animali distribuiti: ${totalAnimalsDestination}. Mortalità: ${mortality}`
+                   `Animali distribuiti: ${totalAnimalsDestination}. Mortalità: ${mortality}`,
+            source: 'desktop_manager' // Operazione da gestionale desktop
           });
 
           // 2. CHIUDI IL CICLO
@@ -371,7 +372,8 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           mortalityRate: destBasket.mortalityRate || 0,
           sizeId: actualSizeId,
           metadata: operationMetadata,
-          notes: operationNotes
+          notes: operationNotes,
+          source: 'desktop_manager' // Operazione da gestionale desktop
         });
 
         // 4. GESTISCI POSIZIONAMENTO O VENDITA
@@ -407,7 +409,8 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             sizeId: actualSizeId,
             lotId: primaryLotId, // ✅ LOTTO DOMINANTE per query veloci
             metadata: operationMetadata,
-            notes: saleNotes
+            notes: saleNotes,
+            source: 'desktop_manager' // Operazione da gestionale desktop
           }).returning();
 
           // ✅ REGISTRA VENDITA NEL LOT_LEDGER

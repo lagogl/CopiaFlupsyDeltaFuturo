@@ -556,7 +556,10 @@ export function implementDirectOperationRoute(app: Express) {
           
           // 3. Inserisci l'operazione
           console.log("Inserimento operazione con cycleId:", cycleId);
-          const newOperation = await tx.insert(operations).values(operationData).returning();
+          const newOperation = await tx.insert(operations).values({
+            ...operationData,
+            source: operationData.source || 'desktop_manager' // Imposta source predefinito se non specificato
+          }).returning();
           if (!newOperation || newOperation.length === 0) {
             throw new Error("Impossibile creare l'operazione");
           }
@@ -646,7 +649,10 @@ export function implementDirectOperationRoute(app: Express) {
         return await db.transaction(async (tx) => {
           // 1. Inserisci l'operazione
           console.log("Inserimento operazione di chiusura ciclo...");
-          const newOperation = await tx.insert(operations).values(operationData).returning();
+          const newOperation = await tx.insert(operations).values({
+            ...operationData,
+            source: operationData.source || 'desktop_manager' // Imposta source predefinito se non specificato
+          }).returning();
           if (!newOperation || newOperation.length === 0) {
             throw new Error("Impossibile creare l'operazione");
           }
@@ -783,7 +789,10 @@ export function implementDirectOperationRoute(app: Express) {
         console.log("Tentativo inserimento standard nel database...");
         
         // Esecuzione dell'inserimento
-        const insertResult = await db.insert(operations).values(operationData).returning();
+        const insertResult = await db.insert(operations).values({
+          ...operationData,
+          source: operationData.source || 'desktop_manager' // Imposta source predefinito se non specificato
+        }).returning();
         
         if (!insertResult || insertResult.length === 0) {
           throw new Error("Nessun risultato restituito dall'inserimento dell'operazione");

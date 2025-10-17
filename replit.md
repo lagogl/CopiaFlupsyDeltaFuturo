@@ -39,7 +39,8 @@ Preferred communication style: Simple, everyday language.
   - **Tag Structure**: Physical tag contains JSON with basketId, physicalNumber, currentCycleId, flupsyId, position, redirectTo URL, and physical serialNumber.
   - **Tag Reading**: System reads basketId from tag's JSON payload for basket lookup, ensuring reliable identification regardless of tag reuse.
 - **Spreadsheet Operations Module**: Mobile-first, editable cell interface for rapid data entry, real-time validation, auto-save, batch operations, dynamic size calculation, intelligent performance-based sorting, and visual performance indicators.
-- **Operation Workflow**: Validated user operations are processed server-side, trigger WebSocket notifications, and update inventory calculations.
+- **Operation Workflow**: Validated user operations are processed server-side, trigger WebSocket notifications, and update inventory calculations. All operations include source tracking to distinguish desktop manager operations from mobile NFC app operations.
+- **Operation Source Tracking**: Database field `source` (enum: 'desktop_manager' | 'mobile_nfc') identifies operation origin. Desktop operations default to 'desktop_manager', mobile NFC operations use 'mobile_nfc'. Implemented across all 13 operation INSERT statements in 6 critical backend files.
 - **Query Optimization Pattern**: Utilizes simple separate queries, application-side data aggregation with `reduce()`, and `Promise.all()` for parallel enrichment in Drizzle ORM to avoid complex SQL subqueries.
 
 ### System Design Choices

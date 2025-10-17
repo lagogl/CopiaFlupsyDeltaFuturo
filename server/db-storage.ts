@@ -649,7 +649,10 @@ export class DbStorage implements IStorage {
       
       // Esecuzione dell'inserimento con gestione degli errori migliorata
       console.log(`Tentativo di inserimento per operazione di tipo ${operationData.type} sulla cesta ${operationData.basketId} con ciclo ${operationData.cycleId}`);
-      const results = await db.insert(operations).values(operationData).returning();
+      const results = await db.insert(operations).values({
+        ...operationData,
+        source: operationData.source || 'desktop_manager' // Imposta source predefinito se non specificato
+      }).returning();
       
       if (!results || results.length === 0) {
         throw new Error("Nessun risultato restituito dall'inserimento dell'operazione");

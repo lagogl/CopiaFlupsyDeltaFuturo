@@ -255,6 +255,7 @@ export const operations = pgTable("operations", {
   mortalityRate: real("mortality_rate"), // percentuale di mortalità
   notes: text("notes"),
   metadata: text("metadata"), // metadati aggiuntivi in formato JSON (per API esterne)
+  source: text("source").notNull().default("desktop_manager"), // origine operazione: 'desktop_manager' o 'mobile_nfc'
 });
 
 // Cycles (Cicli Produttivi)
