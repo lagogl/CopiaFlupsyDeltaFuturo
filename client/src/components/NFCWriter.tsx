@@ -235,10 +235,15 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           const jsonData = JSON.stringify(basketData);
           console.log("Dati JSON da scrivere sul tag:", jsonData);
           
-          // Scrivi i dati sul tag NFC
+          // Scrivi i dati sul tag NFC con formato NDEF standard
           console.log("Scrittura dati su tag NFC in corso...");
           await ndef.write({ 
-            records: [{ recordType: "text", data: jsonData }] 
+            records: [{ 
+              recordType: "text",
+              encoding: "utf-8",
+              lang: "en",
+              data: jsonData 
+            }] 
           });
           console.log("Scrittura tag NFC completata con successo");
           
