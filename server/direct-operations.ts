@@ -3,67 +3,21 @@
 
 import type { Express } from "express";
 import { db } from './db';
-import { operations, cycles, baskets, sizes } from '../shared/schema';
+import { operations, cycles, baskets } from '../shared/schema';
 import { sql, eq, and, between } from 'drizzle-orm';
 import { broadcastMessage } from './websocket';
 import { BasketsCache } from './baskets-cache-service.js';
 import { OperationsCache } from './operations-cache-service.js';
 import { invalidateUnifiedCache } from './controllers/operations-unified-controller.js';
 import { LotAutoStatsService } from './services/lot-auto-stats-service.js';
+import { determineSizeByAnimalsPerKg } from './utils/size-determination.js';
 
 /**
- * Trova automaticamente il sizeId corretto in base al numero di animali per kg.
- * @param animalsPerKg Numero di animali per kg
- * @returns Promise che risolve con il sizeId appropriato
+ * Wrapper for backward compatibility
+ * @deprecated Use determineSizeByAnimalsPerKg from utils/size-determination.ts
  */
 async function findSizeIdByAnimalsPerKg(animalsPerKg: number): Promise<number | null> {
-  try {
-    // Cerca la taglia appropriata in base al range di animali per kg
-    const appropriateSize = await db
-      .select()
-      .from(sizes)
-      .where(
-        and(
-          sql`${animalsPerKg} >= ${sizes.minAnimalsPerKg}`,
-          sql`${animalsPerKg} <= ${sizes.maxAnimalsPerKg}`
-        )
-      )
-      .limit(1);
-    
-    if (appropriateSize && appropriateSize.length > 0) {
-      console.log(`Trovata taglia appropriata per ${animalsPerKg} animali/kg:`, appropriateSize[0]);
-      return appropriateSize[0].id;
-    }
-    
-    // Se non troviamo un range esatto, cerchiamo la taglia più vicina
-    console.log(`Nessuna taglia esatta trovata per ${animalsPerKg} animali/kg, cercando la più vicina...`);
-    const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
-    
-    if (allSizes.length === 0) {
-      console.error("Nessuna taglia trovata nel database!");
-      return null;
-    }
-    
-    // Trova la taglia più vicina
-    let closestSize = allSizes[0];
-    let minDifference = Math.abs(animalsPerKg - ((closestSize.minAnimalsPerKg || 0) + (closestSize.maxAnimalsPerKg || 0)) / 2);
-    
-    for (const size of allSizes) {
-      const avgAnimalsPerKg = ((size.minAnimalsPerKg || 0) + (size.maxAnimalsPerKg || 0)) / 2;
-      const difference = Math.abs(animalsPerKg - avgAnimalsPerKg);
-      
-      if (difference < minDifference) {
-        minDifference = difference;
-        closestSize = size;
-      }
-    }
-    
-    console.log(`Trovata taglia più vicina per ${animalsPerKg} animali/kg:`, closestSize);
-    return closestSize.id;
-  } catch (error) {
-    console.error("Errore nella ricerca della taglia:", error);
-    return null;
-  }
+  return determineSizeByAnimalsPerKg(animalsPerKg);
 }
 
 /**

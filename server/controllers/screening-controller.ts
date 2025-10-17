@@ -471,29 +471,9 @@ export async function executeScreeningOperation(req: Request, res: Response) {
 async function determineSizeId(animalsPerKg: number): Promise<number | null> {
   if (!animalsPerKg || animalsPerKg <= 0) return null;
   
-  try {
-    // Recupera tutte le taglie disponibili
-    const allSizes = await db.select().from(sizes);
-    
-    // Trova la taglia corrispondente in base a animalsPerKg
-    const matchingSize = allSizes.find(size => 
-      size.minAnimalsPerKg !== null && 
-      size.maxAnimalsPerKg !== null && 
-      animalsPerKg >= size.minAnimalsPerKg && 
-      animalsPerKg <= size.maxAnimalsPerKg
-    );
-    
-    if (matchingSize) {
-      console.log(`Taglia determinata automaticamente: ${matchingSize.code} (ID: ${matchingSize.id})`);
-      return matchingSize.id;
-    } else {
-      console.log(`Nessuna taglia trovata per animalsPerKg: ${animalsPerKg}`);
-      return null;
-    }
-  } catch (error) {
-    console.error("Errore durante la determinazione della taglia:", error);
-    return null;
-  }
+  // Use shared utility function for consistent sizing logic
+  const { determineSizeByAnimalsPerKg } = await import('../utils/size-determination.js');
+  return determineSizeByAnimalsPerKg(animalsPerKg);
 }
 
 /**

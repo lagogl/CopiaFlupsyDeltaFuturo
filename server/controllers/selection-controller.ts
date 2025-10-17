@@ -1564,24 +1564,11 @@ export async function completeSelectionFixed(req: Request, res: Response) {
 
 /**
  * Determina automaticamente l'ID della taglia basandosi sugli animali per kg
+ * Uses shared utility function for consistent sizing logic
  */
 async function determineSizeId(animalsPerKg: number): Promise<number | null> {
-  try {
-    const sizeResult = await db.select()
-      .from(sizes)
-      .where(
-        and(
-          sql`${animalsPerKg} >= ${sizes.minAnimalsPerKg}`,
-          sql`${animalsPerKg} <= ${sizes.maxAnimalsPerKg}`
-        )
-      )
-      .limit(1);
-    
-    return sizeResult.length > 0 ? sizeResult[0].id : null;
-  } catch (error) {
-    console.error("Errore determinazione taglia:", error);
-    return null;
-  }
+  const { determineSizeByAnimalsPerKg } = await import('../utils/size-determination.js');
+  return determineSizeByAnimalsPerKg(animalsPerKg);
 }
 
 /**
