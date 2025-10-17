@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import NFCWriter from '@/components/NFCWriter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -204,23 +205,16 @@ export default function NFCTagManager() {
       const updateData = { 
         state: 'available',
         currentCycleId: null,
-        nfcData: null  // Cancella anche l'associazione con il tag NFC
+        nfcData: null,  // Cancella anche l'associazione con il tag NFC
+        nfcLastProgrammedAt: null  // Rimuovi anche il timestamp
       };
       
-      const response = await fetch(`/api/baskets/${data.basketId}`, {
+      // Usa apiRequest per gestire correttamente PATCH con METHOD-OVERRIDE
+      return await apiRequest({
+        url: `/api/baskets/${data.basketId}`,
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
+        body: updateData
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Errore durante il cambio stato');
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
