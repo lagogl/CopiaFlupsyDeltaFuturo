@@ -229,7 +229,7 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
     const cteQuery = `
       SELECT 
         b.id, b.physical_number, b.flupsy_id, b.cycle_code, 
-        b.state, b.current_cycle_id, b.nfc_data, b.row, b.position,
+        b.state, b.current_cycle_id, b.nfc_data, b.nfc_last_programmed_at, b.row, b.position,
         f.name as flupsy_name,
         COUNT(*) OVER() as total_count,
         -- Solo dati essenziali per performance massime
@@ -309,6 +309,7 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
         state: row.state,
         currentCycleId: row.current_cycle_id,
         nfcData: row.nfc_data,
+        nfcLastProgrammedAt: row.nfc_last_programmed_at,
         row: row.row,
         position: row.position,
         flupsyName: row.flupsy_name
