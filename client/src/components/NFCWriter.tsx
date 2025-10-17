@@ -182,110 +182,95 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     try {
       // @ts-ignore - NDEFReader non è ancora nei tipi standard di TypeScript
       const ndef = new window.NDEFReader();
-      await ndef.scan();
       
-      // Gestisce l'evento di lettura per Web NFC API
-      ndef.addEventListener("reading", async ({ message, serialNumber }: any) => {
-        try {
-          // Prima otteniamo i dettagli del cestello
-          console.log("Recupero dettagli cestello per ID:", basketId);
-          const basketDetails = await apiRequest({
-            url: `/api/baskets/details/${basketId}`,
-            method: 'GET'
-          }) as any;
-          console.log("Dettagli cestello ricevuti:", basketDetails);
-          
-          // Prepara i dati da scrivere con tutte le informazioni necessarie
-          // Se il cestello ha un ciclo attivo, reindirizza direttamente alla pagina del ciclo
-          let redirectPath;
-          // Ottiene l'URL base dell'applicazione senza il percorso
-          const baseUrl = window.location.origin;
-          console.log("URL base dell'applicazione:", baseUrl);
-          
-          if (basketDetails && basketDetails.currentCycleId) {
-            redirectPath = `${baseUrl}/cycles/${basketDetails.currentCycleId}`;
-            console.log("Cestello ha ciclo attivo, redirectPath completo impostato a:", redirectPath);
-          } else {
-            redirectPath = `${baseUrl}/nfc-scan/basket/${basketId}`;
-            console.log("Cestello senza ciclo attivo, redirectPath completo impostato a:", redirectPath);
-          }
-            
-          // Struttura NFC v2.0 OTTIMIZZATA - Identificazione univoca garantita
-          const basketData = {
-            // Identificazione primaria v2.0 (SEMPRE UNIVOCA)
-            basketId: basketId,
-            physicalNumber: basketDetails?.physicalNumber || basketNumber,
-            currentCycleId: basketDetails?.currentCycleId || null,
-            flupsyId: basketDetails?.flupsyId || 570,
-            position: basketDetails?.position || null,
-            
-            // Compatibilità legacy v1.0
-            id: basketId,
-            number: basketNumber,
-            
-            // Metadati tecnici
-            serialNumber: serialNumber,
-            redirectTo: redirectPath,
-            timestamp: new Date().toISOString(),
-            type: 'basket-tag',
-            version: '2.0'
-          };
-          
-          // Codifica JSON
-          const jsonData = JSON.stringify(basketData);
-          console.log("Dati JSON da scrivere sul tag:", jsonData);
-          
-          // Scrivi i dati sul tag NFC con formato NDEF standard
-          console.log("Scrittura dati su tag NFC in corso...");
-          await ndef.write({ 
-            records: [{ 
-              recordType: "text",
-              encoding: "utf-8",
-              lang: "en",
-              data: jsonData 
-            }] 
-          });
-          console.log("Scrittura tag NFC completata con successo");
-          
-          // Aggiorna il cestello nel database: imposta nfcData E stato "active"
-          // nfcData ora contiene un ID univoco per il cestello, NON il serialNumber del tag fisico
-          const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
-          await apiRequest({
-            url: `/api/baskets/${basketId}`,
-            method: 'PATCH',
-            body: { 
-              nfcData: uniqueNfcId,
-              state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
-            }
-          });
-          
-          console.log(`✅ Cestello #${basketNumber} programmato - nfcData: ${uniqueNfcId}, serialNumber tag: ${serialNumber}`);
-          
-          // Invalida la cache immediatamente per refresh rapido
-          await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-          await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
-          
-          // Feedback visivo
-          setSuccess(true);
-          setIsScanning(false);
-          
-          // Tempo per vedere il feedback di successo
-          setTimeout(() => {
-            onSuccess();
-          }, 1500);
-          
-        } catch (err: any) {
-          await reportError(err, 'handleNativeNFC - reading event');
+      // Prima otteniamo i dettagli del cestello
+      console.log("Recupero dettagli cestello per ID:", basketId);
+      const basketDetails = await apiRequest({
+        url: `/api/baskets/details/${basketId}`,
+        method: 'GET'
+      }) as any;
+      console.log("Dettagli cestello ricevuti:", basketDetails);
+      
+      // Prepara i dati da scrivere con tutte le informazioni necessarie
+      // Se il cestello ha un ciclo attivo, reindirizza direttamente alla pagina del ciclo
+      let redirectPath;
+      // Ottiene l'URL base dell'applicazione senza il percorso
+      const baseUrl = window.location.origin;
+      console.log("URL base dell'applicazione:", baseUrl);
+      
+      if (basketDetails && basketDetails.currentCycleId) {
+        redirectPath = `${baseUrl}/cycles/${basketDetails.currentCycleId}`;
+        console.log("Cestello ha ciclo attivo, redirectPath completo impostato a:", redirectPath);
+      } else {
+        redirectPath = `${baseUrl}/nfc-scan/basket/${basketId}`;
+        console.log("Cestello senza ciclo attivo, redirectPath completo impostato a:", redirectPath);
+      }
+        
+      // Struttura NFC v2.0 OTTIMIZZATA - Identificazione univoca garantita
+      const basketData = {
+        // Identificazione primaria v2.0 (SEMPRE UNIVOCA)
+        basketId: basketId,
+        physicalNumber: basketDetails?.physicalNumber || basketNumber,
+        currentCycleId: basketDetails?.currentCycleId || null,
+        flupsyId: basketDetails?.flupsyId || 570,
+        position: basketDetails?.position || null,
+        
+        // Compatibilità legacy v1.0
+        id: basketId,
+        number: basketNumber,
+        
+        // Metadati tecnici
+        redirectTo: redirectPath,
+        timestamp: new Date().toISOString(),
+        type: 'basket-tag',
+        version: '2.0'
+      };
+      
+      // Codifica JSON
+      const jsonData = JSON.stringify(basketData);
+      console.log("Dati JSON da scrivere sul tag:", jsonData);
+      
+      // Scrivi i dati sul tag NFC con formato NDEF standard
+      console.log("Scrittura dati su tag NFC in corso...");
+      await ndef.write({ 
+        records: [{ 
+          recordType: "text",
+          encoding: "utf-8",
+          lang: "en",
+          data: jsonData 
+        }] 
+      });
+      console.log("Scrittura tag NFC completata con successo");
+      
+      // Aggiorna il cestello nel database: imposta nfcData E stato "active"
+      // nfcData ora contiene un ID univoco per il cestello, NON il serialNumber del tag fisico
+      const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
+      await apiRequest({
+        url: `/api/baskets/${basketId}`,
+        method: 'PATCH',
+        body: { 
+          nfcData: uniqueNfcId,
+          state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
         }
       });
       
-      // Gestisce errori durante la scansione
-      ndef.addEventListener("error", async (error: any) => {
-        await reportError(error, 'handleNativeNFC - error event');
-      });
+      console.log(`✅ Cestello #${basketNumber} programmato - nfcData: ${uniqueNfcId}`);
+      
+      // Invalida la cache immediatamente per refresh rapido
+      await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+      
+      // Feedback visivo
+      setSuccess(true);
+      setIsScanning(false);
+      
+      // Tempo per vedere il feedback di successo
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
       
     } catch (err: any) {
-      await reportError(err, 'handleNativeNFC - initialization');
+      await reportError(err, 'handleNativeNFC');
     }
   };
 
