@@ -43,6 +43,7 @@ import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIco
 import { useForm } from 'react-hook-form';
 import { nfcService } from '@/nfc-features/utils/nfcService';
 import BluetoothNFCGuide from '@/components/BluetoothNFCGuide';
+import { useWebSocketMessage } from '@/lib/websocket';
 
 interface Basket {
   id: number;
@@ -101,6 +102,14 @@ export default function NFCTagManager() {
     const supportInfo = nfcService.getNFCSupportType();
     setNfcSupportInfo(supportInfo);
   }, []);
+
+  // WebSocket listener per aggiornamenti real-time dei cestelli
+  useWebSocketMessage('basket_updated', async (data) => {
+    console.log('🏷️ NFC TAG MANAGER: Cestello aggiornato via WebSocket, aggiorno lista', data);
+    // Invalida la cache e ricarica immediatamente i dati
+    await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+  });
   
   // Carica i cestelli
   const {
