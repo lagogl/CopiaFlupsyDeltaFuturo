@@ -155,15 +155,15 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       });
 
       if (result.success) {
-        // Aggiorna il cestello nel database: imposta nfcData E stato "active"
+        // Aggiorna il cestello nel database: imposta solo nfcData (NON lo stato!)
         const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
         await apiRequest({
           url: `/api/baskets/${basketId}`,
           method: 'PATCH',
           body: { 
             nfcData: uniqueNfcId,
-            nfcLastProgrammedAt: new Date().toISOString(),
-            state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
+            nfcLastProgrammedAt: new Date().toISOString()
+            // NON impostare state qui! Lo stato dipende dal ciclo, non dal tag NFC
           }
         });
         
@@ -174,7 +174,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
         
         // Feedback nativo immediato
-        alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora attivo.\n\nPuoi usare il tag con l'app FLUPSY mobile.`);
+        alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora associato al tag.\n\nPuoi usare il tag con l'app FLUPSY mobile.`);
         
         // Chiudi immediatamente
         setIsScanning(false);
@@ -256,7 +256,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       });
       console.log("Scrittura tag NFC completata con successo");
       
-      // Aggiorna il cestello nel database: imposta nfcData E stato "active"
+      // Aggiorna il cestello nel database: imposta solo nfcData (NON lo stato!)
       // nfcData ora contiene un ID univoco per il cestello, NON il serialNumber del tag fisico
       const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
       await apiRequest({
@@ -264,8 +264,8 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         method: 'PATCH',
         body: { 
           nfcData: uniqueNfcId,
-          nfcLastProgrammedAt: new Date().toISOString(),
-          state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
+          nfcLastProgrammedAt: new Date().toISOString()
+          // NON impostare state qui! Lo stato dipende dal ciclo, non dal tag NFC
         }
       });
       
@@ -276,7 +276,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
       
       // Feedback nativo immediato (appare sopra l'anteprima Android)
-      alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora attivo.\n\nPuoi usare il tag con l'app FLUPSY mobile per operazioni di pesatura.`);
+      alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora associato al tag.\n\nPuoi usare il tag con l'app FLUPSY mobile per operazioni di pesatura.`);
       
       // Chiudi immediatamente dopo l'alert
       setIsScanning(false);
@@ -342,15 +342,15 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       
       console.log(`✅ Tag scritto via USB: ${result.message}`);
       
-      // Aggiorna database
+      // Aggiorna database: solo nfcData (NON lo stato!)
       const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
       await apiRequest({
         url: `/api/baskets/${basketId}`,
         method: 'PATCH',
         body: { 
           nfcData: uniqueNfcId,
-          nfcLastProgrammedAt: new Date().toISOString(),
-          state: 'active'
+          nfcLastProgrammedAt: new Date().toISOString()
+          // NON impostare state qui! Lo stato dipende dal ciclo, non dal tag NFC
         }
       });
       
@@ -391,8 +391,8 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         method: 'PATCH',
         body: { 
           nfcData: uniqueNfcId,
-          nfcLastProgrammedAt: new Date().toISOString(),
-          state: 'active'  // Imposta automaticamente come "in uso" quando programmi il tag
+          nfcLastProgrammedAt: new Date().toISOString()
+          // NON impostare state qui! Lo stato dipende dal ciclo, non dal tag NFC
         }
       });
       
