@@ -116,10 +116,13 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     try {
       // Ottieni dettagli cestello
       console.log("Recupero dettagli cestello per ID:", basketId);
-      const basketDetails = await apiRequest({
+      const basketDetailsArray = await apiRequest({
         url: `/api/baskets/details/${basketId}`,
         method: 'GET'
-      }) as any;
+      }) as any[];
+
+      // L'API restituisce un array, prendiamo il primo elemento
+      const basketDetails = basketDetailsArray && basketDetailsArray.length > 0 ? basketDetailsArray[0] : null;
 
       // Prepara URL di redirect
       const baseUrl = window.location.origin;
@@ -137,7 +140,9 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         basketId: basketId,
         physicalNumber: basketDetails?.physicalNumber || basketNumber,
         currentCycleId: basketDetails?.currentCycleId || null,
+        cycleCode: basketDetails?.cycleCode || null,
         flupsyId: basketDetails?.flupsyId || 570,
+        row: basketDetails?.row || null,
         position: basketDetails?.position || null,
         
         // Metadati tecnici
@@ -185,10 +190,13 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       
       // Prima otteniamo i dettagli del cestello
       console.log("Recupero dettagli cestello per ID:", basketId);
-      const basketDetails = await apiRequest({
+      const basketDetailsArray = await apiRequest({
         url: `/api/baskets/details/${basketId}`,
         method: 'GET'
-      }) as any;
+      }) as any[];
+      
+      // L'API restituisce un array, prendiamo il primo elemento
+      const basketDetails = basketDetailsArray && basketDetailsArray.length > 0 ? basketDetailsArray[0] : null;
       console.log("Dettagli cestello ricevuti:", basketDetails);
       
       // Prepara i dati da scrivere con tutte le informazioni necessarie
@@ -212,7 +220,9 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         basketId: basketId,
         physicalNumber: basketDetails?.physicalNumber || basketNumber,
         currentCycleId: basketDetails?.currentCycleId || null,
+        cycleCode: basketDetails?.cycleCode || null,
         flupsyId: basketDetails?.flupsyId || 570,
+        row: basketDetails?.row || null,
         position: basketDetails?.position || null,
         
         // Compatibilità legacy v1.0
@@ -279,10 +289,13 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       console.log('🔌 Scrittura tramite lettore USB NFC...');
       
       // Ottieni dettagli cestello
-      const basketDetails = await apiRequest({
+      const basketDetailsArray = await apiRequest({
         url: `/api/baskets/details/${basketId}`,
         method: 'GET'
-      }) as any;
+      }) as any[];
+      
+      // L'API restituisce un array, prendiamo il primo elemento
+      const basketDetails = basketDetailsArray && basketDetailsArray.length > 0 ? basketDetailsArray[0] : null;
       
       // Prepara URL di redirect
       const baseUrl = window.location.origin;
@@ -299,7 +312,10 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         id: basketId,
         num: basketDetails?.physicalNumber || basketNumber,
         cid: basketDetails?.currentCycleId || null,
+        cc: basketDetails?.cycleCode || null,
         fid: basketDetails?.flupsyId || 570,
+        row: basketDetails?.row || null,
+        pos: basketDetails?.position || null,
         url: redirectPath,
         v: '2.0'
       };
