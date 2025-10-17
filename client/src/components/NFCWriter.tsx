@@ -44,6 +44,9 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       timestamp: new Date().toISOString()
     };
     
+    // CRITICAL: Log error nella console per debugging
+    console.error(`❌ NFC ERROR [${context}]:`, details.message, details);
+    
     // Mostra nell'UI
     setError(details.message);
     setErrorDetails(details);
