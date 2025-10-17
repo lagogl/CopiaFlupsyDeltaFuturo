@@ -11,7 +11,7 @@ import { and, sql } from 'drizzle-orm';
  * Handles exact matches, out-of-range values, and gaps in size ranges.
  * 
  * @param animalsPerKg - Number of animals per kg
- * @returns Promise resolving to the appropriate size ID, or null if no sizes exist
+ * @returns Promise resolving to the appropriate size ID, or null if out of range
  */
 export async function determineSizeByAnimalsPerKg(animalsPerKg: number): Promise<number | null> {
   if (!animalsPerKg || animalsPerKg <= 0) return null;
@@ -42,45 +42,31 @@ export async function determineSizeByAnimalsPerKg(animalsPerKg: number): Promise
       return null;
     }
     
-    // 3. Separate sentinels (with NULL boundaries) from finite ranges
-    const lowerSentinel = allSizes.find(s => s.minAnimalsPerKg === null); // For heavy fish (low animals/kg)
-    const upperSentinel = allSizes.find(s => s.maxAnimalsPerKg === null); // For small fish (high animals/kg)
-    const finiteSizes = allSizes.filter(s => s.minAnimalsPerKg !== null && s.maxAnimalsPerKg !== null);
+    // 3. Find actual min/max from all sizes
+    const minRange = allSizes[0].minAnimalsPerKg!;
+    const maxRange = allSizes[allSizes.length - 1].maxAnimalsPerKg!;
     
-    if (finiteSizes.length === 0) {
-      // No finite ranges, use sentinels if available
-      if (lowerSentinel) return lowerSentinel.id;
-      if (upperSentinel) return upperSentinel.id;
-      return allSizes[0]?.id ?? null;
+    // 4. Handle out-of-range values
+    if (animalsPerKg < minRange) {
+      // Below minimum → TP-10000+ (fuori scala, pesci troppo grandi)
+      console.log(`⚠️ ${animalsPerKg} SOTTO range minimo ${minRange} → TP-10000+ (pesci troppo grandi) → NULL`);
+      return null;
     }
     
-    // 4. Find actual min/max from finite ranges only
-    const minFiniteRange = finiteSizes[0].minAnimalsPerKg!;
-    const maxFiniteRange = finiteSizes[finiteSizes.length - 1].maxAnimalsPerKg!;
-    
-    // 5. Handle out-of-range values using sentinels
-    if (animalsPerKg < minFiniteRange) {
-      // Below minimum finite range → use lower sentinel if exists, else first finite size
-      const targetSize = lowerSentinel || finiteSizes[0];
-      console.log(`⚠️ ${animalsPerKg} SOTTO range minimo finito ${minFiniteRange} → ${targetSize.code} (pesci più grandi)`);
-      return targetSize.id;
+    if (animalsPerKg > maxRange) {
+      // Above maximum → TP-180- (fuori scala, pesci troppo piccoli)
+      console.log(`⚠️ ${animalsPerKg} SOPRA range massimo ${maxRange} → TP-180- (pesci troppo piccoli) → NULL`);
+      return null;
     }
     
-    if (animalsPerKg > maxFiniteRange) {
-      // Above maximum finite range → use upper sentinel if exists, else last finite size
-      const targetSize = upperSentinel || finiteSizes[finiteSizes.length - 1];
-      console.log(`⚠️ ${animalsPerKg} SOPRA range massimo finito ${maxFiniteRange} → ${targetSize.code} (pesci più piccoli)`);
-      return targetSize.id;
-    }
-    
-    // 6. Value falls in a gap between finite ranges - find closest boundary
-    let closestSize = finiteSizes[0];
+    // 5. Value falls in a gap between ranges - find closest boundary
+    let closestSize = allSizes[0];
     let minDistance = Math.min(
       Math.abs(animalsPerKg - closestSize.minAnimalsPerKg!),
       Math.abs(animalsPerKg - closestSize.maxAnimalsPerKg!)
     );
     
-    for (const size of finiteSizes) {
+    for (const size of allSizes) {
       const distanceFromMin = Math.abs(animalsPerKg - size.minAnimalsPerKg!);
       const distanceFromMax = Math.abs(animalsPerKg - size.maxAnimalsPerKg!);
       const distance = Math.min(distanceFromMin, distanceFromMax);
@@ -91,7 +77,7 @@ export async function determineSizeByAnimalsPerKg(animalsPerKg: number): Promise
       }
     }
     
-    console.log(`📍 Gap nei range finiti: ${animalsPerKg} animali/kg → taglia più vicina ${closestSize.code}`);
+    console.log(`📍 Gap nei range: ${animalsPerKg} animali/kg → taglia più vicina ${closestSize.code}`);
     return closestSize.id;
     
   } catch (error) {
