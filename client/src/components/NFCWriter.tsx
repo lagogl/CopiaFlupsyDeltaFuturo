@@ -169,12 +169,12 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
         await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
         
-        setSuccess(true);
-        setIsScanning(false);
+        // Feedback nativo immediato
+        alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora attivo.\n\nPuoi usare il tag con l'app FLUPSY mobile.`);
         
-        setTimeout(() => {
-          onSuccess();
-        }, 1500);
+        // Chiudi immediatamente
+        setIsScanning(false);
+        onSuccess();
       } else {
         throw new Error(result.error || 'Errore WeChat bridge');
       }
@@ -270,14 +270,12 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
       
-      // Feedback visivo
-      setSuccess(true);
-      setIsScanning(false);
+      // Feedback nativo immediato (appare sopra l'anteprima Android)
+      alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora attivo.\n\nPuoi usare il tag con l'app FLUPSY mobile per operazioni di pesatura.`);
       
-      // Tempo per vedere il feedback di successo (3 secondi)
-      setTimeout(() => {
-        onSuccess();
-      }, 3000);
+      // Chiudi immediatamente dopo l'alert
+      setIsScanning(false);
+      onSuccess();
       
     } catch (err: any) {
       await reportError(err, 'handleNativeNFC');
@@ -356,13 +354,12 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
       
-      // Feedback visivo
-      setSuccess(true);
-      setIsScanning(false);
+      // Feedback nativo immediato
+      alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora attivo.\n\nPuoi usare il tag con l'app FLUPSY mobile.`);
       
-      setTimeout(() => {
-        onSuccess();
-      }, 3000);
+      // Chiudi immediatamente
+      setIsScanning(false);
+      onSuccess();
       
     } catch (err: any) {
       setIsScanning(false); // Importante: resetta UI in caso di errore
@@ -398,12 +395,12 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
       
-      setSuccess(true);
-      setIsScanning(false);
+      // Feedback nativo immediato
+      alert(`✅ TAG NFC PROGRAMMATO CON SUCCESSO!\n\nCestello #${basketNumber} è ora attivo (simulazione).\n\nPuoi usare il tag con l'app FLUPSY mobile.`);
       
-      setTimeout(() => {
-        onSuccess();
-      }, 3000);
+      // Chiudi immediatamente
+      setIsScanning(false);
+      onSuccess();
 
     } catch (error: any) {
       await reportError(error, 'handleSimulationFallback');
