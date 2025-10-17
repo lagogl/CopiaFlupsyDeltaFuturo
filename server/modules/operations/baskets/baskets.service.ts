@@ -528,7 +528,8 @@ export class BasketsService {
 
     // Invalida cache cestelli
     try {
-      BasketsCache.invalidateAll();
+      BasketsCache.clear();
+      console.log('✅ Cache cestelli invalidata dopo aggiornamento');
     } catch (error) {
       console.error('Errore nell\'invalidazione cache cestelli:', error);
     }
