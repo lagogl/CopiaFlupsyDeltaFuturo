@@ -687,13 +687,14 @@ export default function NFCTagManager() {
                     <TableHead>Posizione</TableHead>
                     <TableHead>Stato</TableHead>
                     <TableHead>Tag NFC</TableHead>
+                    <TableHead>Data Programmazione</TableHead>
                     <TableHead className="text-right">Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBaskets.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
                         Nessun cestello trovato con i filtri applicati
                       </TableCell>
                     </TableRow>
@@ -722,6 +723,21 @@ export default function NFCTagManager() {
                             <Badge variant="outline">
                               Nessun tag
                             </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {basket.nfcLastProgrammedAt ? (
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(basket.nfcLastProgrammedAt).toLocaleString('it-IT', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">-</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
