@@ -274,10 +274,10 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       setSuccess(true);
       setIsScanning(false);
       
-      // Tempo per vedere il feedback di successo
+      // Tempo per vedere il feedback di successo (3 secondi)
       setTimeout(() => {
         onSuccess();
-      }, 1500);
+      }, 3000);
       
     } catch (err: any) {
       await reportError(err, 'handleNativeNFC');
@@ -362,7 +362,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       
       setTimeout(() => {
         onSuccess();
-      }, 1500);
+      }, 3000);
       
     } catch (err: any) {
       setIsScanning(false); // Importante: resetta UI in caso di errore
@@ -403,7 +403,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       
       setTimeout(() => {
         onSuccess();
-      }, 1500);
+      }, 3000);
 
     } catch (error: any) {
       await reportError(error, 'handleSimulationFallback');
@@ -417,16 +417,27 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
   
   if (success) {
     return (
-      <div className="py-6 flex flex-col items-center justify-center space-y-4">
+      <div className="py-6 flex flex-col items-center justify-center space-y-6">
         <DialogHeader>
-          <DialogTitle className="text-center">Tag NFC Programmato!</DialogTitle>
-          <DialogDescription className="text-center">
-            Il tag NFC è stato associato con successo al cestello #{basketNumber}.
+          <DialogTitle className="text-center text-2xl font-bold text-green-600 dark:text-green-400">
+            ✅ Tag NFC Programmato con Successo!
+          </DialogTitle>
+          <DialogDescription className="text-center text-lg">
+            Il tag NFC è stato scritto e il cestello #{basketNumber} è ora attivo.
           </DialogDescription>
         </DialogHeader>
         
         <div className="flex items-center justify-center p-4">
-          <CheckCircle className="h-16 w-16 text-green-500" />
+          <CheckCircle className="h-20 w-20 text-green-500 animate-pulse" />
+        </div>
+        
+        <div className="w-full bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-800">
+          <p className="text-center text-green-800 dark:text-green-200 font-semibold text-lg">
+            🎯 Operazione completata!
+          </p>
+          <p className="text-center text-green-700 dark:text-green-300 text-sm mt-2">
+            Puoi ora usare il tag NFC con l'app FLUPSY mobile per operazioni di pesatura.
+          </p>
         </div>
       </div>
     );
