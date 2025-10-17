@@ -53,6 +53,7 @@ interface Basket {
   state: string;
   currentCycleId: number | null;
   nfcData: string | null;
+  nfcLastProgrammedAt: string | null;
 }
 
 interface Flupsy {
