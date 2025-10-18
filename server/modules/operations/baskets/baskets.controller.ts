@@ -390,6 +390,8 @@ export class BasketsController {
         return res.status(400).json({ message: "Invalid basket ID" });
       }
 
+      console.log(`🔍 CONTROLLER - req.body ricevuto:`, JSON.stringify(req.body));
+
       // Schema di validazione
       const updateSchema = z.object({
         physicalNumber: z.number().optional(),
