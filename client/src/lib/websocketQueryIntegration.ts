@@ -81,7 +81,10 @@ function handleBasketUpdate(updatedBasket: any, action: string) {
     return oldData;
   });
   
-  console.log(`🔄 Cestello ${updatedBasket.id} ${action}: tutte le cache sincronizzate`);
+  // CRITICAL FIX: Invalida tutte le query baskets per forzare re-render su TUTTI i device
+  queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  
+  console.log(`🔄 Cestello ${updatedBasket.id} ${action}: tutte le cache sincronizzate e invalidate`);
 }
 
 /**
