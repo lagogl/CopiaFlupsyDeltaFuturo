@@ -304,8 +304,6 @@ export class DbStorage implements IStorage {
 
   async updateBasket(id: number, basketUpdate: Partial<Basket>): Promise<Basket | undefined> {
     console.log(`updateBasket - Inizio aggiornamento cestello ID:${id} con dati:`, JSON.stringify(basketUpdate));
-    console.log(`🔍 DEBUG nfcLastProgrammedAt:`, basketUpdate.nfcLastProgrammedAt);
-    console.log(`🔍 DEBUG Tutte le chiavi:`, Object.keys(basketUpdate));
     
     try {
       // Aggiorniamo il cestello

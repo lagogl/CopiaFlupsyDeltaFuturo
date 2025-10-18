@@ -1414,10 +1414,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // quando vengono specificati entrambi row e position
       const updateData = { ...parsedData.data };
       
-      // DEBUG: Log per verificare se nfcLastProgrammedAt arriva
-      console.log(`🔍 ROUTES updateData keys:`, Object.keys(updateData));
-      console.log(`🔍 ROUTES nfcLastProgrammedAt:`, updateData.nfcLastProgrammedAt);
-      
       // Se è un'operazione di spostamento e flupsyId è nel corpo della richiesta,
       // assicuriamoci che venga impostato nel database
       if (parsedData.data.row && parsedData.data.position && parsedData.data.flupsyId) {
