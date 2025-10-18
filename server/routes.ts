@@ -1423,6 +1423,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the basket
       const updatedBasket = await storage.updateBasket(id, updateData);
       
+      // Invalida cache cestelli per garantire sincronizzazione immediata
+      try {
+        const BasketsCache = (await import('./baskets-cache-service')).default;
+        BasketsCache.clear();
+        console.log('✅ Cache cestelli invalidata dopo aggiornamento');
+      } catch (error) {
+        console.error('Errore nell\'invalidazione cache cestelli:', error);
+      }
+      
       // Ottieni il cestello aggiornato completo per assicurarci di avere tutti i dati
       const completeBasket = await storage.getBasket(id);
       
