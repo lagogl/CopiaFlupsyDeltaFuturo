@@ -198,15 +198,13 @@ export default function NFCTagManager() {
     }
   });
 
-  // Mutation per forzare lo stato a "disponibile" (solo override manuale)
-  const forceAvailableState = useMutation({
+  // Mutation per rimuovere il tag NFC (NON tocca lo stato o il ciclo!)
+  const removeNFCTag = useMutation({
     mutationFn: async (data: { basketId: number }) => {
-      // Forza sempre a "available" e rimuovi currentCycleId e tag NFC
+      // Rimuovi SOLO il tag NFC, NON toccare state o currentCycleId!
       const updateData = { 
-        state: 'available',
-        currentCycleId: null,
-        nfcData: null,  // Cancella anche l'associazione con il tag NFC
-        nfcLastProgrammedAt: null  // Rimuovi anche il timestamp
+        nfcData: null,
+        nfcLastProgrammedAt: null
       };
       
       // Usa apiRequest per gestire correttamente PATCH con METHOD-OVERRIDE
@@ -220,14 +218,14 @@ export default function NFCTagManager() {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       
       toast({
-        title: "Cestello forzato a disponibile",
-        description: "Il cestello è stato forzato allo stato disponibile e il tag NFC è stato rimosso.",
+        title: "Tag NFC rimosso",
+        description: "Il tag NFC è stato dissociato dal cestello. Il ciclo rimane attivo.",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Errore",
-        description: error.message || "Si è verificato un errore durante il cambio stato.",
+        description: error.message || "Si è verificato un errore durante la rimozione del tag.",
         variant: "destructive",
       });
     }
@@ -745,23 +743,20 @@ export default function NFCTagManager() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end flex-wrap">
-                            {(() => {
-                              const isInUse = basket.state === 'active' || basket.currentCycleId !== null;
-                              // Mostra il pulsante SOLO se il cestello è "in uso" (per forzare "disponibile")
-                              return isInUse ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => forceAvailableState.mutate({ basketId: basket.id })}
-                                  disabled={forceAvailableState.isPending}
-                                  className="bg-orange-50 hover:bg-orange-100 border-orange-300"
-                                  title="Forza manualmente lo stato a disponibile (override)"
-                                >
-                                  <AlertCircle className="h-4 w-4 mr-1" />
-                                  Forza disponibile
-                                </Button>
-                              ) : null;
-                            })()}
+                            {/* Mostra il pulsante SOLO se il cestello ha un tag NFC da rimuovere */}
+                            {basket.nfcData && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeNFCTag.mutate({ basketId: basket.id })}
+                                disabled={removeNFCTag.isPending}
+                                className="bg-red-50 hover:bg-red-100 border-red-300"
+                                title="Rimuovi il tag NFC da questo cestello"
+                              >
+                                <AlertCircle className="h-4 w-4 mr-1" />
+                                Rimuovi Tag
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
