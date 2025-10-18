@@ -673,4 +673,4 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       </div>
     </div>
   );
-}
+}// Force recompile Sat Oct 18 05:16:54 PM UTC 2025
