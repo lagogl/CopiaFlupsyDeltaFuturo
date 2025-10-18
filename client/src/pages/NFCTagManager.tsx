@@ -500,18 +500,18 @@ export default function NFCTagManager() {
       }
     };
 
-    // Refresh automatico periodico ogni 30 secondi per sincronizzazione cross-device
+    // Refresh automatico periodico ogni 3 secondi per sincronizzazione cross-device
     const interval = setInterval(() => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime;
       
-      // Solo se sono passati più di 30 secondi dall'ultimo refresh manuale
-      if (timeSinceLastRefresh > 30000) {
+      // Solo se sono passati più di 3 secondi dall'ultimo refresh manuale
+      if (timeSinceLastRefresh > 3000) {
         console.log('Refresh automatico periodico per sincronizzazione');
         queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
         setLastRefreshTime(now);
       }
-    }, 30000); // Ogni 30 secondi
+    }, 3000); // Ogni 3 secondi
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
