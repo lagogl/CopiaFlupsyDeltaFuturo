@@ -54,7 +54,7 @@ export const baskets = pgTable("baskets", {
   state: text("state").notNull().default("available"), // available, active
   currentCycleId: integer("current_cycle_id"), // reference to the current active cycle, null when not in a cycle
   nfcData: text("nfc_data"), // data to be stored in NFC tag
-  nfcLastProgrammedAt: timestamp("nfc_last_programmed_at"), // data e ora ultima programmazione tag NFC
+  nfcLastProgrammedAt: timestamp("nfc_last_programmed_at", { mode: 'string' }), // data e ora ultima programmazione tag NFC
   row: text("row").notNull(), // fila in cui si trova la cesta (DX o SX)
   position: integer("position").notNull(), // posizione numerica nella fila (1, 2, 3, ecc.)
 });
