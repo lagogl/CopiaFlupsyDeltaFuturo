@@ -1333,6 +1333,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid basket ID" });
       }
 
+      // 🔍 DEBUG IMMEDIATO: Vedi req.body RAW prima di qualsiasi elaborazione
+      console.log(`🔍 PATCH /api/baskets/${id} - req.body RAW:`, JSON.stringify(req.body));
+      console.log(`🔍 PATCH /api/baskets/${id} - nfcLastProgrammedAt in req.body?`, 'nfcLastProgrammedAt' in req.body, req.body.nfcLastProgrammedAt);
+
       // Verify the basket exists
       const basket = await storage.getBasket(id);
       if (!basket) {
