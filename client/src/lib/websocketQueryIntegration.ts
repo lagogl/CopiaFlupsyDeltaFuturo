@@ -24,7 +24,7 @@ const messageTypeToQueryKeys: Record<string, string[]> = {
   // Selezioni/Vagliatura
   'selection_completed': ['/api/baskets', '/api/selections', '/api/flupsys', '/api/operations', '/api/cycles', '/api/cycles/active'],
   
-  // Cestelli - Non includiamo basket_moved, basket_updated e baskets_switched qui perché li gestiamo separatamente
+  // Cestelli - basket_moved, basket_updated e baskets_switched vengono gestiti separatamente con logica ottimizzata
 };
 
 /**
