@@ -410,6 +410,8 @@ export class BasketsController {
         return res.status(400).json({ message: errorMessage });
       }
 
+      console.log(`🔍 CONTROLLER - parsedData.data dopo Zod:`, JSON.stringify(parsedData.data));
+
       const result = await basketsService.updateBasket(id, parsedData.data);
       
       // Se c'è un conflitto di posizione, restituisci info sul cestello occupante
