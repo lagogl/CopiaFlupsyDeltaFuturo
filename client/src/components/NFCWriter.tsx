@@ -386,15 +386,19 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       }) as any;
 
       const uniqueNfcId = `basket-${basketId}-${Date.now()}`;
+      const timestamp = new Date().toISOString();
+      
+      const updatePayload = { 
+        nfcData: uniqueNfcId,
+        nfcLastProgrammedAt: timestamp
+      };
+      
+      console.log('📤 INVIO PAYLOAD:', JSON.stringify(updatePayload));
 
       await apiRequest({
         url: `/api/baskets/${basketId}`,
         method: 'PATCH',
-        body: { 
-          nfcData: uniqueNfcId,
-          nfcLastProgrammedAt: new Date().toISOString()
-          // NON impostare state qui! Lo stato dipende dal ciclo, non dal tag NFC
-        }
+        body: updatePayload
       });
       
       console.log(`✅ Cestello #${basketNumber} programmato (simulazione) - nfcData: ${uniqueNfcId}`);
