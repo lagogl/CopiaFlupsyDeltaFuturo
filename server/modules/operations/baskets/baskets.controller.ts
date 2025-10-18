@@ -398,6 +398,7 @@ export class BasketsController {
         position: z.number().nullable().optional(),
         state: z.string().optional(),
         nfcData: z.string().nullable().optional(),
+        nfcLastProgrammedAt: z.string().nullable().optional(),
         currentCycleId: z.number().nullable().optional()
       });
 
