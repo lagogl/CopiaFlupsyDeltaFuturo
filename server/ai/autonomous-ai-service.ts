@@ -1,4 +1,6 @@
 // Sistema AI autonomo semplificato - senza dipendenze esterne
+import { db } from '../db';
+import { sizes } from '../../shared/schema';
 
 /**
  * Sistema AI Autonomo FLUPSY - Algoritmi interni di analisi intelligente
@@ -66,6 +68,8 @@ export class AutonomousAIService {
       days: number;
       predictedWeight: number;
       predictedAnimalsPerKg: number;
+      predictedSize?: string;
+      predictedAnimalCount: number;
       confidence: number;
       targetSize?: string;
     }>;
@@ -73,9 +77,12 @@ export class AutonomousAIService {
     recommendations: string[];
   }> {
     try {
+      // Recupera le taglie dal database per la mappatura
+      const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
+      
       // Algoritmo di crescita predittiva autonomo (simulazione realistica)
       const predictions = [];
-      let currentWeight = 50 + Math.random() * 200; // Peso base realistico
+      let currentWeight = 50 + Math.random() * 200; // Peso base realistico (grammi)
       let currentAnimalsPerKg = 800 + Math.random() * 1200; // Animali per kg realistici
       
       const baseGrowthRate = 2.5 + Math.random() * 2; // 2.5-4.5% crescita giornaliera
@@ -97,10 +104,21 @@ export class AutonomousAIService {
         const animalGrowthFactor = 1 + (dailyGrowthRate / 100) * 0.8; // Crescita individuale
         currentAnimalsPerKg = Math.max(50, currentAnimalsPerKg / animalGrowthFactor * (1 - dailyMortalityRate / 100));
         
+        // Determina la taglia in base agli animalsPerKg
+        const predictedSizeObj = allSizes.find(s => 
+          currentAnimalsPerKg >= (s.minAnimalsPerKg || 0) && 
+          currentAnimalsPerKg <= (s.maxAnimalsPerKg || Infinity)
+        );
+        
+        // Calcola numero totale di animali (peso in kg × animali per kg)
+        const totalAnimals = Math.round((currentWeight / 1000) * currentAnimalsPerKg);
+        
         predictions.push({
           days: day,
           predictedWeight: Math.round(currentWeight),
           predictedAnimalsPerKg: Math.round(currentAnimalsPerKg),
+          predictedSize: predictedSizeObj?.code || 'N/A',
+          predictedAnimalCount: totalAnimals,
           confidence: this.calculateConfidence(10, day), // Simula confidenza basata su dati storici
           targetSize: targetSizeId ? this.getTargetSizeName(targetSizeId) : undefined
         });

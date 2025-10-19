@@ -382,8 +382,10 @@ export default function AIDashboard() {
                                 </td>
                                 {basketPred.prediction?.predictions?.map((pred: any, idx: number) => (
                                   <td key={idx} className="px-2 py-2 text-center">
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col gap-0.5">
                                       <span className="font-medium">{pred.predictedWeight}g</span>
+                                      <span className="text-xs text-blue-600 font-medium">{pred.predictedSize || 'N/A'}</span>
+                                      <span className="text-xs text-gray-600">{pred.predictedAnimalCount?.toLocaleString('it-IT') || 0} anim.</span>
                                       <span className="text-xs text-gray-500">{pred.predictedAnimalsPerKg}/kg</span>
                                     </div>
                                   </td>
