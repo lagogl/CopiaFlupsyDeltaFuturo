@@ -25,7 +25,6 @@ interface ErrorDetails {
 
 export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel }: NFCWriterProps) {
   const [isScanning, setIsScanning] = useState(false);
-  const [showMethodSelection, setShowMethodSelection] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
   const [success, setSuccess] = useState(false);
@@ -537,70 +536,6 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     );
   }
   
-  // Schermata di selezione metodo di programmazione
-  if (showMethodSelection) {
-    return (
-      <div className="py-6 flex flex-col items-center justify-center space-y-4">
-        <DialogHeader>
-          <DialogTitle className="text-center">Seleziona Metodo di Programmazione</DialogTitle>
-          <DialogDescription className="text-center">
-            Scegli come vuoi programmare il tag NFC per il cestello #{basketNumber}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="w-full space-y-3 px-4">
-          {/* WeChat Mini Program */}
-          {wechatNFCBridge.isWeChatAvailable() && (
-            <Button 
-              className="w-full" 
-              variant="outline"
-              onClick={writeViaWeChatBridge}
-            >
-              <WifiIcon className="mr-2 h-4 w-4" />
-              📱 WeChat (Mini Program)
-            </Button>
-          )}
-          
-          {/* NFC Nativo Smartphone */}
-          {'NDEFReader' in window && (
-            <Button 
-              className="w-full" 
-              variant="outline"
-              onClick={handleNativeNFC}
-            >
-              <WifiIcon className="mr-2 h-4 w-4" />
-              📱 NFC nativo smartphone
-            </Button>
-          )}
-          
-          {/* USB NFC Reader/Writer */}
-          {usbBridge.isConnected && (
-            <Button 
-              className="w-full" 
-              variant="outline"
-              onClick={handleUSBNFC}
-            >
-              <Usb className="mr-2 h-4 w-4" />
-              🔌 USB NFC Reader/Writer
-            </Button>
-          )}
-          
-          {/* Simulazione (sempre disponibile per testing) */}
-          <Button 
-            className="w-full bg-red-600 hover:bg-red-700 text-white" 
-            onClick={handleSimulationFallback}
-          >
-            <AlertTriangle className="mr-2 h-4 w-4" />
-            🔴 Simula Scrittura Tag
-          </Button>
-        </div>
-        
-        <Button variant="ghost" onClick={() => setShowMethodSelection(false)}>
-          Indietro
-        </Button>
-      </div>
-    );
-  }
   
   if (isScanning) {
     return (
@@ -671,8 +606,8 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         <Button variant="ghost" onClick={cancelScanning}>
           Annulla
         </Button>
-        <Button onClick={() => setShowMethodSelection(true)}>
-          Inizia programmazione
+        <Button onClick={startWriting}>
+          Programma Tag NFC
         </Button>
       </div>
     </div>
