@@ -168,6 +168,15 @@ export default function FlupsyComparison() {
     return matchingSize || null;
   };
 
+  // Helper function per convertire indice mese (0-11) a nome mese italiano
+  const getItalianMonthName = (monthIndex: number): string => {
+    const monthNames = [
+      'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+    ];
+    return monthNames[monthIndex];
+  };
+
   // Helper function per ottenere SGR usando la gerarchia: sgr_per_taglia → sgr → fallback
   const getSgrForMonthAndSize = (monthName: string, sizeId?: number): number => {
     const defaultSgr = 2.5; // Fallback SGR di default
@@ -203,31 +212,25 @@ export default function FlupsyComparison() {
     let currentWeight = latestOperation.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : 0;
     const measurementDate = new Date(latestOperation.date);
     
-    // Calcola il peso futuro usando la formula corretta: Pf = Pi * e^(SGR*t)
-    const targetDate = addDays(new Date(), daysToAdd);
-    
-    // Calcolo dei giorni tra la data di misurazione e la data target
-    const days = Math.floor((targetDate.getTime() - measurementDate.getTime()) / (1000 * 60 * 60 * 24));
-    
     // Simula la crescita giorno per giorno, aggiornando la taglia quando necessario
     let simulatedWeight = currentWeight;
     let currentDate = new Date(measurementDate);
     let currentAnimalsPerKg = latestOperation.animalsPerKg;
     
-    for (let i = 0; i < days; i++) {
+    for (let i = 0; i < daysToAdd; i++) {
       // Aggiorna la data corrente
       if (i > 0) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
-      const month = format(currentDate, 'MMMM');
+      const monthName = getItalianMonthName(currentDate.getMonth());
       
       // Determina la taglia corrente basandosi su animalsPerKg
       const currentSize = getSizeForAnimalsPerKg(currentAnimalsPerKg);
       const sizeId = currentSize ? currentSize.id : undefined;
       
       // Ottieni l'SGR usando la gerarchia: sgr_per_taglia → sgr → fallback
-      const dailyRate = getSgrForMonthAndSize(month, sizeId);
+      const dailyRate = getSgrForMonthAndSize(monthName, sizeId);
       
       // Applica la crescita giornaliera: W(t+1) = W(t) * e^(SGR/100)
       simulatedWeight = simulatedWeight * Math.exp(dailyRate / 100);
@@ -291,15 +294,15 @@ export default function FlupsyComparison() {
     let currentAnimalsPerKg = latestOperation.animalsPerKg;
     
     while (simulationWeight < targetWeight && days < 365) {
-      // Determina il mese corrente
-      const month = format(currentDate, 'MMMM');
+      // Determina il mese corrente (in italiano)
+      const monthName = getItalianMonthName(currentDate.getMonth());
       
       // Determina la taglia corrente basandosi su animalsPerKg
       const currentSize = getSizeForAnimalsPerKg(currentAnimalsPerKg);
       const sizeId = currentSize ? currentSize.id : undefined;
       
       // Ottieni l'SGR usando la gerarchia: sgr_per_taglia → sgr → fallback
-      const dailyRate = getSgrForMonthAndSize(month, sizeId);
+      const dailyRate = getSgrForMonthAndSize(monthName, sizeId);
       
       // Applica la crescita giornaliera: W(t+1) = W(t) * e^(SGR/100)
       simulationWeight = simulationWeight * Math.exp(dailyRate / 100);
