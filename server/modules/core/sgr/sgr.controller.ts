@@ -265,20 +265,14 @@ export class SgrController {
       console.log("🔧 SGR CONTROLLER: Manual calculation triggered");
       
       // Send initial WebSocket event
-      broadcastMessage({
-        type: "sgr_calculation_start",
-        data: {}
-      });
+      broadcastMessage("sgr_calculation_start", {});
 
       // Trigger calculation in background
       setTimeout(async () => {
         try {
           // Progress: Loading operations
-          broadcastMessage({
-            type: "sgr_calculation_operations_loaded",
-            data: {
-              totalOperations: 0 // Will be updated during calculation
-            }
+          broadcastMessage("sgr_calculation_operations_loaded", {
+            totalOperations: 0 // Will be updated during calculation
           });
 
           const result = await sgrScheduler.triggerManualCalculation(month);
@@ -286,33 +280,24 @@ export class SgrController {
           // Progress: Size calculations completed
           const sizeCount = result.results.length;
           for (let i = 0; i < sizeCount; i++) {
-            broadcastMessage({
-              type: "sgr_calculation_size_complete",
-              data: {
-                completedSizes: i + 1,
-                totalSizes: sizeCount,
-                sizeName: result.results[i].sizeName
-              }
+            broadcastMessage("sgr_calculation_size_complete", {
+              completedSizes: i + 1,
+              totalSizes: sizeCount,
+              sizeName: result.results[i].sizeName
             });
           }
 
           // Complete
-          broadcastMessage({
-            type: "sgr_calculation_complete",
-            data: {
-              results: result.results,
-              month: result.month,
-              year: result.year
-            }
+          broadcastMessage("sgr_calculation_complete", {
+            results: result.results,
+            month: result.month,
+            year: result.year
           });
 
         } catch (error) {
           console.error("Error during SGR calculation:", error);
-          broadcastMessage({
-            type: "sgr_calculation_error",
-            data: {
-              error: error instanceof Error ? error.message : "Unknown error"
-            }
+          broadcastMessage("sgr_calculation_error", {
+            error: error instanceof Error ? error.message : "Unknown error"
           });
         }
       }, 100);
