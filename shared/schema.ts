@@ -301,6 +301,23 @@ export const sgrGiornalieri = pgTable("sgr_giornalieri", {
   notes: text("notes"), // Note aggiuntive
 });
 
+// SGR Per Taglia (SGR calcolato da dati reali specifico per mese e taglia)
+export const sgrPerTaglia = pgTable("sgr_per_taglia", {
+  id: serial("id").primaryKey(),
+  month: text("month").notNull(), // e.g., January, February...
+  sizeId: integer("size_id").notNull(), // reference to the size
+  calculatedSgr: real("calculated_sgr").notNull(), // SGR medio % per questo mese+taglia
+  sampleCount: integer("sample_count").notNull().default(0), // Numero operazioni usate per calcolo
+  lastCalculated: timestamp("last_calculated").notNull().defaultNow(), // Quando è stato calcolato
+  notes: text("notes"), // Note aggiuntive
+}, (table) => ({
+  // Indice unico per combinazione mese-taglia
+  uniqueMonthSize: {
+    name: "sgr_per_taglia_month_size_idx",
+    columns: [table.month, table.sizeId],
+  }
+}));
+
 // Lots (Lotti)
 export const lots = pgTable("lots", {
   id: serial("id").primaryKey(),
@@ -405,6 +422,11 @@ export const insertSgrSchema = createInsertSchema(sgr).omit({
 
 export const insertSgrGiornalieriSchema = createInsertSchema(sgrGiornalieri).omit({
   id: true
+});
+
+export const insertSgrPerTagliaSchema = createInsertSchema(sgrPerTaglia).omit({
+  id: true,
+  lastCalculated: true
 });
 
 export const insertLotSchema = createInsertSchema(lots).omit({ 
@@ -520,6 +542,9 @@ export type InsertSgr = z.infer<typeof insertSgrSchema>;
 
 export type SgrGiornaliero = typeof sgrGiornalieri.$inferSelect;
 export type InsertSgrGiornaliero = z.infer<typeof insertSgrGiornalieriSchema>;
+
+export type SgrPerTaglia = typeof sgrPerTaglia.$inferSelect;
+export type InsertSgrPerTaglia = z.infer<typeof insertSgrPerTagliaSchema>;
 
 export type Lot = typeof lots.$inferSelect;
 export type InsertLot = z.infer<typeof insertLotSchema>;

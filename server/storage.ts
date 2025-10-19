@@ -8,6 +8,7 @@ import {
   Lot, InsertLot,
   BasketPositionHistory, InsertBasketPositionHistory,
   SgrGiornaliero, InsertSgrGiornaliero,
+  SgrPerTaglia, InsertSgrPerTaglia,
   MortalityRate, InsertMortalityRate,
   TargetSizeAnnotation, InsertTargetSizeAnnotation,
   operationTypes,
@@ -136,6 +137,15 @@ export interface IStorage {
   createSgrGiornaliero(sgrGiornaliero: InsertSgrGiornaliero): Promise<SgrGiornaliero>;
   updateSgrGiornaliero(id: number, sgrGiornaliero: Partial<SgrGiornaliero>): Promise<SgrGiornaliero | undefined>;
   deleteSgrGiornaliero(id: number): Promise<boolean>;
+  
+  // SGR Per Taglia methods
+  getSgrPerTaglia(): Promise<any[]>;
+  getSgrPerTagliaById(id: number): Promise<any | undefined>;
+  getSgrPerTagliaByMonthAndSize(month: string, sizeId: number): Promise<any | undefined>;
+  createSgrPerTaglia(sgrPerTaglia: any): Promise<any>;
+  updateSgrPerTaglia(id: number, sgrPerTaglia: Partial<any>): Promise<any | undefined>;
+  upsertSgrPerTaglia(month: string, sizeId: number, calculatedSgr: number, sampleCount: number, notes?: string): Promise<any>;
+  deleteSgrPerTaglia(id: number): Promise<boolean>;
   
   // Lot methods
   getLots(): Promise<Lot[]>;

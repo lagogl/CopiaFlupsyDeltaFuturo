@@ -6,7 +6,9 @@ import {
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
   operations, sgr, sizes,
-  SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri, MortalityRate, InsertMortalityRate, mortalityRates,
+  SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri,
+  SgrPerTaglia, InsertSgrPerTaglia, sgrPerTaglia,
+  MortalityRate, InsertMortalityRate, mortalityRates,
   TargetSizeAnnotation, InsertTargetSizeAnnotation, targetSizeAnnotations,
   // Modulo di vagliatura
   ScreeningOperation, InsertScreeningOperation, screeningOperations,
@@ -1370,6 +1372,79 @@ export class DbStorage implements IStorage {
       .where(eq(sgrGiornalieri.id, id))
       .returning({
         id: sgrGiornalieri.id
+      });
+    return results.length > 0;
+  }
+
+  // SGR PER TAGLIA
+  async getSgrPerTaglia(): Promise<SgrPerTaglia[]> {
+    return await db.select()
+      .from(sgrPerTaglia)
+      .orderBy(sgrPerTaglia.month, sgrPerTaglia.sizeId);
+  }
+
+  async getSgrPerTagliaById(id: number): Promise<SgrPerTaglia | undefined> {
+    const results = await db.select()
+      .from(sgrPerTaglia)
+      .where(eq(sgrPerTaglia.id, id));
+    return results[0];
+  }
+
+  async getSgrPerTagliaByMonthAndSize(month: string, sizeId: number): Promise<SgrPerTaglia | undefined> {
+    const results = await db.select()
+      .from(sgrPerTaglia)
+      .where(and(
+        eq(sgrPerTaglia.month, month),
+        eq(sgrPerTaglia.sizeId, sizeId)
+      ));
+    return results[0];
+  }
+
+  async createSgrPerTaglia(sgrPerTagliaData: InsertSgrPerTaglia): Promise<SgrPerTaglia> {
+    const results = await db.insert(sgrPerTaglia)
+      .values(sgrPerTagliaData)
+      .returning();
+    return results[0];
+  }
+
+  async updateSgrPerTaglia(id: number, sgrPerTagliaUpdate: Partial<SgrPerTaglia>): Promise<SgrPerTaglia | undefined> {
+    const results = await db.update(sgrPerTaglia)
+      .set({
+        ...sgrPerTagliaUpdate,
+        lastCalculated: new Date()
+      })
+      .where(eq(sgrPerTaglia.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async upsertSgrPerTaglia(month: string, sizeId: number, calculatedSgr: number, sampleCount: number, notes?: string): Promise<SgrPerTaglia> {
+    const existing = await this.getSgrPerTagliaByMonthAndSize(month, sizeId);
+    
+    if (existing) {
+      const updated = await this.updateSgrPerTaglia(existing.id, {
+        calculatedSgr,
+        sampleCount,
+        notes,
+        lastCalculated: new Date()
+      });
+      return updated!;
+    } else {
+      return await this.createSgrPerTaglia({
+        month,
+        sizeId,
+        calculatedSgr,
+        sampleCount,
+        notes
+      });
+    }
+  }
+
+  async deleteSgrPerTaglia(id: number): Promise<boolean> {
+    const results = await db.delete(sgrPerTaglia)
+      .where(eq(sgrPerTaglia.id, id))
+      .returning({
+        id: sgrPerTaglia.id
       });
     return results.length > 0;
   }
