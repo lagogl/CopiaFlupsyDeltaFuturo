@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Search, Plus, Pencil, LineChart, Droplets, BarChart } from 'lucide-react';
+import { Search, Plus, Pencil, LineChart, Droplets, BarChart, Calculator, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import SgrForm from '@/components/SgrForm';
 import SgrGiornalieriForm from '@/components/SgrGiornalieriForm';
 import GrowthPredictionChart from '@/components/GrowthPredictionChart';
+import { connectWebSocket, disconnectWebSocket, onWebSocketMessage } from '@/lib/websocket';
 
 export default function Sgr() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +22,11 @@ export default function Sgr() {
   const [projectionDays, setProjectionDays] = useState(60); // 60 giorni default
   const [bestVariation, setBestVariation] = useState(20); // +20% default
   const [worstVariation, setWorstVariation] = useState(30); // -30% default
+  
+  // SGR Per Taglia calculation states
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationProgress, setCalculationProgress] = useState(0);
+  const [calculationStatus, setCalculationStatus] = useState<string>('');
   
   // Array dei mesi in italiano
   const monthOrder = [
@@ -35,6 +42,16 @@ export default function Sgr() {
   // Query SGR Giornalieri
   const { data: sgrGiornalieri, isLoading: isLoadingSgrGiornalieri } = useQuery({
     queryKey: ['/api/sgr-giornalieri'],
+  });
+
+  // Query SGR Per Taglia
+  const { data: sgrPerTaglia, isLoading: isLoadingSgrPerTaglia } = useQuery({
+    queryKey: ['/api/sgr-per-taglia'],
+  });
+
+  // Query Sizes
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
   });
   
   // Get current month's SGR
@@ -94,6 +111,58 @@ export default function Sgr() {
     }
   });
 
+  // Recalculate SGR Per Taglia mutation
+  const recalculateSgrMutation = useMutation({
+    mutationFn: () => apiRequest({ 
+      url: '/api/sgr-calculation/recalculate', 
+      method: 'POST'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/sgr-per-taglia'] });
+    },
+    onError: () => {
+      setIsCalculating(false);
+      setCalculationProgress(0);
+      setCalculationStatus('Errore durante il calcolo');
+    }
+  });
+
+  // WebSocket listener for SGR calculation progress
+  useEffect(() => {
+    const unsubscribe = onWebSocketMessage((event) => {
+      if (event.type === 'sgr_calculation_start') {
+        setIsCalculating(true);
+        setCalculationProgress(0);
+        setCalculationStatus('Inizio calcolo SGR...');
+      } else if (event.type === 'sgr_calculation_operations_loaded') {
+        setCalculationProgress(20);
+        setCalculationStatus(`Caricate ${event.data?.totalOperations || 0} operazioni`);
+      } else if (event.type === 'sgr_calculation_size_complete') {
+        const progress = 20 + (event.data?.completedSizes / event.data?.totalSizes) * 70;
+        setCalculationProgress(progress);
+        setCalculationStatus(`Completata taglia ${event.data?.sizeName} (${event.data?.completedSizes}/${event.data?.totalSizes})`);
+      } else if (event.type === 'sgr_calculation_complete') {
+        setCalculationProgress(100);
+        setCalculationStatus('Calcolo completato!');
+        setTimeout(() => {
+          setIsCalculating(false);
+          setCalculationProgress(0);
+          setCalculationStatus('');
+        }, 2000);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Handle SGR recalculation
+  const handleRecalculateSgr = () => {
+    setIsCalculating(true);
+    setCalculationProgress(0);
+    setCalculationStatus('Avvio calcolo...');
+    recalculateSgrMutation.mutate();
+  };
+
   // Filter SGRs
   const filteredSgrs = sgrs?.filter(sgr => {
     return searchTerm === '' || 
@@ -122,12 +191,171 @@ export default function Sgr() {
 
   return (
     <div>
-      <Tabs defaultValue="indici-sgr" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full mb-6 max-w-md">
+      <Tabs defaultValue="sgr-per-taglia" className="w-full">
+        <TabsList className="grid grid-cols-4 w-full mb-6">
+          <TabsTrigger value="sgr-per-taglia">SGR Per Taglia</TabsTrigger>
           <TabsTrigger value="indici-sgr">Indici SGR</TabsTrigger>
           <TabsTrigger value="dati-giornalieri">Dati Seneye</TabsTrigger>
           <TabsTrigger value="previsioni">Previsioni</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sgr-per-taglia">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-2xl font-condensed font-bold text-gray-800">SGR Per Taglia</h2>
+            <Button 
+              onClick={handleRecalculateSgr} 
+              disabled={isCalculating}
+              data-testid="button-recalculate-sgr"
+            >
+              {isCalculating ? (
+                <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Calcolo...</>
+              ) : (
+                <><Calculator className="h-4 w-4 mr-1" /> Ricalcola SGR</>
+              )}
+            </Button>
+          </div>
+          
+          {/* Calculation Progress */}
+          {isCalculating && (
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">{calculationStatus}</span>
+                    <span className="text-gray-500">{Math.round(calculationProgress)}%</span>
+                  </div>
+                  <Progress value={calculationProgress} className="h-2" data-testid="progress-sgr-calculation" />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Info Card */}
+          <div className="bg-blue-50 p-3 rounded-md mb-6 border border-blue-100">
+            <p className="text-blue-700 text-sm font-medium">
+              <span className="inline-block mr-2">ℹ️</span>
+              SGR calcolati da operazioni storiche dello stesso mese dell'anno precedente, specifici per ogni taglia
+            </p>
+          </div>
+
+          {/* SGR Per Taglia Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Taglia
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mese
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      SGR Calcolato (%)
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Campioni
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ultimo Calcolo
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {isLoadingSgrPerTaglia ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                        Caricamento SGR per taglia...
+                      </td>
+                    </tr>
+                  ) : !sgrPerTaglia || sgrPerTaglia.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                        Nessun SGR per taglia trovato. Clicca "Ricalcola SGR" per generare i dati.
+                      </td>
+                    </tr>
+                  ) : (
+                    sgrPerTaglia.map((sgrItem: any) => {
+                      // Find size name
+                      const size = sizes?.find((s: any) => s.id === sgrItem.sizeId);
+                      const sizeName = size?.name || `Taglia ${sgrItem.sizeId}`;
+                      
+                      // Format last calculated date
+                      const lastCalc = sgrItem.lastCalculated 
+                        ? new Intl.DateTimeFormat('it-IT', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }).format(new Date(sgrItem.lastCalculated))
+                        : '-';
+                      
+                      return (
+                        <tr key={`${sgrItem.month}-${sgrItem.sizeId}`} data-testid={`row-sgr-${sgrItem.sizeId}`}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {sizeName}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {sgrItem.month.charAt(0).toUpperCase() + sgrItem.month.slice(1)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600" data-testid={`text-sgr-value-${sgrItem.sizeId}`}>
+                            {sgrItem.calculatedSgr ? `${sgrItem.calculatedSgr.toFixed(2)}%` : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {sgrItem.sampleCount || 0}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {lastCalc}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Statistics Cards */}
+          {sgrPerTaglia && sgrPerTaglia.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Taglie Monitorate</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{sgrPerTaglia.length}</p>
+                  <p className="text-sm text-gray-500 mt-1">Taglie con SGR calcolato</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">SGR Medio</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-green-600">
+                    {(sgrPerTaglia.reduce((acc: number, item: any) => acc + (item.calculatedSgr || 0), 0) / sgrPerTaglia.length).toFixed(2)}%
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">Media tra tutte le taglie</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Campioni Totali</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {sgrPerTaglia.reduce((acc: number, item: any) => acc + (item.sampleCount || 0), 0)}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">Operazioni analizzate</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="indici-sgr">
           <div className="flex justify-between items-center mb-3">
