@@ -153,12 +153,6 @@ export default function Sgr() {
     queryKey: ['/api/growth-prediction', selectedSizeId, getCurrentMonthSgr(), projectionDays, projectionStartDate, bestVariation, worstVariation],
     queryFn: () => {
       const currentWeight = getAverageWeightFromSize();
-      console.log('DEBUG calcolo peso:', { 
-        selectedSizeId, 
-        sizesLoaded: !!sizes, 
-        currentWeight,
-        sizeData: sizes?.find((s: any) => s.id === selectedSizeId)
-      });
       const sizeIdParam = selectedSizeId ? `&sizeId=${selectedSizeId}` : '';
       const dateParam = projectionStartDate ? `&date=${projectionStartDate}` : '';
       return apiRequest({ 

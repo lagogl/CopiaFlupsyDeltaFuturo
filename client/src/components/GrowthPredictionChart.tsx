@@ -180,9 +180,9 @@ export default function GrowthPredictionChart({
                 height={60}
               />
               <YAxis
-                tickFormatter={(value) => `${(value / 1000).toFixed(1)}`}
+                tickFormatter={(value) => formatNumberWithCommas(Math.round(value))}
                 label={{ 
-                  value: 'Peso (g)',
+                  value: 'Peso (mg)',
                   angle: -90, 
                   position: 'insideLeft',
                   style: { textAnchor: 'middle', fontSize: 12 }
