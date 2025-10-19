@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Search, Plus, Pencil, LineChart, Droplets, BarChart, Calculator, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -927,6 +927,15 @@ export default function Sgr() {
                       dot={false}
                       name="Salinità"
                       connectNulls
+                    />
+                    
+                    {/* Brush per zoom sulla timeline */}
+                    <Brush 
+                      dataKey="date" 
+                      height={30} 
+                      stroke="#3b82f6"
+                      fill="#f0f9ff"
+                      travellerWidth={10}
                     />
                   </RechartsLineChart>
                 </ResponsiveContainer>
