@@ -376,24 +376,34 @@ export default function FlupsyComparison() {
       if (currentTabId === 'data-futuro') {
         // Modalità Data Futura: verifica se raggiunge il target entro i giorni selezionati
         const futureWeight = calculateFutureWeight(basket.id, daysInFuture);
-        if (futureWeight) {
+        const targetSize = sizes?.find(s => s.code === targetSizeCode);
+        
+        if (futureWeight && targetSize) {
           const futureSize = getTargetSizeForWeight(futureWeight, sizes);
-          const targetSize = sizes?.find(s => s.code === targetSizeCode);
           
-          if (futureSize && targetSize) {
-            // Estrai il numero dalla taglia (es. TP-3000 -> 3000)
-            const futureSizeNum = parseInt(futureSize.code.replace('TP-', ''));
-            const targetSizeNum = parseInt(targetSizeCode.replace('TP-', ''));
+          if (futureSize) {
+            // Confronta le taglie usando minAnimalsPerKg
+            // Una taglia è "maggiore" (più grande) se ha minAnimalsPerKg più piccolo
+            // Raggiungi il target se futureSize.minAnimalsPerKg <= targetSize.minAnimalsPerKg
+            const futureMinApk = futureSize.minAnimalsPerKg !== undefined ? futureSize.minAnimalsPerKg : futureSize.min_animals_per_kg;
+            const targetMinApk = targetSize.minAnimalsPerKg !== undefined ? targetSize.minAnimalsPerKg : targetSize.min_animals_per_kg;
             
-            // Controlla se raggiunge o supera il target
-            if (futureSizeNum <= targetSizeNum) {
+            if (futureMinApk !== undefined && targetMinApk !== undefined && futureMinApk <= targetMinApk) {
               targetByDate += animalCount;
               targetByDateCount++;
             } else {
               outOfTarget += animalCount;
               outOfTargetCount++;
             }
+          } else {
+            // Nessuna taglia futura identificata - fuori target
+            outOfTarget += animalCount;
+            outOfTargetCount++;
           }
+        } else {
+          // Nessun peso futuro calcolato o target non trovato - fuori target
+          outOfTarget += animalCount;
+          outOfTargetCount++;
         }
       } else {
         // Modalità Taglia Target: verifica se può raggiungere la taglia target
@@ -1101,10 +1111,13 @@ export default function FlupsyComparison() {
       let note = 'Fuori target';
       
       if (currentTabId === 'data-futuro') {
-        if (futureSize) {
-          const futureSizeNum = parseInt(futureSize.code.replace('TP-', ''));
-          const targetSizeNum = parseInt(targetSizeCode.replace('TP-', ''));
-          if (futureSizeNum <= targetSizeNum) {
+        const targetSize = sizes?.find(s => s.code === targetSizeCode);
+        if (futureSize && targetSize) {
+          // Confronta le taglie usando minAnimalsPerKg
+          const futureMinApk = futureSize.minAnimalsPerKg !== undefined ? futureSize.minAnimalsPerKg : futureSize.min_animals_per_kg;
+          const targetMinApk = targetSize.minAnimalsPerKg !== undefined ? targetSize.minAnimalsPerKg : targetSize.min_animals_per_kg;
+          
+          if (futureMinApk !== undefined && targetMinApk !== undefined && futureMinApk <= targetMinApk) {
             raggiungeTarget = 'Sì';
             note = 'Target centrato';
           }
