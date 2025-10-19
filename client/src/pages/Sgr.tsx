@@ -109,7 +109,7 @@ export default function Sgr() {
         
         if (minAnimals > 0 && maxAnimals > 0) {
           const avgAnimalsPerKg = (minAnimals + maxAnimals) / 2;
-          avgWeight = 1000 / avgAnimalsPerKg; // mantieni precisione decimale
+          avgWeight = 1000000 / avgAnimalsPerKg; // 1 kg = 1,000,000 mg
         }
         
         return {
@@ -140,10 +140,9 @@ export default function Sgr() {
     
     if (minAnimals === 0 || maxAnimals === 0) return 250;
     
-    // Calcola peso medio: 1000 / media(animali/kg) = peso in mg
-    // Per taglie piccole (milioni di animali/kg) il peso sarà < 1 mg
+    // Calcola peso medio: 1,000,000 mg (1 kg) / media(animali/kg) = peso in mg per animale
     const avgAnimalsPerKg = (minAnimals + maxAnimals) / 2;
-    const avgWeightMg = 1000 / avgAnimalsPerKg;
+    const avgWeightMg = 1000000 / avgAnimalsPerKg;
     
     // Non arrotondare - mantieni la precisione decimale
     return avgWeightMg;
