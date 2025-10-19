@@ -154,6 +154,46 @@ export default function FlupsyComparison() {
     )[0];
   };
 
+  // Helper function per identificare la taglia basandosi su animalsPerKg
+  const getSizeForAnimalsPerKg = (animalsPerKg: number) => {
+    if (!sizes || !animalsPerKg) return null;
+    
+    // Trova la taglia che contiene questo valore di animalsPerKg
+    const matchingSize = sizes.find(size => {
+      const minBound = size.minAnimalsPerKg || 0;
+      const maxBound = size.maxAnimalsPerKg || Infinity;
+      return animalsPerKg >= minBound && animalsPerKg <= maxBound;
+    });
+    
+    return matchingSize || null;
+  };
+
+  // Helper function per ottenere SGR usando la gerarchia: sgr_per_taglia → sgr → fallback
+  const getSgrForMonthAndSize = (monthName: string, sizeId?: number): number => {
+    const defaultSgr = 2.5; // Fallback SGR di default
+    
+    // PRIMA: Cerca in sgr_per_taglia se abbiamo un sizeId
+    if (sizeId && sgrPerTaglia && sgrPerTaglia.length > 0) {
+      const sgrForSize = sgrPerTaglia.find(
+        s => s.month.toLowerCase() === monthName.toLowerCase() && s.sizeId === sizeId
+      );
+      if (sgrForSize) {
+        return sgrForSize.calculatedSgr;
+      }
+    }
+    
+    // POI: Cerca in sgr generico
+    if (sgrs && sgrs.length > 0) {
+      const genericSgr = sgrs.find(sgr => sgr.month.toLowerCase() === monthName.toLowerCase());
+      if (genericSgr) {
+        return genericSgr.percentage;
+      }
+    }
+    
+    // INFINE: Usa fallback
+    return defaultSgr;
+  };
+
   // Calcola il peso futuro di un cestello
   const calculateFutureWeight = (basketId: number, daysToAdd: number) => {
     const latestOperation = getLatestOperationForBasket(basketId);
