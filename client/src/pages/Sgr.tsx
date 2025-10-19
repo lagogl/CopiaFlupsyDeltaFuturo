@@ -712,6 +712,149 @@ export default function Sgr() {
             </div>
           </div>
 
+          {/* Seneye Parameters Chart */}
+          {sortedSgrGiornalieri && sortedSgrGiornalieri.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart className="h-5 w-5" />
+                  Andamento Parametri Ambientali
+                </CardTitle>
+                <CardDescription>
+                  Visualizzazione dell'andamento dei parametri rilevati dal dispositivo Seneye
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <RechartsLineChart 
+                    data={[...sortedSgrGiornalieri].reverse().map(item => ({
+                      date: new Intl.DateTimeFormat('it-IT', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      }).format(new Date(item.recordDate)),
+                      fullDate: new Date(item.recordDate).toLocaleDateString('it-IT'),
+                      temperatura: item.temperature,
+                      pH: item.pH,
+                      ammoniaca: item.ammonia,
+                      ossigeno: item.oxygen,
+                      salinita: item.salinity
+                    }))} 
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#6b7280"
+                      style={{ fontSize: '11px' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px' }}
+                      label={{ value: 'Temp (°C) / pH / O2 / NH3', angle: -90, position: 'insideLeft' }}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px' }}
+                      label={{ value: 'Salinità (ppt)', angle: 90, position: 'insideRight' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}
+                      labelFormatter={(label) => {
+                        const item = [...sortedSgrGiornalieri].reverse().find(
+                          i => new Intl.DateTimeFormat('it-IT', {
+                            day: '2-digit',
+                            month: '2-digit'
+                          }).format(new Date(i.recordDate)) === label
+                        );
+                        return item ? new Date(item.recordDate).toLocaleDateString('it-IT') : label;
+                      }}
+                      formatter={(value: any, name: string) => {
+                        const labels: Record<string, string> = {
+                          'temperatura': '°C',
+                          'pH': '',
+                          'ammoniaca': 'mg/L',
+                          'ossigeno': 'mg/L',
+                          'salinita': 'ppt'
+                        };
+                        return [`${value !== null ? value : '-'}${labels[name] || ''}`, name.charAt(0).toUpperCase() + name.slice(1)];
+                      }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="line"
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="temperatura"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="Temperatura"
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="pH"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="pH"
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="ammoniaca"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="Ammoniaca"
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="ossigeno"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="Ossigeno"
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="salinita"
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="Salinità"
+                      connectNulls
+                    />
+                  </RechartsLineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
           {/* SGR Giornalieri Table */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
