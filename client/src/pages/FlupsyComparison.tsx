@@ -117,6 +117,10 @@ export default function FlupsyComparison() {
     queryKey: ['/api/sgr'],
   });
 
+  const { data: sgrPerTaglia } = useQuery({
+    queryKey: ['/api/sgr-per-taglia'],
+  });
+
   // Extract cycles array from response (API now returns {cycles: [], pagination: {}})
   const cycles = Array.isArray(cyclesResponse) ? cyclesResponse : cyclesResponse?.cycles || [];
 
