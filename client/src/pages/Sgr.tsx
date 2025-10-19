@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Search, Plus, Pencil, LineChart, Droplets, BarChart, Calculator, Loader2 } from 'lucide-react';
+import { Search, Plus, Pencil, LineChart, Droplets, BarChart, Calculator, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -27,6 +28,10 @@ export default function Sgr() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationProgress, setCalculationProgress] = useState(0);
   const [calculationStatus, setCalculationStatus] = useState<string>('');
+  
+  // Sorting states for SGR Per Taglia
+  const [sortColumn, setSortColumn] = useState<'size' | 'month' | 'sgr' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   // Array dei mesi in italiano
   const monthOrder = [
@@ -163,6 +168,92 @@ export default function Sgr() {
     recalculateSgrMutation.mutate();
   };
 
+  // Handle sorting for SGR Per Taglia table
+  const handleSort = (column: 'size' | 'month' | 'sgr') => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sort SGR Per Taglia data
+  const sortedSgrPerTaglia = [...(sgrPerTaglia || [])].sort((a, b) => {
+    if (!sortColumn) return 0;
+
+    let compareValue = 0;
+
+    if (sortColumn === 'size') {
+      const sizeA = sizes?.find((s: any) => s.id === a.sizeId);
+      const sizeB = sizes?.find((s: any) => s.id === b.sizeId);
+      const nameA = sizeA?.name || '';
+      const nameB = sizeB?.name || '';
+      compareValue = nameA.localeCompare(nameB);
+    } else if (sortColumn === 'month') {
+      const monthA = a.month.toLowerCase();
+      const monthB = b.month.toLowerCase();
+      compareValue = monthOrder.indexOf(monthA) - monthOrder.indexOf(monthB);
+    } else if (sortColumn === 'sgr') {
+      compareValue = (a.calculatedSgr || 0) - (b.calculatedSgr || 0);
+    }
+
+    return sortDirection === 'asc' ? compareValue : -compareValue;
+  });
+
+  // Export SGR Per Taglia to Excel
+  const exportToExcel = () => {
+    if (!sgrPerTaglia || sgrPerTaglia.length === 0) return;
+
+    // Prepare data for export
+    const exportData = sortedSgrPerTaglia.map((sgrItem: any) => {
+      const size = sizes?.find((s: any) => s.id === sgrItem.sizeId);
+      const sizeName = size?.name || `Taglia ${sgrItem.sizeId}`;
+      const lastCalc = sgrItem.lastCalculated 
+        ? new Intl.DateTimeFormat('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }).format(new Date(sgrItem.lastCalculated))
+        : '-';
+
+      return {
+        'Taglia': sizeName,
+        'Mese': sgrItem.month.charAt(0).toUpperCase() + sgrItem.month.slice(1),
+        'SGR Calcolato (%)': sgrItem.calculatedSgr ? sgrItem.calculatedSgr.toFixed(2) : '-',
+        'Campioni': sgrItem.sampleCount || 0,
+        'Ultimo Calcolo': lastCalc,
+        'Note': sgrItem.notes || ''
+      };
+    });
+
+    // Create worksheet and workbook
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'SGR Per Taglia');
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 12 }, // Taglia
+      { wch: 12 }, // Mese
+      { wch: 18 }, // SGR Calcolato
+      { wch: 10 }, // Campioni
+      { wch: 20 }, // Ultimo Calcolo
+      { wch: 40 }  // Note
+    ];
+
+    // Generate filename with current date
+    const today = new Date().toISOString().split('T')[0];
+    const filename = `SGR_Per_Taglia_${today}.xlsx`;
+
+    // Export file
+    XLSX.writeFile(workbook, filename);
+  };
+
   // Filter SGRs
   const filteredSgrs = sgrs?.filter(sgr => {
     return searchTerm === '' || 
@@ -202,17 +293,27 @@ export default function Sgr() {
         <TabsContent value="sgr-per-taglia">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-2xl font-condensed font-bold text-gray-800">SGR Per Taglia</h2>
-            <Button 
-              onClick={handleRecalculateSgr} 
-              disabled={isCalculating}
-              data-testid="button-recalculate-sgr"
-            >
-              {isCalculating ? (
-                <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Calcolo...</>
-              ) : (
-                <><Calculator className="h-4 w-4 mr-1" /> Ricalcola SGR</>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={exportToExcel} 
+                disabled={!sgrPerTaglia || sgrPerTaglia.length === 0}
+                variant="outline"
+                data-testid="button-export-excel"
+              >
+                <Download className="h-4 w-4 mr-1" /> Esporta Excel
+              </Button>
+              <Button 
+                onClick={handleRecalculateSgr} 
+                disabled={isCalculating}
+                data-testid="button-recalculate-sgr"
+              >
+                {isCalculating ? (
+                  <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Calcolo...</>
+                ) : (
+                  <><Calculator className="h-4 w-4 mr-1" /> Ricalcola SGR</>
+                )}
+              </Button>
+            </div>
           </div>
           
           {/* Calculation Progress */}
@@ -244,14 +345,50 @@ export default function Sgr() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Taglia
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('size')}
+                      data-testid="header-size"
+                    >
+                      <div className="flex items-center gap-1">
+                        Taglia
+                        {sortColumn === 'size' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-40" />
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mese
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('month')}
+                      data-testid="header-month"
+                    >
+                      <div className="flex items-center gap-1">
+                        Mese
+                        {sortColumn === 'month' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-40" />
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      SGR Calcolato (%)
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('sgr')}
+                      data-testid="header-sgr"
+                    >
+                      <div className="flex items-center gap-1">
+                        SGR Calcolato (%)
+                        {sortColumn === 'sgr' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-40" />
+                        )}
+                      </div>
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Campioni
@@ -275,7 +412,7 @@ export default function Sgr() {
                       </td>
                     </tr>
                   ) : (
-                    sgrPerTaglia.map((sgrItem: any) => {
+                    sortedSgrPerTaglia.map((sgrItem: any) => {
                       // Find size name
                       const size = sizes?.find((s: any) => s.id === sgrItem.sizeId);
                       const sizeName = size?.name || `Taglia ${sgrItem.sizeId}`;
