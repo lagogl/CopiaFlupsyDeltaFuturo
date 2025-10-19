@@ -6,7 +6,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  Brush 
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatNumberWithCommas } from '@/lib/utils';
@@ -38,6 +39,14 @@ export default function MultiSizeGrowthComparisonChart({
     }).format(date);
   };
   
+  // Formato per l'asse X con mesi letterali
+  const formatAxisDate = (date: Date) => {
+    return new Intl.DateTimeFormat('it-IT', { 
+      month: 'short',
+      year: projectionDays > 180 ? '2-digit' : undefined
+    }).format(date);
+  };
+  
   const minSimulationWeight = 1;
   const effectiveWeight = currentWeight > 0 ? currentWeight : minSimulationWeight;
   
@@ -51,7 +60,8 @@ export default function MultiSizeGrowthComparisonChart({
     const dataPoint: any = {
       day,
       date,
-      dateFormatted: formatDate(date)
+      dateFormatted: formatDate(date),
+      dateAxis: formatAxisDate(date)
     };
     
     // Calcola il peso per ogni taglia
@@ -83,18 +93,21 @@ export default function MultiSizeGrowthComparisonChart({
           </div>
         </div>
         
-        <div className="h-[400px] mt-4">
+        <div className="h-[450px] mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
-              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+              margin={{ top: 5, right: 20, left: 10, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis 
-                dataKey="dateFormatted" 
+                dataKey="dateAxis" 
                 padding={{ left: 10, right: 10 }}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 11 }}
                 interval="preserveStartEnd"
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
               <YAxis
                 tickFormatter={(value) => `${(value / 1000).toFixed(1)}`}
@@ -134,6 +147,15 @@ export default function MultiSizeGrowthComparisonChart({
                   activeDot={{ r: 5 }}
                 />
               ))}
+              
+              {/* Brush per zoom sulla timeline */}
+              <Brush 
+                dataKey="dateAxis" 
+                height={30} 
+                stroke="#3b82f6"
+                fill="#f0f9ff"
+                travellerWidth={10}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
