@@ -30,8 +30,14 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Components
 - **Core Entities**: FLUPSY Systems, Baskets, Cycles, Operations (cleaning, screening, weighing), Lots, Selections/Screenings, Advanced Sales, DDT.
-- **Business Logic**: Inventory Management, Growth Forecasting (SGR calculations), Mortality Tracking, External Data Synchronization, Quality Control, Advanced Sales with DDT Generation.
-- **AI Integration**: Hybrid system integrating DeepSeek-V3 for predictive growth analysis, anomaly detection, sustainability analysis, business analytics, and AI-enhanced performance scoring.
+- **Business Logic**: Inventory Management, Growth Forecasting (size-specific SGR calculations from historical data), Mortality Tracking, External Data Synchronization, Quality Control, Advanced Sales with DDT Generation.
+- **SGR Per Taglia System**: Advanced growth rate calculation system analyzing historical operations from same month previous year, specific per size category. Features automated monthly scheduler (day 1, 02:00), AI data quality validation, WebSocket-based progress tracking for manual recalculation, and intelligent fallback chain (sgr_per_taglia → sgr → 2.5% default).
+  - **Database**: `sgr_per_taglia` table with unique index on (month, sizeId) storing calculated SGR, sample count, and last calculation timestamp.
+  - **Calculation Formula**: SGR = [(ln(W2) - ln(W1)) / Days] × 100
+  - **AI Quality Check**: Validates operations before calculations, excludes outliers (>10% or <-5% daily growth), handles mortality exceptions.
+  - **Size Transition Handling**: Predictive system dynamically changes SGR when animals transition between size categories during growth predictions.
+  - **Dashboard**: "SGR Per Taglia" tab in /sgr page displaying size-specific SGR values, recalculation button with real-time progress bar, and statistics (monitored sizes, average SGR, total samples).
+- **AI Integration**: Hybrid system integrating DeepSeek-V3 for predictive growth analysis using real historical SGR data, anomaly detection, sustainability analysis, business analytics, and AI-enhanced performance scoring.
 - **DDT System**: Generates transport documents for advanced sales with three-state tracking, immutable customer data snapshots, traceability, subtotals by size, and integration with Fatture in Cloud API. Includes sale reversal functionality.
 - **Dynamic Logo System**: Automated company logo integration in all PDF reports based on Fatture in Cloud Company ID.
 - **NFC Tag Management**: Comprehensive NFC tag programming system with manual basket state override and timestamp tracking. Operators can toggle basket state between "available" and "in use" via visual toggle buttons (green/orange color-coded), complementing automatic state management during operations.
