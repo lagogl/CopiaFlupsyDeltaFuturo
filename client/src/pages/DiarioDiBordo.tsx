@@ -323,13 +323,12 @@ export default function DiarioDiBordo() {
         completed: false
       });
       
-      console.log(`Caricamento dati per il mese: ${format(currentMonth, 'yyyy-MM')}`);
+      console.log(`Caricamento dati per il mese: ${formattedMonth}`);
       setAnalysisCounter(current => ({ ...current, current: 10 }));
       
       // Utilizza il nuovo endpoint ottimizzato che carica tutti i dati del mese in una singola chiamata
-      const apiFormattedMonth = format(currentMonth, 'yyyy-MM');
-      console.log(`Richiesta API con month=${apiFormattedMonth}`);
-      const response = await fetch(`/api/diario/month-data?month=${apiFormattedMonth}`);
+      console.log(`Richiesta API con month=${formattedMonth}`);
+      const response = await fetch(`/api/diario/month-data?month=${formattedMonth}`);
       
       if (!response.ok) {
         throw new Error(`Errore nel caricamento dei dati del mese: ${response.statusText}`);
