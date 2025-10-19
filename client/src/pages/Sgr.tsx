@@ -40,6 +40,13 @@ export default function Sgr() {
   const [sortColumn, setSortColumn] = useState<'size' | 'month' | 'sgr' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
+  // States per controllare visibilità parametri ambientali
+  const [showTemperatura, setShowTemperatura] = useState(true);
+  const [showPH, setShowPH] = useState(true);
+  const [showAmmoniaca, setShowAmmoniaca] = useState(true);
+  const [showOssigeno, setShowOssigeno] = useState(true);
+  const [showSalinita, setShowSalinita] = useState(true);
+  
   // Array dei mesi in italiano
   const monthOrder = [
     'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
@@ -809,6 +816,68 @@ export default function Sgr() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Controlli per selezionare parametri visibili */}
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Parametri da visualizzare:</h4>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="show-temperatura" 
+                        checked={showTemperatura}
+                        onCheckedChange={(checked) => setShowTemperatura(!!checked)}
+                      />
+                      <label htmlFor="show-temperatura" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-1">
+                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#ef4444' }}></span>
+                        Temperatura
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="show-ph" 
+                        checked={showPH}
+                        onCheckedChange={(checked) => setShowPH(!!checked)}
+                      />
+                      <label htmlFor="show-ph" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-1">
+                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }}></span>
+                        pH
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="show-ammoniaca" 
+                        checked={showAmmoniaca}
+                        onCheckedChange={(checked) => setShowAmmoniaca(!!checked)}
+                      />
+                      <label htmlFor="show-ammoniaca" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-1">
+                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }}></span>
+                        Ammoniaca
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="show-ossigeno" 
+                        checked={showOssigeno}
+                        onCheckedChange={(checked) => setShowOssigeno(!!checked)}
+                      />
+                      <label htmlFor="show-ossigeno" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-1">
+                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }}></span>
+                        Ossigeno
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="show-salinita" 
+                        checked={showSalinita}
+                        onCheckedChange={(checked) => setShowSalinita(!!checked)}
+                      />
+                      <label htmlFor="show-salinita" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-1">
+                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#8b5cf6' }}></span>
+                        Salinità
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
                 <ResponsiveContainer width="100%" height={400}>
                   <RechartsLineChart 
                     data={[...sortedSgrGiornalieri].reverse().map(item => ({
@@ -878,56 +947,68 @@ export default function Sgr() {
                       wrapperStyle={{ paddingTop: '20px' }}
                       iconType="line"
                     />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="temperatura"
-                      stroke="#ef4444"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Temperatura"
-                      connectNulls
-                    />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="pH"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      dot={false}
-                      name="pH"
-                      connectNulls
-                    />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="ammoniaca"
-                      stroke="#f59e0b"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Ammoniaca"
-                      connectNulls
-                    />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="ossigeno"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Ossigeno"
-                      connectNulls
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="salinita"
-                      stroke="#8b5cf6"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Salinità"
-                      connectNulls
-                    />
+                    
+                    {/* Linee condizionali basate sui checkbox */}
+                    {showTemperatura && (
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="temperatura"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Temperatura"
+                        connectNulls
+                      />
+                    )}
+                    {showPH && (
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="pH"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={false}
+                        name="pH"
+                        connectNulls
+                      />
+                    )}
+                    {showAmmoniaca && (
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="ammoniaca"
+                        stroke="#f59e0b"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Ammoniaca"
+                        connectNulls
+                      />
+                    )}
+                    {showOssigeno && (
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="ossigeno"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Ossigeno"
+                        connectNulls
+                      />
+                    )}
+                    {showSalinita && (
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="salinita"
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Salinità"
+                        connectNulls
+                      />
+                    )}
                     
                     {/* Brush per zoom sulla timeline */}
                     <Brush 
