@@ -24,8 +24,8 @@ export default function Sgr() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreateDailyDialogOpen, setIsCreateDailyDialogOpen] = useState(false);
   const [editingSgr, setEditingSgr] = useState<any>(null);
-  const [currentWeightForPrediction, setCurrentWeightForPrediction] = useState(250); // default 250mg
   const [projectionDays, setProjectionDays] = useState(60); // 60 giorni default
+  const [projectionStartDate, setProjectionStartDate] = useState(new Date().toISOString().split('T')[0]); // Data inizio proiezione
   const [bestVariation, setBestVariation] = useState(20); // +20% default
   const [worstVariation, setWorstVariation] = useState(30); // -30% default
   const [selectedSizeId, setSelectedSizeId] = useState<number | null>(null); // Taglia selezionata per previsioni
@@ -91,7 +91,7 @@ export default function Sgr() {
   const getSizesWithSgr = () => {
     if (!sizes || !sgrPerTaglia) return [];
     
-    const today = new Date();
+    const today = new Date(projectionStartDate);
     const currentMonthName = monthOrder[today.getMonth()];
     
     return sizes
@@ -102,11 +102,22 @@ export default function Sgr() {
         
         if (!sgrForSize?.calculatedSgr) return null;
         
+        // Calcola il peso medio per questa taglia
+        const minAnimals = size.minAnimalsPerKg || 0;
+        const maxAnimals = size.maxAnimalsPerKg || 0;
+        let avgWeight = 250; // default
+        
+        if (minAnimals > 0 && maxAnimals > 0) {
+          const avgAnimalsPerKg = (minAnimals + maxAnimals) / 2;
+          avgWeight = Math.round(1000 / avgAnimalsPerKg); // la colonna memorizza animali per grammo
+        }
+        
         return {
           sizeId: size.id,
           sizeName: size.name,
           sgrPercentage: sgrForSize.calculatedSgr,
-          color: size.color || '#3b82f6'
+          color: size.color || '#3b82f6',
+          averageWeight: avgWeight
         };
       })
       .filter(Boolean)
@@ -117,13 +128,41 @@ export default function Sgr() {
       });
   };
   
+  // Calcola il peso medio dalla taglia selezionata
+  const getAverageWeightFromSize = () => {
+    if (!selectedSizeId || !sizes) return 250; // default se non selezionata
+    
+    const selectedSize = sizes.find((s: any) => s.id === selectedSizeId);
+    if (!selectedSize) return 250;
+    
+    const minAnimals = selectedSize.minAnimalsPerKg || 0;
+    const maxAnimals = selectedSize.maxAnimalsPerKg || 0;
+    
+    if (minAnimals === 0 || maxAnimals === 0) return 250;
+    
+    // Calcola peso medio: 1000 / media(animali/kg) = peso in mg
+    // Nota: la colonna animalsPerKg memorizza in realtà animali per grammo
+    const avgAnimalsPerKg = (minAnimals + maxAnimals) / 2;
+    const avgWeightMg = 1000 / avgAnimalsPerKg;
+    
+    return Math.round(avgWeightMg);
+  };
+
   // Query per le proiezioni di crescita
   const { data: growthPrediction, isLoading: isLoadingPrediction, refetch: refetchPrediction } = useQuery({
-    queryKey: ['/api/growth-prediction', currentWeightForPrediction, selectedSizeId, getCurrentMonthSgr(), projectionDays, bestVariation, worstVariation],
+    queryKey: ['/api/growth-prediction', selectedSizeId, getCurrentMonthSgr(), projectionDays, projectionStartDate, bestVariation, worstVariation],
     queryFn: () => {
+      const currentWeight = getAverageWeightFromSize();
+      console.log('DEBUG calcolo peso:', { 
+        selectedSizeId, 
+        sizesLoaded: !!sizes, 
+        currentWeight,
+        sizeData: sizes?.find((s: any) => s.id === selectedSizeId)
+      });
       const sizeIdParam = selectedSizeId ? `&sizeId=${selectedSizeId}` : '';
+      const dateParam = projectionStartDate ? `&date=${projectionStartDate}` : '';
       return apiRequest({ 
-        url: `/api/growth-prediction?currentWeight=${currentWeightForPrediction}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}${sizeIdParam}`, 
+        url: `/api/growth-prediction?currentWeight=${currentWeight}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}${sizeIdParam}${dateParam}`, 
         method: 'GET' 
       });
     },
@@ -1104,8 +1143,7 @@ export default function Sgr() {
             <div className="lg:col-span-2">
               {compareMultipleSizes ? (
                 <MultiSizeGrowthComparisonChart
-                  currentWeight={currentWeightForPrediction}
-                  measurementDate={new Date()}
+                  measurementDate={new Date(projectionStartDate)}
                   sizesWithSgr={getSizesWithSgr()}
                   projectionDays={projectionDays}
                 />
@@ -1120,8 +1158,8 @@ export default function Sgr() {
               ) : (
                 <div className="bg-white p-4 rounded-lg shadow">
                   <GrowthPredictionChart 
-                    currentWeight={currentWeightForPrediction}
-                    measurementDate={new Date()}
+                    currentWeight={getAverageWeightFromSize()}
+                    measurementDate={new Date(projectionStartDate)}
                     theoreticalSgrMonthlyPercentage={getCurrentMonthSgr()}
                     projectionDays={projectionDays}
                     variationPercentages={{
@@ -1189,15 +1227,25 @@ export default function Sgr() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Peso attuale (mg)</label>
+                      <label className="text-sm font-medium">Peso medio taglia</label>
+                      <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                        <p className="text-base font-semibold text-gray-900">
+                          {selectedSizeId ? `${getAverageWeightFromSize().toLocaleString('it-IT')} mg` : 'Seleziona una taglia'}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {selectedSizeId ? 'Calcolato automaticamente dalla taglia selezionata' : 'Il peso sarà calcolato dalla taglia'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Data inizio proiezione</label>
                       <Input 
-                        type="number" 
-                        value={currentWeightForPrediction} 
-                        onChange={(e) => setCurrentWeightForPrediction(Number(e.target.value))}
-                        min={1}
-                        max={5000}
+                        type="date" 
+                        value={projectionStartDate} 
+                        onChange={(e) => setProjectionStartDate(e.target.value)}
                       />
-                      <p className="text-xs text-gray-500">Peso medio attuale in milligrammi</p>
+                      <p className="text-xs text-gray-500">Data di partenza per il calcolo della crescita</p>
                     </div>
 
                     <div className="space-y-2">

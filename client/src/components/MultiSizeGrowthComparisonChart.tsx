@@ -17,17 +17,16 @@ interface SizeWithSgr {
   sizeName: string;
   sgrPercentage: number;
   color: string;
+  averageWeight: number;
 }
 
 interface MultiSizeGrowthComparisonChartProps {
-  currentWeight: number;
   measurementDate: Date;
   sizesWithSgr: SizeWithSgr[];
   projectionDays?: number;
 }
 
 export default function MultiSizeGrowthComparisonChart({
-  currentWeight,
   measurementDate,
   sizesWithSgr,
   projectionDays = 60
@@ -47,9 +46,6 @@ export default function MultiSizeGrowthComparisonChart({
     }).format(date);
   };
   
-  const minSimulationWeight = 1;
-  const effectiveWeight = currentWeight > 0 ? currentWeight : minSimulationWeight;
-  
   // Genera i dati per il grafico
   const data: any[] = [];
   
@@ -64,9 +60,10 @@ export default function MultiSizeGrowthComparisonChart({
       dateAxis: formatAxisDate(date)
     };
     
-    // Calcola il peso per ogni taglia
+    // Calcola il peso per ogni taglia usando il suo peso specifico
     sizesWithSgr.forEach(size => {
       const dailySgr = size.sgrPercentage / 100;
+      const effectiveWeight = size.averageWeight > 0 ? size.averageWeight : 250;
       const weight = effectiveWeight * Math.exp(dailySgr * day);
       dataPoint[`size_${size.sizeId}`] = parseFloat(Math.max(0, weight).toFixed(1));
     });
@@ -85,11 +82,11 @@ export default function MultiSizeGrowthComparisonChart({
       <CardContent>
         <div className="flex flex-col my-1 text-sm">
           <div className="flex justify-between">
-            <span>Peso iniziale: <strong>{formatNumberWithCommas(currentWeight)} mg</strong></span>
-            <span>Data: <strong>{formatDate(measurementDate)}</strong></span>
+            <span>Data inizio: <strong>{formatDate(measurementDate)}</strong></span>
+            <span>Proiezione: <strong>{projectionDays} giorni</strong></span>
           </div>
           <div className="text-xs text-muted-foreground">
-            Proiezione a {projectionDays} giorni per {sizesWithSgr.length} taglie
+            Confronto di {sizesWithSgr.length} taglie con pesi medi specifici
           </div>
         </div>
         
@@ -167,14 +164,16 @@ export default function MultiSizeGrowthComparisonChart({
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Taglia</th>
                 <th className="px-3 py-2 text-right font-medium">SGR (%)</th>
-                <th className="px-3 py-2 text-right font-medium">Peso finale (mg)</th>
+                <th className="px-3 py-2 text-right font-medium">Peso iniziale</th>
+                <th className="px-3 py-2 text-right font-medium">Peso finale</th>
                 <th className="px-3 py-2 text-right font-medium">Crescita (%)</th>
               </tr>
             </thead>
             <tbody>
               {sizesWithSgr.map(size => {
                 const finalWeight = data[data.length - 1]?.[`size_${size.sizeId}`] || 0;
-                const growthPercentage = ((finalWeight - currentWeight) / currentWeight) * 100;
+                const initialWeight = size.averageWeight;
+                const growthPercentage = ((finalWeight - initialWeight) / initialWeight) * 100;
                 return (
                   <tr key={size.sizeId} className="border-t">
                     <td className="px-3 py-2">
@@ -187,7 +186,8 @@ export default function MultiSizeGrowthComparisonChart({
                       </div>
                     </td>
                     <td className="px-3 py-2 text-right font-mono">{size.sgrPercentage.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right font-mono">{formatNumberWithCommas(finalWeight)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{formatNumberWithCommas(initialWeight)} mg</td>
+                    <td className="px-3 py-2 text-right font-mono">{formatNumberWithCommas(finalWeight)} mg</td>
                     <td className="px-3 py-2 text-right font-mono">+{growthPercentage.toFixed(0)}%</td>
                   </tr>
                 );
