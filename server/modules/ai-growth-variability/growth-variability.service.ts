@@ -160,17 +160,29 @@ export class GrowthVariabilityService {
    * Recupera operazioni con dati completi
    */
   private static async fetchOperationsData(options: GrowthVariabilityAnalysisOptions) {
-    const conditions = [];
+    // Costruisci tutti i predicati in un unico array
+    // IMPORTANTE: Inizializzare con predicati base per evitare array vuoto
+    const allConditions = [
+      eq(operations.type, 'peso'),
+      sql`${operations.animalCount} > 0`,
+      sql`${operations.totalWeight} > 0`
+    ];
     
+    // Aggiungi filtri di data se specificati
     if (options.dateFrom) {
-      conditions.push(gte(operations.date, options.dateFrom));
+      allConditions.push(gte(operations.date, options.dateFrom));
     }
     if (options.dateTo) {
-      conditions.push(lte(operations.date, options.dateTo));
+      allConditions.push(lte(operations.date, options.dateTo));
+    }
+    
+    // Aggiungi filtro FLUPSY se specificato
+    if (options.flupsyIds && options.flupsyIds.length > 0) {
+      allConditions.push(inArray(baskets.flupsyId, options.flupsyIds));
     }
     
     // Recupera operazioni di tipo "peso" con dati completi
-    const query = db
+    return await db
       .select({
         operation: operations,
         basket: baskets,
@@ -183,19 +195,8 @@ export class GrowthVariabilityService {
       .leftJoin(cycles, eq(operations.cycleId, cycles.id))
       .leftJoin(lots, eq(operations.lotId, lots.id))
       .leftJoin(sizes, eq(operations.sizeId, sizes.id))
-      .where(and(
-        eq(operations.type, 'peso'),
-        sql`${operations.animalCount} > 0`,
-        sql`${operations.totalWeight} > 0`,
-        ...conditions
-      ))
+      .where(and(...allConditions))
       .orderBy(operations.date);
-    
-    if (options.flupsyIds && options.flupsyIds.length > 0) {
-      query.where(and(...conditions, inArray(baskets.flupsyId, options.flupsyIds)));
-    }
-    
-    return await query;
   }
   
   /**
