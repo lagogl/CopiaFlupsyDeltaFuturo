@@ -1,7 +1,8 @@
 // Sistema AI autonomo semplificato - senza dipendenze esterne
 import { db } from '../db';
-import { sizes, operations } from '../../shared/schema';
-import { eq, desc } from 'drizzle-orm';
+import { sizes, operations, sgrPerTaglia, sgr } from '../../shared/schema';
+import { eq, desc, and } from 'drizzle-orm';
+import { storage } from '../storage';
 
 /**
  * Sistema AI Autonomo FLUPSY - Algoritmi interni di analisi intelligente
@@ -62,6 +63,50 @@ export class AutonomousAIService {
   }
 
   /**
+   * Get SGR for specific month and size
+   * Priority 1: sgrPerTaglia (calculated from real data)
+   * Priority 2: sgr (monthly fixed values)
+   * Priority 3: Default value (2.5%)
+   */
+  private static async getSgrForMonthAndSize(month: string, sizeId: number): Promise<number> {
+    try {
+      // Try sgrPerTaglia first
+      const sgrPerTagliaResult = await storage.getSgrPerTagliaByMonthAndSize(month, sizeId);
+      if (sgrPerTagliaResult && sgrPerTagliaResult.calculatedSgr) {
+        console.log(`📊 Using calculated SGR for ${month} size ${sizeId}: ${sgrPerTagliaResult.calculatedSgr}%`);
+        return sgrPerTagliaResult.calculatedSgr;
+      }
+
+      // Fallback to monthly sgr
+      const sgrResult = await storage.getSgrByMonth(month);
+      if (sgrResult && sgrResult.percentage) {
+        console.log(`📊 Using monthly SGR fallback for ${month}: ${sgrResult.percentage}%`);
+        return sgrResult.percentage;
+      }
+
+      // Default fallback
+      console.log(`⚠️  No SGR data found for ${month}, using default: 2.5%`);
+      return 2.5;
+    } catch (error) {
+      console.error('Error getting SGR:', error);
+      return 2.5; // Safe default
+    }
+  }
+
+  /**
+   * Find size for given animalsPerKg
+   * Handles open bounds (null min/max) for edge sizes
+   */
+  private static findSizeForAnimalsPerKg(animalsPerKg: number, allSizes: any[]): any | null {
+    const matchingSize = allSizes.find(s => {
+      const minBound = s.minAnimalsPerKg || 0;
+      const maxBound = s.maxAnimalsPerKg || Infinity;
+      return animalsPerKg >= minBound && animalsPerKg <= maxBound;
+    });
+    return matchingSize || null;
+  }
+
+  /**
    * Predizioni di crescita autonome basate su algoritmi statistici avanzati
    */
   static async predictiveGrowth(basketId: number, targetSizeId?: number, days: number = 14): Promise<{
@@ -107,19 +152,35 @@ export class AutonomousAIService {
         console.log(`⚠️ Nessuna operazione per cestello ${basketId}, uso valori di default`);
       }
       
-      // Algoritmo di crescita predittiva autonomo (simulazione realistica)
+      // Algoritmo di crescita predittiva con SGR reali dal database
       const predictions = [];
       
-      const baseGrowthRate = 2.5 + Math.random() * 2; // 2.5-4.5% crescita giornaliera
-      const baseMortalityRate = 0.3 + Math.random() * 0.7; // 0.3-1% mortalità giornaliera
+      // Get current month for SGR lookup
+      const currentDate = new Date();
+      const currentMonth = currentDate.toLocaleString('en-US', { month: 'long' });
+      
+      // Mortality rate fixed (0.5% daily average)
+      const baseMortalityRate = 0.5;
+      
+      // Determine current size
+      let currentSize = this.findSizeForAnimalsPerKg(currentAnimalsPerKg, allSizes);
+      let currentSgr = await this.getSgrForMonthAndSize(currentMonth, currentSize?.id || 1);
+      
+      console.log(`🎯 Starting prediction for basket ${basketId} - Current size: ${currentSize?.name || 'Unknown'}, SGR: ${currentSgr}%`);
       
       for (let day = 1; day <= days; day++) {
-        // Variazioni stagionali e ambientali
-        const seasonalFactor = 1 + 0.1 * Math.sin(day / 30 * Math.PI);
-        const environmentalVariation = 0.9 + Math.random() * 0.2;
+        // Get SGR for current size (with transiti on detection)
+        const newSize = this.findSizeForAnimalsPerKg(currentAnimalsPerKg, allSizes);
+        if (newSize && newSize.id !== currentSize?.id) {
+          // Size transition detected!
+          currentSize = newSize;
+          currentSgr = await this.getSgrForMonthAndSize(currentMonth, currentSize.id);
+          console.log(`🔄 Day ${day}: Size transition to ${currentSize.name}, new SGR: ${currentSgr}%`);
+        }
         
-        const dailyGrowthRate = baseGrowthRate * seasonalFactor * environmentalVariation;
-        const dailyMortalityRate = baseMortalityRate * (1 + Math.random() * 0.3);
+        // Apply daily growth using real SGR
+        const dailyGrowthRate = currentSgr; // Use real SGR from database
+        const dailyMortalityRate = baseMortalityRate;
         
         // Algoritmo di crescita predittiva
         const weightGrowth = currentWeight * (dailyGrowthRate / 100) * (1 - dailyMortalityRate / 100);
@@ -133,10 +194,7 @@ export class AutonomousAIService {
         currentAnimalsPerKg = Math.max(50, currentAnimalsPerKg / animalGrowthFactor * (1 - dailyMortalityRate / 100));
         
         // Determina la taglia in base agli animalsPerKg
-        const predictedSizeObj = allSizes.find(s => 
-          currentAnimalsPerKg >= (s.minAnimalsPerKg || 0) && 
-          currentAnimalsPerKg <= (s.maxAnimalsPerKg || Infinity)
-        );
+        const predictedSizeObj = this.findSizeForAnimalsPerKg(currentAnimalsPerKg, allSizes);
         
         // Usa il numero di animali aggiornato
         const totalAnimals = Math.round(currentAnimalCount);
@@ -147,15 +205,15 @@ export class AutonomousAIService {
           predictedAnimalsPerKg: Math.round(currentAnimalsPerKg),
           predictedSize: predictedSizeObj?.code || 'N/A',
           predictedAnimalCount: totalAnimals,
-          confidence: this.calculateConfidence(10, day), // Simula confidenza basata su dati storici
+          confidence: this.calculateConfidence(10, day),
           targetSize: targetSizeId ? this.getTargetSizeName(targetSizeId) : undefined
         });
       }
 
       return {
         predictions,
-        insights: this.generateInsights(baseGrowthRate, baseMortalityRate, predictions),
-        recommendations: this.generateRecommendations(currentWeight, baseGrowthRate, baseMortalityRate)
+        insights: this.generateInsights(currentSgr, baseMortalityRate, predictions),
+        recommendations: this.generateRecommendations(currentWeight, currentSgr, baseMortalityRate)
       };
 
     } catch (error) {

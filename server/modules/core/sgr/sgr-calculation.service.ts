@@ -9,14 +9,17 @@ export class SgrCalculationService {
   
   /**
    * Find size for given animalsPerKg
+   * Handles open bounds (null min/max) for edge sizes
    */
   private async findSizeForAnimalsPerKg(animalsPerKg: number): Promise<Size | null> {
     const sizes = await storage.getAllSizes();
     
     // Find size where animalsPerKg falls within range
+    // Use 0 for missing minBound and Infinity for missing maxBound
     const matchingSize = sizes.find(size => {
-      if (!size.minAnimalsPerKg || !size.maxAnimalsPerKg) return false;
-      return animalsPerKg >= size.minAnimalsPerKg && animalsPerKg <= size.maxAnimalsPerKg;
+      const minBound = size.minAnimalsPerKg || 0;
+      const maxBound = size.maxAnimalsPerKg || Infinity;
+      return animalsPerKg >= minBound && animalsPerKg <= maxBound;
     });
     
     return matchingSize || null;
