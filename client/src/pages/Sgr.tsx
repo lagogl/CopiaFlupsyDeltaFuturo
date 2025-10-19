@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Search, Plus, Pencil, LineChart, Droplets, BarChart, Calculator, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -280,6 +281,54 @@ export default function Sgr() {
     return (sum / validValues.length).toFixed(2);
   }
 
+  // Prepare chart data for SGR Per Taglia
+  const prepareChartData = () => {
+    if (!sgrPerTaglia || !sizes) return [];
+
+    // Group data by month
+    const dataByMonth: Record<string, any> = {};
+    
+    monthOrder.forEach(month => {
+      dataByMonth[month] = { month: month.charAt(0).toUpperCase() + month.slice(1) };
+    });
+
+    // Fill in SGR values for each size
+    sgrPerTaglia.forEach((item: any) => {
+      const size = sizes.find((s: any) => s.id === item.sizeId);
+      if (size && dataByMonth[item.month]) {
+        dataByMonth[item.month][size.name] = item.calculatedSgr;
+      }
+    });
+
+    // Convert to array and filter out months with no data
+    return monthOrder.map(month => dataByMonth[month]).filter(item => 
+      Object.keys(item).length > 1 // Has at least month + one size
+    );
+  };
+
+  const chartData = prepareChartData();
+
+  // Get unique sizes that have data for the chart
+  const chartSizes = sgrPerTaglia && sizes ? 
+    [...new Set(sgrPerTaglia.map((item: any) => item.sizeId))]
+      .map(sizeId => sizes.find((s: any) => s.id === sizeId))
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        // Sort by numeric value in the name (e.g., TP-500 -> 500)
+        const aNum = parseInt(a.name.split('-')[1] || '0');
+        const bNum = parseInt(b.name.split('-')[1] || '0');
+        return aNum - bNum;
+      })
+    : [];
+
+  // Define colors for different sizes (using a color palette)
+  const sizeColors = [
+    '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', 
+    '#ef4444', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4',
+    '#a855f7', '#84cc16', '#eab308', '#22c55e', '#6366f1',
+    '#f43f5e', '#0ea5e9', '#d946ef', '#65a30d', '#dc2626'
+  ];
+
   return (
     <div>
       <Tabs defaultValue="sgr-per-taglia" className="w-full">
@@ -338,6 +387,64 @@ export default function Sgr() {
               SGR calcolati da operazioni storiche dello stesso mese dell'anno precedente, specifici per ogni taglia
             </p>
           </div>
+
+          {/* SGR Per Taglia Chart */}
+          {chartData.length > 0 && chartSizes.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LineChart className="h-5 w-5" />
+                  Andamento SGR per Taglia
+                </CardTitle>
+                <CardDescription>
+                  Visualizzazione dell'andamento mensile del tasso di crescita specifico per ogni taglia
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <RechartsLineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis 
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px' }}
+                      label={{ value: 'SGR (%)', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px'
+                      }}
+                      formatter={(value: any) => `${value?.toFixed(2)}%`}
+                    />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="line"
+                    />
+                    {chartSizes.map((size: any, index: number) => (
+                      <Line
+                        key={size.id}
+                        type="monotone"
+                        dataKey={size.name}
+                        stroke={sizeColors[index % sizeColors.length]}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                        name={size.name}
+                        connectNulls
+                      />
+                    ))}
+                  </RechartsLineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
 
           {/* SGR Per Taglia Table */}
           <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
