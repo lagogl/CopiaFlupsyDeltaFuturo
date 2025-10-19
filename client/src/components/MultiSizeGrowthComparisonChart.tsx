@@ -90,11 +90,11 @@ export default function MultiSizeGrowthComparisonChart({
           </div>
         </div>
         
-        <div className="h-[500px] mt-4 mb-8">
+        <div className="h-[450px] mt-4 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
-              margin={{ top: 5, right: 20, left: 10, bottom: 80 }}
+              margin={{ top: 5, right: 20, left: 10, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis 
@@ -135,15 +135,6 @@ export default function MultiSizeGrowthComparisonChart({
                   return [formattedValue, size?.sizeName || name];
                 }}
                 labelFormatter={(label) => `Data: ${label}`}
-              />
-              <Legend 
-                verticalAlign="bottom" 
-                height={60}
-                wrapperStyle={{ paddingTop: '20px' }}
-                formatter={(value) => {
-                  const size = sizesWithSgr.find(s => `size_${s.sizeId}` === value);
-                  return size ? `${size.sizeName} (SGR: ${size.sgrPercentage.toFixed(2)}%)` : value;
-                }}
               />
               
               {/* Linee di crescita per ogni taglia */}
