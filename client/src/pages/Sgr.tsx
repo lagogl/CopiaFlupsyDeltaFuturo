@@ -981,7 +981,8 @@ export default function Sgr() {
                             fill: '#ef4444',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideTopRight'
+                            fontWeight: 'bold',
+                            position: 'right'
                           }}
                         />
                         <ReferenceLine 
@@ -995,7 +996,8 @@ export default function Sgr() {
                             fill: '#ef4444',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideBottomRight'
+                            fontWeight: 'bold',
+                            position: 'right'
                           }}
                         />
                       </>
@@ -1014,7 +1016,8 @@ export default function Sgr() {
                             fill: '#10b981',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideTopLeft'
+                            fontWeight: 'bold',
+                            position: 'right'
                           }}
                         />
                         <ReferenceLine 
@@ -1028,7 +1031,8 @@ export default function Sgr() {
                             fill: '#10b981',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideBottomLeft'
+                            fontWeight: 'bold',
+                            position: 'right'
                           }}
                         />
                       </>
@@ -1047,7 +1051,8 @@ export default function Sgr() {
                             fill: '#f59e0b',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideTop'
+                            fontWeight: 'bold',
+                            position: 'right'
                           }}
                         />
                         <ReferenceLine 
@@ -1061,7 +1066,8 @@ export default function Sgr() {
                             fill: '#f59e0b',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideBottom'
+                            fontWeight: 'bold',
+                            position: 'right'
                           }}
                         />
                       </>
@@ -1080,6 +1086,7 @@ export default function Sgr() {
                             fill: '#3b82f6',
                             fontSize: 11,
                             opacity: 0.6,
+                            fontWeight: 'bold',
                             position: 'right'
                           }}
                         />
@@ -1094,6 +1101,7 @@ export default function Sgr() {
                             fill: '#3b82f6',
                             fontSize: 11,
                             opacity: 0.6,
+                            fontWeight: 'bold',
                             position: 'right'
                           }}
                         />
@@ -1113,7 +1121,8 @@ export default function Sgr() {
                             fill: '#8b5cf6',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideTopLeft'
+                            fontWeight: 'bold',
+                            position: 'left'
                           }}
                         />
                         <ReferenceLine 
@@ -1127,7 +1136,8 @@ export default function Sgr() {
                             fill: '#8b5cf6',
                             fontSize: 11,
                             opacity: 0.6,
-                            position: 'insideBottomLeft'
+                            fontWeight: 'bold',
+                            position: 'left'
                           }}
                         />
                       </>
