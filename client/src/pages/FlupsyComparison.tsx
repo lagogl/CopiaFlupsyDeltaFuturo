@@ -265,7 +265,7 @@ export default function FlupsyComparison() {
     return futureWeight >= targetWeight;
   };
 
-  // Calcola il numero di giorni necessari per raggiungere una taglia target
+  // Calcola il numero di giorni necessari per raggiungere una taglia target usando la gerarchia SGR
   const getDaysToReachTargetSize = (basketId: number, targetSize: string) => {
     const latestOperation = getLatestOperationForBasket(basketId);
     if (!latestOperation || latestOperation.animalsPerKg === null) return null;
@@ -283,45 +283,30 @@ export default function FlupsyComparison() {
     // Se il peso corrente è già maggiore del peso target, è già nella taglia target
     if (currentWeight >= targetWeight) return 0;
     
-    // Ottieni la percentuale SGR giornaliera (convertita da percentuale mensile)
-    let sgrDailyPercentage = 0.067; // Valore di default (2% mensile = ~0.067% al giorno)
-    if (sgrs && sgrs.length > 0) {
-      // Usa il valore SGR del mese corrente se disponibile
-      const currentMonth = format(new Date(), 'MMMM').toLowerCase();
-      const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
-      if (currentSgr) {
-        // Usa direttamente il valore giornaliero
-        sgrDailyPercentage = currentSgr.percentage;
-      } else {
-        // Altrimenti usa il valore medio delle percentuali giornaliere
-        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
-      }
-    }
-    
-    // Calcolo dei giorni necessari usando i valori SGR giornalieri mese per mese
+    // Calcolo dei giorni necessari usando i valori SGR con gerarchia sgr_per_taglia → sgr → fallback
     let simulationWeight = currentWeight;
     let days = 0;
-    const measureDate = new Date(latestOperation.date); // Ottieni la data dalla misurazione
+    const measureDate = new Date(latestOperation.date);
     let currentDate = new Date(measureDate);
+    let currentAnimalsPerKg = latestOperation.animalsPerKg;
     
     while (simulationWeight < targetWeight && days < 365) {
-      // Determina il mese corrente per usare il tasso SGR appropriato
-      const month = format(currentDate, 'MMMM').toLowerCase();
+      // Determina il mese corrente
+      const month = format(currentDate, 'MMMM');
       
-      // Trova il tasso SGR per questo mese
-      let dailyRate = sgrDailyPercentage;
-      if (sgrs) {
-        const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
-        if (monthSgr) {
-          // Usa direttamente il valore giornaliero
-          dailyRate = monthSgr.percentage;
-        }
-      }
+      // Determina la taglia corrente basandosi su animalsPerKg
+      const currentSize = getSizeForAnimalsPerKg(currentAnimalsPerKg);
+      const sizeId = currentSize ? currentSize.id : undefined;
       
-      // Applica la crescita giornaliera usando la formula corretta: Pf = Pi * e^(SGR/100*t)
-      // Convertiamo il tasso da percentuale a decimale dividendo per 100
+      // Ottieni l'SGR usando la gerarchia: sgr_per_taglia → sgr → fallback
+      const dailyRate = getSgrForMonthAndSize(month, sizeId);
+      
+      // Applica la crescita giornaliera: W(t+1) = W(t) * e^(SGR/100)
       simulationWeight = simulationWeight * Math.exp(dailyRate / 100);
       days++;
+      
+      // Aggiorna animalsPerKg per la prossima iterazione (per detectare cambio taglia)
+      currentAnimalsPerKg = simulationWeight > 0 ? 1000000 / simulationWeight : currentAnimalsPerKg;
       
       // Aggiorna la data corrente per il giorno successivo
       currentDate.setDate(currentDate.getDate() + 1);
