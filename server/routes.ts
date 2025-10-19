@@ -5075,9 +5075,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Nuovo endpoint per previsioni di crescita verso qualsiasi taglia
+  // Nuovo endpoint per previsioni di crescita verso qualsiasi taglia - OTTIMIZZATO
   app.get("/api/size-predictions", async (req, res) => {
     try {
+      const startTime = Date.now();
+      
       // Parametro per la taglia target (default TP-3000)
       const targetSizeCode = req.query.size ? String(req.query.size) : "TP-3000";
       
@@ -5096,13 +5098,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allSizes = await storage.getSizes();
       
       // Filtriamo le taglie che sono uguali o superiori alla taglia target
-      // Le taglie superiori hanno minAnimalsPerKg minore o uguale alla taglia target
       const validSizes = allSizes.filter(size => {
-        // Se non abbiamo un valore minAnimalsPerKg, non possiamo fare un confronto
         if (!size.minAnimalsPerKg || !targetSize.minAnimalsPerKg) return false;
-        
-        // Consideriamo tutte le taglie con minAnimalsPerKg <= alla taglia target
-        // (minore numero di animali/kg = maggiore peso individuale = taglia superiore)
         return size.minAnimalsPerKg <= targetSize.minAnimalsPerKg;
       });
       
@@ -5110,161 +5107,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
       
-      // Recupera tutti i cicli attivi
-      const activeCycles = await storage.getActiveCycles();
-      
       // Ottieni gli SGR mensili per il calcolo della crescita
       const sgrs = await storage.getSgrs();
       const currentMonth = new Date().toLocaleString('default', { month: 'long' }).toLowerCase();
       
       // Trova l'SGR per il mese corrente o usa la media di tutti gli SGR disponibili
-      let sgrDaily = 0.067; // Valore di default: ~2% al mese, circa 0.067% al giorno
+      let sgrDaily = 0.067;
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
       if (currentSgr) {
-        // Usa il valore SGR del database che è già in percentuale giornaliera
-        // Esempio: 3.7% è 0.037 come coefficiente di crescita giornaliero
         sgrDaily = currentSgr.percentage / 100;
       } else if (sgrs.length > 0) {
-        // Calcola la media degli SGR disponibili (convertendo da percentuale a coefficiente)
         sgrDaily = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length / 100;
       }
       
-      // Per ogni ciclo attivo, controlla se il cestello raggiunge la taglia target entro il periodo specificato
-      const predictions = await Promise.all(
-        activeCycles.map(async (cycle) => {
-          // Ottieni il cestello e le sue operazioni
-          const basket = await storage.getBasket(cycle.basketId);
-          if (!basket) return null;
+      // OTTIMIZZAZIONE: Query unica per cicli attivi con baskets (JOIN)
+      const cyclesWithBaskets = await db
+        .select({
+          cycleId: cycles.id,
+          basketId: cycles.basketId,
+          basketPhysicalNumber: baskets.physicalNumber,
+          basketState: baskets.state,
+          basketFlupsyId: baskets.flupsyId,
+          basketRow: baskets.row,
+          basketPosition: baskets.position,
+          basketCycleCode: baskets.cycleCode,
+          basketNfcData: baskets.nfcData,
+          basketCurrentCycleId: baskets.currentCycleId,
+        })
+        .from(cycles)
+        .innerJoin(baskets, eq(cycles.basketId, baskets.id))
+        .where(eq(cycles.state, 'active'));
+      
+      if (cyclesWithBaskets.length === 0) {
+        return res.json([]);
+      }
+      
+      // Estrai i basketId per la query delle operazioni
+      const basketIds = cyclesWithBaskets.map(c => c.basketId);
+      
+      // OTTIMIZZAZIONE: Query unica per tutte le operazioni dei baskets attivi
+      const allOperations = await db
+        .select()
+        .from(operations)
+        .where(inArray(operations.basketId, basketIds));
+      
+      // Raggruppa le operazioni per basketId per accesso veloce
+      const operationsByBasket = allOperations.reduce((acc, op) => {
+        if (!acc[op.basketId]) {
+          acc[op.basketId] = [];
+        }
+        acc[op.basketId].push(op);
+        return acc;
+      }, {} as Record<number, typeof allOperations>);
+      
+      // Processa i dati in memoria
+      const predictions = cyclesWithBaskets.map((cycleData) => {
+        const basket = {
+          id: cycleData.basketId,
+          physicalNumber: cycleData.basketPhysicalNumber,
+          state: cycleData.basketState,
+          flupsyId: cycleData.basketFlupsyId,
+          row: cycleData.basketRow,
+          position: cycleData.basketPosition,
+          cycleCode: cycleData.basketCycleCode,
+          nfcData: cycleData.basketNfcData,
+          currentCycleId: cycleData.basketCurrentCycleId,
+        };
+        
+        const basketOperations = operationsByBasket[cycleData.basketId] || [];
+        if (basketOperations.length === 0) return null;
+        
+        // Ordina le operazioni per data (più recente prima)
+        const sortedOps = basketOperations.sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        
+        // Prendi l'ultima operazione con misurazione di peso
+        const lastOperation = sortedOps.find(op => op.animalsPerKg !== null && op.animalsPerKg > 0);
+        if (!lastOperation) return null;
+        
+        // Calcola il peso attuale in mg
+        const currentWeight = lastOperation.animalsPerKg ? 1000000 / lastOperation.animalsPerKg : 0;
+        if (currentWeight <= 0) return null;
+        
+        // Calcola il peso della taglia target in mg
+        const targetWeight = targetSize.minAnimalsPerKg ? 1000000 / targetSize.minAnimalsPerKg : 0;
+        if (targetWeight <= 0) return null;
+        
+        // Se il peso è già uguale o superiore alla taglia target
+        if (currentWeight >= targetWeight) {
+          return {
+            id: -Date.now() - basket.id,
+            basketId: basket.id,
+            targetSizeId: targetSize.id,
+            status: "pending",
+            predictedDate: new Date().toISOString(),
+            basket,
+            lastOperation,
+            daysRemaining: 0,
+            currentWeight,
+            targetWeight
+          };
+        }
+        
+        // Calcola il tempo necessario per raggiungere la taglia target
+        const daysToReachSize = Math.ceil(Math.log(targetWeight / currentWeight) / sgrDaily);
+        
+        // Se il numero di giorni è entro il periodo specificato
+        if (daysToReachSize <= withinDays) {
+          const predictedDate = new Date();
+          predictedDate.setDate(predictedDate.getDate() + daysToReachSize);
           
-          const operations = await storage.getOperationsByBasket(basket.id);
-          if (operations.length === 0) return null;
+          return {
+            id: -Date.now() - basket.id,
+            basketId: basket.id,
+            targetSizeId: targetSize.id,
+            status: "pending",
+            predictedDate: predictedDate.toISOString(),
+            basket,
+            lastOperation,
+            daysRemaining: daysToReachSize,
+            currentWeight,
+            targetWeight
+          };
+        }
+        
+        // Controlla se raggiunge una taglia superiore entro il periodo specificato
+        for (const size of validSizes) {
+          if (size.id === targetSize.id) continue;
           
-          // Ordina le operazioni per data (più recente prima)
-          const sortedOps = operations.sort((a, b) => 
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
+          const sizeWeight = size.minAnimalsPerKg ? 1000000 / size.minAnimalsPerKg : 0;
+          if (sizeWeight <= 0 || sizeWeight < targetWeight) continue;
           
-          // Prendi l'ultima operazione con misurazione di peso
-          const lastOperation = sortedOps.find(op => op.animalsPerKg !== null && op.animalsPerKg > 0);
-          if (!lastOperation) return null;
-          
-          // Calcola il peso attuale in mg
-          const currentWeight = lastOperation.animalsPerKg ? 1000000 / lastOperation.animalsPerKg : 0;
-          if (currentWeight <= 0) return null;
-          
-          // Calcola il peso della taglia target in mg
-          const targetWeight = targetSize.minAnimalsPerKg ? 1000000 / targetSize.minAnimalsPerKg : 0;
-          if (targetWeight <= 0) return null;
-          
-          // Se il peso è già uguale o superiore alla taglia target, includi subito
-          if (currentWeight >= targetWeight) {
+          if (currentWeight >= sizeWeight) {
             return {
-              id: -Date.now() - basket.id, // ID temporaneo negativo
+              id: -Date.now() - basket.id - size.id,
               basketId: basket.id,
-              targetSizeId: targetSize.id,
+              targetSizeId: size.id,
               status: "pending",
               predictedDate: new Date().toISOString(),
               basket,
               lastOperation,
               daysRemaining: 0,
               currentWeight,
-              targetWeight
+              targetWeight: sizeWeight,
+              actualSize: size,
+              requestedSize: targetSize
             };
           }
           
-          // Altrimenti calcola il tempo necessario per raggiungere la taglia target
-          // Usando la formula: daysTaken = ln(finalWeight/initialWeight) / SGR
-          const daysToReachSize = Math.ceil(Math.log(targetWeight / currentWeight) / sgrDaily);
+          const daysToReachThisSize = Math.ceil(Math.log(sizeWeight / currentWeight) / sgrDaily);
           
-          // Se il numero di giorni è entro il periodo specificato, includi nella previsione
-          if (daysToReachSize <= withinDays) {
-            // Calcola la data prevista
+          if (daysToReachThisSize <= withinDays) {
             const predictedDate = new Date();
-            predictedDate.setDate(predictedDate.getDate() + daysToReachSize);
+            predictedDate.setDate(predictedDate.getDate() + daysToReachThisSize);
             
             return {
-              id: -Date.now() - basket.id, // ID temporaneo negativo
+              id: -Date.now() - basket.id - size.id,
               basketId: basket.id,
-              targetSizeId: targetSize.id,
+              targetSizeId: size.id,
               status: "pending",
               predictedDate: predictedDate.toISOString(),
               basket,
               lastOperation,
-              daysRemaining: daysToReachSize,
+              daysRemaining: daysToReachThisSize,
               currentWeight,
-              targetWeight
+              targetWeight: sizeWeight,
+              actualSize: size,
+              requestedSize: targetSize
             };
           }
-          
-          // Se non ha raggiunto la taglia target, controllo se raggiunge una taglia superiore
-          // entro il periodo specificato
-          for (const size of validSizes) {
-            // Salta la taglia target, già controllata
-            if (size.id === targetSize.id) continue;
-            
-            // Calcola il peso della taglia superiore in mg
-            const sizeWeight = size.minAnimalsPerKg ? 1000000 / size.minAnimalsPerKg : 0;
-            if (sizeWeight <= 0) continue;
-            
-            // Salta questa taglia se il suo peso è minore del target 
-            // (ovvero se è una taglia inferiore con più animali/kg)
-            if (sizeWeight < targetWeight) continue;
-            
-            // Se il peso è già uguale o superiore a questa taglia, la cesta è già in questa taglia
-            if (currentWeight >= sizeWeight) {
-              return {
-                id: -Date.now() - basket.id - size.id, // ID temporaneo negativo
-                basketId: basket.id,
-                targetSizeId: size.id,
-                status: "pending",
-                predictedDate: new Date().toISOString(),
-                basket,
-                lastOperation,
-                daysRemaining: 0,
-                currentWeight,
-                targetWeight: sizeWeight,
-                actualSize: size,
-                requestedSize: targetSize
-              };
-            }
-            
-            // Calcola il tempo necessario per raggiungere questa taglia superiore
-            const daysToReachThisSize = Math.ceil(Math.log(sizeWeight / currentWeight) / sgrDaily);
-            
-            // Se il numero di giorni è entro il periodo specificato, includi nella previsione
-            if (daysToReachThisSize <= withinDays) {
-              // Calcola la data prevista
-              const predictedDate = new Date();
-              predictedDate.setDate(predictedDate.getDate() + daysToReachThisSize);
-              
-              return {
-                id: -Date.now() - basket.id - size.id, // ID temporaneo negativo
-                basketId: basket.id,
-                targetSizeId: size.id,
-                status: "pending",
-                predictedDate: predictedDate.toISOString(),
-                basket,
-                lastOperation,
-                daysRemaining: daysToReachThisSize,
-                currentWeight,
-                targetWeight: sizeWeight,
-                actualSize: size,
-                requestedSize: targetSize
-              };
-            }
-          }
-          
-          return null;
-        })
-      );
+        }
+        
+        return null;
+      });
       
       // Filtra i valori null e restituisci le previsioni valide
       const validPredictions = predictions.filter(Boolean);
       
-      // Ordina prima per giorni rimanenti (urgenza)
-      // L'operatore "!" assicura TypeScript che a e b non sono null
-      // (li abbiamo già filtrati con filter(Boolean))
+      // Ordina per giorni rimanenti (urgenza)
       validPredictions.sort((a, b) => a!.daysRemaining - b!.daysRemaining);
+      
+      const duration = Date.now() - startTime;
+      console.log(`Size-predictions completato in ${duration}ms (ottimizzato)`);
       
       res.json(validPredictions);
     } catch (error) {
