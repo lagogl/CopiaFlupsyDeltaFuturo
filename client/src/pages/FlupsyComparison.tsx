@@ -194,29 +194,14 @@ export default function FlupsyComparison() {
     return defaultSgr;
   };
 
-  // Calcola il peso futuro di un cestello
+  // Calcola il peso futuro di un cestello usando la gerarchia SGR: sgr_per_taglia → sgr → fallback
   const calculateFutureWeight = (basketId: number, daysToAdd: number) => {
     const latestOperation = getLatestOperationForBasket(basketId);
     if (!latestOperation || latestOperation.animalsPerKg === null) return null;
     
     // Calcola il peso attuale in mg
-    const currentWeight = latestOperation.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : 0;
+    let currentWeight = latestOperation.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : 0;
     const measurementDate = new Date(latestOperation.date);
-    
-    // Ottieni la percentuale SGR giornaliera (convertita da percentuale mensile)
-    let sgrDailyPercentage = 0.067; // Valore di default (2% mensile = ~0.067% al giorno)
-    if (sgrs && sgrs.length > 0) {
-      // Usa il valore SGR del mese corrente se disponibile
-      const currentMonth = format(new Date(), 'MMMM').toLowerCase();
-      const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
-      if (currentSgr) {
-        // Usa direttamente il valore giornaliero
-        sgrDailyPercentage = currentSgr.percentage;
-      } else {
-        // Altrimenti usa il valore medio delle percentuali giornaliere
-        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
-      }
-    }
     
     // Calcola il peso futuro usando la formula corretta: Pf = Pi * e^(SGR*t)
     const targetDate = addDays(new Date(), daysToAdd);
@@ -224,33 +209,32 @@ export default function FlupsyComparison() {
     // Calcolo dei giorni tra la data di misurazione e la data target
     const days = Math.floor((targetDate.getTime() - measurementDate.getTime()) / (1000 * 60 * 60 * 24));
     
-    // Usa la formula con e^(SGR*t) considerando i diversi tassi SGR per mese
-    let totalSGREffect = 0;
+    // Simula la crescita giorno per giorno, aggiornando la taglia quando necessario
+    let simulatedWeight = currentWeight;
     let currentDate = new Date(measurementDate);
+    let currentAnimalsPerKg = latestOperation.animalsPerKg;
     
     for (let i = 0; i < days; i++) {
-      // Aggiorniamo la data corrente aggiungendo un giorno
+      // Aggiorna la data corrente
       if (i > 0) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
-      const month = format(currentDate, 'MMMM').toLowerCase();
       
-      // Trova il tasso SGR per questo mese (in percentuale)
-      let dailyRate = sgrDailyPercentage;
-      if (sgrs) {
-        const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
-        if (monthSgr) {
-          dailyRate = monthSgr.percentage;
-        }
-      }
+      const month = format(currentDate, 'MMMM');
       
-      // Converti la percentuale in decimale e aggiungi all'effetto cumulativo
-      // Es: 0.8% -> 0.008
-      totalSGREffect += dailyRate / 100;
+      // Determina la taglia corrente basandosi su animalsPerKg
+      const currentSize = getSizeForAnimalsPerKg(currentAnimalsPerKg);
+      const sizeId = currentSize ? currentSize.id : undefined;
+      
+      // Ottieni l'SGR usando la gerarchia: sgr_per_taglia → sgr → fallback
+      const dailyRate = getSgrForMonthAndSize(month, sizeId);
+      
+      // Applica la crescita giornaliera: W(t+1) = W(t) * e^(SGR/100)
+      simulatedWeight = simulatedWeight * Math.exp(dailyRate / 100);
+      
+      // Aggiorna animalsPerKg per la prossima iterazione (per detectare cambio taglia)
+      currentAnimalsPerKg = simulatedWeight > 0 ? 1000000 / simulatedWeight : currentAnimalsPerKg;
     }
-    
-    // Applica la formula completa: Pf = Pi * e^(SGR*t)
-    const simulatedWeight = currentWeight * Math.exp(totalSGREffect);
     
     return Math.round(simulatedWeight);
   };
