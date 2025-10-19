@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, date, numeric, jsonb, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, date, numeric, jsonb, decimal, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -57,7 +57,9 @@ export const baskets = pgTable("baskets", {
   nfcLastProgrammedAt: timestamp("nfc_last_programmed_at", { mode: 'string' }), // data e ora ultima programmazione tag NFC
   row: text("row").notNull(), // fila in cui si trova la cesta (DX o SX)
   position: integer("position").notNull(), // posizione numerica nella fila (1, 2, 3, ecc.)
-});
+}, (table) => ({
+  flupsyIdIdx: index("baskets_flupsy_id_idx").on(table.flupsyId),
+}));
 
 // Operation Types (Tipologie operazioni)
 export const operationTypes = [
@@ -257,7 +259,10 @@ export const operations = pgTable("operations", {
   notes: text("notes"),
   metadata: text("metadata"), // metadati aggiuntivi in formato JSON (per API esterne)
   source: text("source").notNull().default("desktop_manager"), // origine operazione: 'desktop_manager' o 'mobile_nfc'
-});
+}, (table) => ({
+  basketIdIdx: index("operations_basket_id_idx").on(table.basketId),
+  cycleIdIdx: index("operations_cycle_id_idx").on(table.cycleId),
+}));
 
 // Cycles (Cicli Produttivi)
 export const cycles = pgTable("cycles", {
@@ -267,7 +272,9 @@ export const cycles = pgTable("cycles", {
   startDate: date("start_date").notNull(),
   endDate: date("end_date"),
   state: text("state").notNull().default("active"), // active, closed
-});
+}, (table) => ({
+  stateIdx: index("cycles_state_idx").on(table.state),
+}));
 
 // Sizes (Taglie)
 export const sizes = pgTable("sizes", {
@@ -654,7 +661,9 @@ export const notifications = pgTable("notifications", {
   relatedEntityType: text("related_entity_type"), // 'operation', 'basket', 'cycle', ecc.
   relatedEntityId: integer("related_entity_id"), // ID dell'entità correlata
   data: text("data"), // Dati aggiuntivi in formato JSON (stringified)
-});
+}, (table) => ({
+  isReadIdx: index("notifications_is_read_idx").on(table.isRead),
+}));
 
 export const insertNotificationSchema = createInsertSchema(notifications)
   .omit({ id: true, createdAt: true });

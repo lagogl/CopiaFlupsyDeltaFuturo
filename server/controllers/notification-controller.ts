@@ -12,7 +12,7 @@ class NotificationsCacheService {
 
   constructor() {
     this.cache = new Map();
-    this.ttl = 300; // 5 minuti (in secondi) - esteso per ridurre query DB
+    this.ttl = 600; // 10 minuti (in secondi) - esteso per ridurre query DB
   }
 
   /**
