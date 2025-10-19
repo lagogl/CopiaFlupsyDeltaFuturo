@@ -311,14 +311,37 @@ export default function AIDashboard() {
                 className="w-full"
               >
                 {predictiveAnalysisMutation.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Analizzando...
+                  <div className="flex flex-col items-center gap-2 w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Analisi in corso...</span>
+                    </div>
+                    <span className="text-xs opacity-80">
+                      Elaborazione dati cestelli • Può richiedere alcuni secondi
+                    </span>
                   </div>
                 ) : (
                   'Avvia Analisi Predittiva'
                 )}
               </Button>
+
+              {predictiveAnalysisMutation.isPending && (
+                <div className="space-y-2 animate-in fade-in duration-300">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-sm">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 h-full rounded-full animate-progress-shimmer"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                    <Brain className="h-4 w-4 animate-pulse text-purple-600" />
+                    <span className="animate-pulse font-medium">Elaborazione AI dei cestelli in corso...</span>
+                  </div>
+                  <p className="text-xs text-center text-gray-500">
+                    Il sistema sta analizzando i dati storici e generando previsioni. Attendi qualche secondo.
+                  </p>
+                </div>
+              )}
 
               {(predictiveAnalysisMutation.data as any)?.prediction && (
                 <div className="bg-blue-50 p-4 rounded-lg space-y-4">

@@ -30,3 +30,20 @@
     transition: all 0.2s ease;
   }
 }
+
+/* Animazione per la barra di progresso AI */
+@keyframes progress-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@layer utilities {
+  .animate-progress-shimmer {
+    background-size: 200% 100%;
+    animation: progress-shimmer 2s linear infinite;
+  }
+}
