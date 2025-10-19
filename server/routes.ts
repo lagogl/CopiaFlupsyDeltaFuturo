@@ -3448,6 +3448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const days = Number(req.query.days) || 60;
       const bestVariation = Number(req.query.bestVariation) || 20;
       const worstVariation = Number(req.query.worstVariation) || 30;
+      const sizeId = req.query.sizeId ? Number(req.query.sizeId) : undefined;
       
       if (isNaN(currentWeight) || isNaN(sgrPercentage)) {
         return res.status(400).json({ message: "currentWeight e sgrPercentage sono richiesti e devono essere numeri validi" });
@@ -3460,7 +3461,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         measurementDate,
         days,
         sgrPercentage,
-        { best: bestVariation, worst: worstVariation }
+        { best: bestVariation, worst: worstVariation },
+        sizeId
       );
       
       res.json(projections);

@@ -1637,33 +1637,89 @@ export class DbStorage implements IStorage {
     measurementDate: Date, 
     days: number, 
     sgrPercentage: number,
-    variationPercentages: {best: number, worst: number}
+    variationPercentages: {best: number, worst: number},
+    sizeId?: number
   ): Promise<any> {
-    // Convert SGR from percentage to decimal (SGR è già un valore giornaliero percentuale)
-    const dailySgr = sgrPercentage / 100; // Convert % to decimal
+    // Recupera gli SGR mensili generici (tabella sgr)
+    const genericSgrData = await db.select()
+      .from(sgr)
+      .orderBy(sgr.month);
     
-    // Calculate best and worst case scenarios
-    const bestDailySgr = dailySgr * (1 + variationPercentages.best / 100);
-    const worstDailySgr = dailySgr * (1 - variationPercentages.worst / 100);
+    const genericSgrMap: Map<string, number> = new Map();
+    genericSgrData.forEach(entry => {
+      genericSgrMap.set(entry.month.toLowerCase(), entry.percentage);
+    });
     
-    // Calculate projected weights for each day
+    // Se abbiamo un sizeId, recupera gli SGR mensili specifici per quella taglia
+    let monthlySgrMap: Map<string, number> = new Map();
+    
+    if (sizeId) {
+      const sgrPerTagliaData = await db.select()
+        .from(sgrPerTaglia)
+        .where(eq(sgrPerTaglia.sizeId, sizeId));
+      
+      // Crea una mappa mese -> SGR per taglia specifica
+      sgrPerTagliaData.forEach(entry => {
+        monthlySgrMap.set(entry.month.toLowerCase(), entry.calculatedSgr);
+      });
+    }
+    
+    // Funzione helper per ottenere l'SGR per una data specifica
+    // Gerarchia: sgr_per_taglia -> sgr -> sgrPercentage parameter
+    const getSgrForDate = (date: Date): number => {
+      const monthNames = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 
+                         'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+      const monthName = monthNames[date.getMonth()];
+      
+      // PRIMA: controlla sgr_per_taglia se disponibile
+      if (sizeId && monthlySgrMap.size > 0) {
+        const monthlySgr = monthlySgrMap.get(monthName);
+        if (monthlySgr !== undefined) {
+          return monthlySgr;
+        }
+      }
+      
+      // POI: controlla sgr generico per il mese
+      const genericSgr = genericSgrMap.get(monthName);
+      if (genericSgr !== undefined) {
+        return genericSgr;
+      }
+      
+      // INFINE: fallback al valore SGR passato come parametro
+      return sgrPercentage;
+    };
+    
+    // Calculate projected weights for each day usando SGR variabili
     const projections = [];
+    let currentTheoreticalWeight = currentWeight;
+    let currentBestWeight = currentWeight;
+    let currentWorstWeight = currentWeight;
     
     for (let day = 0; day <= days; day++) {
       const date = new Date(measurementDate);
       date.setDate(date.getDate() + day);
       
-      // Calculate weights using the formula: W(t) = W(0) * e^(SGR * t)
-      const theoreticalWeight = currentWeight * Math.exp(dailySgr * day);
-      const bestWeight = currentWeight * Math.exp(bestDailySgr * day);
-      const worstWeight = currentWeight * Math.exp(worstDailySgr * day);
+      if (day > 0) {
+        // Ottieni l'SGR per questo giorno specifico
+        const dailySgrPercentage = getSgrForDate(date);
+        const dailySgr = dailySgrPercentage / 100;
+        
+        // Calculate best and worst case scenarios
+        const bestDailySgr = dailySgr * (1 + variationPercentages.best / 100);
+        const worstDailySgr = dailySgr * (1 - variationPercentages.worst / 100);
+        
+        // Applica la crescita giornaliera: W(t+1) = W(t) * e^(SGR)
+        currentTheoreticalWeight = currentTheoreticalWeight * Math.exp(dailySgr);
+        currentBestWeight = currentBestWeight * Math.exp(bestDailySgr);
+        currentWorstWeight = currentWorstWeight * Math.exp(worstDailySgr);
+      }
       
       projections.push({
         day,
         date: date.toISOString().split('T')[0],
-        theoretical: Math.round(theoreticalWeight),
-        best: Math.round(bestWeight),
-        worst: Math.round(worstWeight)
+        theoretical: Math.round(currentTheoreticalWeight),
+        best: Math.round(currentBestWeight),
+        worst: Math.round(currentWorstWeight)
       });
     }
     
@@ -1688,7 +1744,8 @@ export class DbStorage implements IStorage {
       variationPercentages,
       summary,  // Aggiunto il riepilogo qui
       projections,
-      lastMeasurementDate: measurementDate.toISOString().split('T')[0] // Aggiunto esplicitamente per evitare confusione
+      lastMeasurementDate: measurementDate.toISOString().split('T')[0], // Aggiunto esplicitamente per evitare confusione
+      usedMonthlySgr: sizeId && monthlySgrMap.size > 0 // Indica se sono stati usati gli SGR mensili
     };
   }
 

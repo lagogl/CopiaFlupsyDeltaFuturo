@@ -195,7 +195,8 @@ export interface IStorage {
     measurementDate: Date, 
     days: number, 
     sgrPercentage: number, 
-    variationPercentages: {best: number, worst: number}
+    variationPercentages: {best: number, worst: number},
+    sizeId?: number
   ): Promise<any>;
   
   // Screening (Vagliatura) methods

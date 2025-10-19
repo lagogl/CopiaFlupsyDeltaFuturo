@@ -120,10 +120,13 @@ export default function Sgr() {
   // Query per le proiezioni di crescita
   const { data: growthPrediction, isLoading: isLoadingPrediction, refetch: refetchPrediction } = useQuery({
     queryKey: ['/api/growth-prediction', currentWeightForPrediction, selectedSizeId, getCurrentMonthSgr(), projectionDays, bestVariation, worstVariation],
-    queryFn: () => apiRequest({ 
-      url: `/api/growth-prediction?currentWeight=${currentWeightForPrediction}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`, 
-      method: 'GET' 
-    }),
+    queryFn: () => {
+      const sizeIdParam = selectedSizeId ? `&sizeId=${selectedSizeId}` : '';
+      return apiRequest({ 
+        url: `/api/growth-prediction?currentWeight=${currentWeightForPrediction}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}${sizeIdParam}`, 
+        method: 'GET' 
+      });
+    },
     enabled: false
   });
 
