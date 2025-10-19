@@ -109,7 +109,7 @@ export default function Sgr() {
         
         if (minAnimals > 0 && maxAnimals > 0) {
           const avgAnimalsPerKg = (minAnimals + maxAnimals) / 2;
-          avgWeight = Math.round(1000 / avgAnimalsPerKg); // la colonna memorizza animali per grammo
+          avgWeight = 1000 / avgAnimalsPerKg; // mantieni precisione decimale
         }
         
         return {
@@ -141,11 +141,12 @@ export default function Sgr() {
     if (minAnimals === 0 || maxAnimals === 0) return 250;
     
     // Calcola peso medio: 1000 / media(animali/kg) = peso in mg
-    // Nota: la colonna animalsPerKg memorizza in realtà animali per grammo
+    // Per taglie piccole (milioni di animali/kg) il peso sarà < 1 mg
     const avgAnimalsPerKg = (minAnimals + maxAnimals) / 2;
     const avgWeightMg = 1000 / avgAnimalsPerKg;
     
-    return Math.round(avgWeightMg);
+    // Non arrotondare - mantieni la precisione decimale
+    return avgWeightMg;
   };
 
   // Query per le proiezioni di crescita
@@ -1224,7 +1225,12 @@ export default function Sgr() {
                       <label className="text-sm font-medium">Peso medio taglia</label>
                       <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                         <p className="text-base font-semibold text-gray-900">
-                          {selectedSizeId ? `${getAverageWeightFromSize().toLocaleString('it-IT')} mg` : 'Seleziona una taglia'}
+                          {selectedSizeId ? (() => {
+                            const weight = getAverageWeightFromSize();
+                            // Mostra decimali appropriati: più decimali per pesi piccoli
+                            const decimals = weight < 0.01 ? 6 : weight < 1 ? 4 : weight < 10 ? 2 : 0;
+                            return `${weight.toFixed(decimals)} mg`;
+                          })() : 'Seleziona una taglia'}
                         </p>
                       </div>
                       <p className="text-xs text-gray-500">

@@ -107,7 +107,14 @@ export default function MultiSizeGrowthComparisonChart({
                 height={60}
               />
               <YAxis
-                tickFormatter={(value) => formatNumberWithCommas(Math.round(value))}
+                tickFormatter={(value) => {
+                  // Gestisci sia valori grandi che piccoli
+                  if (value === 0) return '0';
+                  if (value < 0.01) return value.toExponential(2);
+                  if (value < 1) return value.toFixed(4);
+                  if (value < 10) return value.toFixed(2);
+                  return formatNumberWithCommas(Math.round(value));
+                }}
                 label={{ 
                   value: 'Peso (mg)',
                   angle: -90, 
@@ -118,7 +125,14 @@ export default function MultiSizeGrowthComparisonChart({
               <Tooltip
                 formatter={(value, name) => {
                   const size = sizesWithSgr.find(s => `size_${s.sizeId}` === name);
-                  return [`${formatNumberWithCommas(Number(value))} mg`, size?.sizeName || name];
+                  const num = Number(value);
+                  let formattedValue;
+                  if (num === 0) formattedValue = '0 mg';
+                  else if (num < 0.01) formattedValue = `${num.toExponential(4)} mg`;
+                  else if (num < 1) formattedValue = `${num.toFixed(6)} mg`;
+                  else if (num < 10) formattedValue = `${num.toFixed(4)} mg`;
+                  else formattedValue = `${formatNumberWithCommas(num)} mg`;
+                  return [formattedValue, size?.sizeName || name];
                 }}
                 labelFormatter={(label) => `Data: ${label}`}
               />
@@ -174,6 +188,16 @@ export default function MultiSizeGrowthComparisonChart({
                 const finalWeight = data[data.length - 1]?.[`size_${size.sizeId}`] || 0;
                 const initialWeight = size.averageWeight;
                 const growthPercentage = ((finalWeight - initialWeight) / initialWeight) * 100;
+                
+                // Formatta i pesi in base alla grandezza
+                const formatWeight = (weight: number) => {
+                  if (weight === 0) return '0 mg';
+                  if (weight < 0.01) return `${weight.toExponential(4)} mg`;
+                  if (weight < 1) return `${weight.toFixed(6)} mg`;
+                  if (weight < 10) return `${weight.toFixed(4)} mg`;
+                  return `${formatNumberWithCommas(weight)} mg`;
+                };
+                
                 return (
                   <tr key={size.sizeId} className="border-t">
                     <td className="px-3 py-2">
@@ -186,8 +210,8 @@ export default function MultiSizeGrowthComparisonChart({
                       </div>
                     </td>
                     <td className="px-3 py-2 text-right font-mono">{size.sgrPercentage.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right font-mono">{formatNumberWithCommas(initialWeight)} mg</td>
-                    <td className="px-3 py-2 text-right font-mono">{formatNumberWithCommas(finalWeight)} mg</td>
+                    <td className="px-3 py-2 text-right font-mono">{formatWeight(initialWeight)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{formatWeight(finalWeight)}</td>
                     <td className="px-3 py-2 text-right font-mono">+{growthPercentage.toFixed(0)}%</td>
                   </tr>
                 );

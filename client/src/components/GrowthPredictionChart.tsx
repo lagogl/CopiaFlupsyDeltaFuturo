@@ -180,7 +180,14 @@ export default function GrowthPredictionChart({
                 height={60}
               />
               <YAxis
-                tickFormatter={(value) => formatNumberWithCommas(Math.round(value))}
+                tickFormatter={(value) => {
+                  // Gestisci sia valori grandi che piccoli
+                  if (value === 0) return '0';
+                  if (value < 0.01) return value.toExponential(2); // notazione scientifica per valori molto piccoli
+                  if (value < 1) return value.toFixed(4);
+                  if (value < 10) return value.toFixed(2);
+                  return formatNumberWithCommas(Math.round(value));
+                }}
                 label={{ 
                   value: 'Peso (mg)',
                   angle: -90, 
@@ -189,7 +196,14 @@ export default function GrowthPredictionChart({
                 }}
               />
               <Tooltip
-                formatter={(value) => [`${formatNumberWithCommas(Number(value))} mg`, '']}
+                formatter={(value) => {
+                  const num = Number(value);
+                  if (num === 0) return ['0 mg', ''];
+                  if (num < 0.01) return [`${num.toExponential(4)} mg`, ''];
+                  if (num < 1) return [`${num.toFixed(6)} mg`, ''];
+                  if (num < 10) return [`${num.toFixed(4)} mg`, ''];
+                  return [`${formatNumberWithCommas(num)} mg`, ''];
+                }}
                 labelFormatter={(label) => `Data: ${label}`}
               />
               <Legend verticalAlign="bottom" height={36} />
