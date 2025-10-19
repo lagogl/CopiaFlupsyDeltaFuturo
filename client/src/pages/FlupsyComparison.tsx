@@ -379,24 +379,17 @@ export default function FlupsyComparison() {
         const targetSize = sizes?.find(s => s.code === targetSizeCode);
         
         if (futureWeight && targetSize) {
-          const futureSize = getTargetSizeForWeight(futureWeight, sizes);
+          // Calcola il peso minimo della taglia target
+          // Una taglia è "maggiore" (più grande) se ha animalsPerKg più piccolo
+          // quindi il peso minimo è 1000000 / maxAnimalsPerKg
+          const targetMaxApk = targetSize.maxAnimalsPerKg !== undefined ? targetSize.maxAnimalsPerKg : targetSize.max_animals_per_kg;
+          const targetMinWeight = targetMaxApk ? 1000000 / targetMaxApk : 0;
           
-          if (futureSize) {
-            // Confronta le taglie usando minAnimalsPerKg
-            // Una taglia è "maggiore" (più grande) se ha minAnimalsPerKg più piccolo
-            // Raggiungi il target se futureSize.minAnimalsPerKg <= targetSize.minAnimalsPerKg
-            const futureMinApk = futureSize.minAnimalsPerKg !== undefined ? futureSize.minAnimalsPerKg : futureSize.min_animals_per_kg;
-            const targetMinApk = targetSize.minAnimalsPerKg !== undefined ? targetSize.minAnimalsPerKg : targetSize.min_animals_per_kg;
-            
-            if (futureMinApk !== undefined && targetMinApk !== undefined && futureMinApk <= targetMinApk) {
-              targetByDate += animalCount;
-              targetByDateCount++;
-            } else {
-              outOfTarget += animalCount;
-              outOfTargetCount++;
-            }
+          // Raggiungi il target se il peso futuro >= peso minimo target
+          if (futureWeight >= targetMinWeight) {
+            targetByDate += animalCount;
+            targetByDateCount++;
           } else {
-            // Nessuna taglia futura identificata - fuori target
             outOfTarget += animalCount;
             outOfTargetCount++;
           }
@@ -1112,12 +1105,13 @@ export default function FlupsyComparison() {
       
       if (currentTabId === 'data-futuro') {
         const targetSize = sizes?.find(s => s.code === targetSizeCode);
-        if (futureSize && targetSize) {
-          // Confronta le taglie usando minAnimalsPerKg
-          const futureMinApk = futureSize.minAnimalsPerKg !== undefined ? futureSize.minAnimalsPerKg : futureSize.min_animals_per_kg;
-          const targetMinApk = targetSize.minAnimalsPerKg !== undefined ? targetSize.minAnimalsPerKg : targetSize.min_animals_per_kg;
+        if (futureWeight && targetSize) {
+          // Calcola il peso minimo della taglia target
+          const targetMaxApk = targetSize.maxAnimalsPerKg !== undefined ? targetSize.maxAnimalsPerKg : targetSize.max_animals_per_kg;
+          const targetMinWeight = targetMaxApk ? 1000000 / targetMaxApk : 0;
           
-          if (futureMinApk !== undefined && targetMinApk !== undefined && futureMinApk <= targetMinApk) {
+          // Raggiungi il target se il peso futuro >= peso minimo target
+          if (futureWeight >= targetMinWeight) {
             raggiungeTarget = 'Sì';
             note = 'Target centrato';
           }
