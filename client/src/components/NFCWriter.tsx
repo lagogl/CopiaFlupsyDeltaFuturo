@@ -244,15 +244,22 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       const jsonData = JSON.stringify(basketData);
       console.log("Dati JSON da scrivere sul tag:", jsonData);
       
-      // Scrivi i dati sul tag NFC con formato NDEF standard
+      // Scrivi i dati sul tag NFC con formato NDEF URL + JSON
+      // URL come primo record -> Android apre direttamente l'app senza mostrare dialog
       console.log("Scrittura dati su tag NFC in corso...");
       await ndef.write({ 
-        records: [{ 
-          recordType: "text",
-          encoding: "utf-8",
-          lang: "en",
-          data: jsonData 
-        }] 
+        records: [
+          { 
+            recordType: "url",
+            data: redirectPath
+          },
+          {
+            recordType: "text",
+            encoding: "utf-8",
+            lang: "en",
+            data: jsonData
+          }
+        ] 
       });
       console.log("Scrittura tag NFC completata con successo");
       
