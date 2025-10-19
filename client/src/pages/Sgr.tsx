@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Search, Plus, Pencil, LineChart, Droplets, BarChart, Calculator, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -878,20 +878,39 @@ export default function Sgr() {
                   </div>
                 </div>
                 
+                {(() => {
+                  // Calcola max e min per ogni parametro
+                  const chartData = [...sortedSgrGiornalieri].reverse().map(item => ({
+                    date: new Intl.DateTimeFormat('it-IT', {
+                      day: '2-digit',
+                      month: '2-digit'
+                    }).format(new Date(item.recordDate)),
+                    fullDate: new Date(item.recordDate).toLocaleDateString('it-IT'),
+                    temperatura: item.temperature,
+                    pH: item.pH,
+                    ammoniaca: item.ammonia,
+                    ossigeno: item.oxygen,
+                    salinita: item.salinity
+                  }));
+                  
+                  const getMinMax = (key: string) => {
+                    const values = chartData.map(d => d[key]).filter(v => v !== null && v !== undefined);
+                    return values.length > 0 ? {
+                      min: Math.min(...values),
+                      max: Math.max(...values)
+                    } : { min: null, max: null };
+                  };
+                  
+                  const tempMinMax = getMinMax('temperatura');
+                  const phMinMax = getMinMax('pH');
+                  const ammoniacaMinMax = getMinMax('ammoniaca');
+                  const ossigenoMinMax = getMinMax('ossigeno');
+                  const salinitaMinMax = getMinMax('salinita');
+                  
+                  return (
                 <ResponsiveContainer width="100%" height={400}>
                   <RechartsLineChart 
-                    data={[...sortedSgrGiornalieri].reverse().map(item => ({
-                      date: new Intl.DateTimeFormat('it-IT', {
-                        day: '2-digit',
-                        month: '2-digit'
-                      }).format(new Date(item.recordDate)),
-                      fullDate: new Date(item.recordDate).toLocaleDateString('it-IT'),
-                      temperatura: item.temperature,
-                      pH: item.pH,
-                      ammoniaca: item.ammonia,
-                      ossigeno: item.oxygen,
-                      salinita: item.salinity
-                    }))} 
+                    data={chartData}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -947,6 +966,172 @@ export default function Sgr() {
                       wrapperStyle={{ paddingTop: '20px' }}
                       iconType="line"
                     />
+                    
+                    {/* Linee di riferimento (max/min) per ogni parametro */}
+                    {showTemperatura && tempMinMax.max !== null && (
+                      <>
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={tempMinMax.max} 
+                          stroke="#ef4444" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${tempMinMax.max.toFixed(1)}°C`, 
+                            fill: '#ef4444',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideTopRight'
+                          }}
+                        />
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={tempMinMax.min} 
+                          stroke="#ef4444" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${tempMinMax.min.toFixed(1)}°C`, 
+                            fill: '#ef4444',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideBottomRight'
+                          }}
+                        />
+                      </>
+                    )}
+                    
+                    {showPH && phMinMax.max !== null && (
+                      <>
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={phMinMax.max} 
+                          stroke="#10b981" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `pH ${phMinMax.max.toFixed(2)}`, 
+                            fill: '#10b981',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideTopLeft'
+                          }}
+                        />
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={phMinMax.min} 
+                          stroke="#10b981" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `pH ${phMinMax.min.toFixed(2)}`, 
+                            fill: '#10b981',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideBottomLeft'
+                          }}
+                        />
+                      </>
+                    )}
+                    
+                    {showAmmoniaca && ammoniacaMinMax.max !== null && (
+                      <>
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={ammoniacaMinMax.max} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${ammoniacaMinMax.max.toFixed(3)} mg/L`, 
+                            fill: '#f59e0b',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideTop'
+                          }}
+                        />
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={ammoniacaMinMax.min} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${ammoniacaMinMax.min.toFixed(3)} mg/L`, 
+                            fill: '#f59e0b',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideBottom'
+                          }}
+                        />
+                      </>
+                    )}
+                    
+                    {showOssigeno && ossigenoMinMax.max !== null && (
+                      <>
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={ossigenoMinMax.max} 
+                          stroke="#3b82f6" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${ossigenoMinMax.max.toFixed(1)} mg/L`, 
+                            fill: '#3b82f6',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'right'
+                          }}
+                        />
+                        <ReferenceLine 
+                          yAxisId="left"
+                          y={ossigenoMinMax.min} 
+                          stroke="#3b82f6" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${ossigenoMinMax.min.toFixed(1)} mg/L`, 
+                            fill: '#3b82f6',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'right'
+                          }}
+                        />
+                      </>
+                    )}
+                    
+                    {showSalinita && salinitaMinMax.max !== null && (
+                      <>
+                        <ReferenceLine 
+                          yAxisId="right"
+                          y={salinitaMinMax.max} 
+                          stroke="#8b5cf6" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${salinitaMinMax.max.toFixed(1)} ppt`, 
+                            fill: '#8b5cf6',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideTopLeft'
+                          }}
+                        />
+                        <ReferenceLine 
+                          yAxisId="right"
+                          y={salinitaMinMax.min} 
+                          stroke="#8b5cf6" 
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.4}
+                          label={{ 
+                            value: `${salinitaMinMax.min.toFixed(1)} ppt`, 
+                            fill: '#8b5cf6',
+                            fontSize: 11,
+                            opacity: 0.6,
+                            position: 'insideBottomLeft'
+                          }}
+                        />
+                      </>
+                    )}
                     
                     {/* Linee condizionali basate sui checkbox */}
                     {showTemperatura && (
@@ -1020,6 +1205,8 @@ export default function Sgr() {
                     />
                   </RechartsLineChart>
                 </ResponsiveContainer>
+                  );
+                })()}
               </CardContent>
             </Card>
           )}
