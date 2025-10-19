@@ -112,6 +112,36 @@ export class SgrService {
     sgrCache.flushAll();
     console.log("🧹 SGR SERVICE: Cache invalidated");
   }
+
+  /**
+   * Get all SGR Per Taglia
+   */
+  async getSgrPerTaglia() {
+    const cacheKey = "all-sgr-per-taglia";
+    const cached = sgrCache.get(cacheKey);
+    if (cached) {
+      console.log("📦 SGR SERVICE: Returning cached SGR per taglia");
+      return cached;
+    }
+
+    const sgrPerTaglia = await storage.getSgrPerTaglia();
+    sgrCache.set(cacheKey, sgrPerTaglia);
+    return sgrPerTaglia;
+  }
+
+  /**
+   * Get SGR Per Taglia by ID
+   */
+  async getSgrPerTagliaById(id: number) {
+    return await storage.getSgrPerTagliaById(id);
+  }
+
+  /**
+   * Get SGR Per Taglia by month and size
+   */
+  async getSgrPerTagliaByMonthAndSize(month: string, sizeId: number) {
+    return await storage.getSgrPerTagliaByMonthAndSize(month, sizeId);
+  }
 }
 
 export const sgrService = new SgrService();

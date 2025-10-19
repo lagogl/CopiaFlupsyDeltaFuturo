@@ -92,6 +92,16 @@ secureLogger.info('Logging middleware: Secure API logger initialized with PII pr
     console.error("⚠️ Errore durante il controllo consistenza:", error);
   }
 
+  // Inizializza lo scheduler SGR
+  console.log("📅 Inizializzazione scheduler SGR mensile...");
+  try {
+    const { sgrScheduler } = await import('./modules/core/sgr/sgr-scheduler');
+    sgrScheduler.start();
+    console.log("✅ Scheduler SGR attivo (calcolo automatico il giorno 1 del mese)");
+  } catch (error) {
+    console.error("❌ Errore durante l'inizializzazione dello scheduler SGR:", error);
+  }
+
   // Inizializza il servizio di sincronizzazione esterno (temporaneamente disabilitato)
   console.log("🔄 Servizio sincronizzazione esterno temporaneamente disabilitato per debug");
   // setTimeout(async () => {

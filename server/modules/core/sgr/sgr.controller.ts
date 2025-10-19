@@ -3,6 +3,8 @@ import { sgrService } from "./sgr.service";
 import { insertSgrSchema, insertSgrGiornalieriSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 import { z } from "zod";
+import { sgrScheduler } from "./sgr-scheduler";
+import { broadcastMessage } from "../../../websocket";
 
 export class SgrController {
   // ========== SGR Mensili (Monthly) ==========
@@ -232,6 +234,114 @@ export class SgrController {
     } catch (error) {
       console.error("Error deleting SGR giornaliero:", error);
       res.status(500).json({ message: "Failed to delete SGR giornaliero" });
+    }
+  }
+
+  // ========== SGR Per Taglia (Calculated SGR) ==========
+
+  /**
+   * GET /api/sgr-per-taglia
+   * Get all calculated SGR per taglia
+   */
+  async getAllSgrPerTaglia(req: Request, res: Response) {
+    try {
+      const sgrPerTaglia = await sgrService.getSgrPerTaglia();
+      res.json(sgrPerTaglia);
+    } catch (error) {
+      console.error("Error fetching SGR per taglia:", error);
+      res.status(500).json({ message: "Failed to fetch SGR per taglia" });
+    }
+  }
+
+  /**
+   * POST /api/sgr-per-taglia/calculate
+   * Manually trigger SGR calculation with WebSocket progress updates
+   */
+  async triggerSgrCalculation(req: Request, res: Response) {
+    try {
+      const { month } = req.body;
+      
+      console.log("🔧 SGR CONTROLLER: Manual calculation triggered");
+      
+      // Send initial WebSocket event
+      broadcastMessage({
+        type: "sgr_calculation_start",
+        data: {
+          month: month || 'current',
+          progress: 0,
+          status: "Inizializzazione calcolo SGR..."
+        }
+      });
+
+      // Trigger calculation in background
+      setTimeout(async () => {
+        try {
+          // Progress: Loading operations
+          broadcastMessage({
+            type: "sgr_calculation_progress",
+            data: {
+              progress: 20,
+              status: "Recupero operazioni storiche..."
+            }
+          });
+
+          const result = await sgrScheduler.triggerManualCalculation(month);
+
+          // Progress: Size calculations
+          const sizeCount = result.results.length;
+          for (let i = 0; i < sizeCount; i++) {
+            broadcastMessage({
+              type: "sgr_calculation_progress",
+              data: {
+                progress: 40 + (i / sizeCount) * 40,
+                status: `Calcolo SGR Taglia ${i + 1}/${sizeCount}...`,
+                currentSize: result.results[i].sizeName
+              }
+            });
+          }
+
+          // Progress: Saving
+          broadcastMessage({
+            type: "sgr_calculation_progress",
+            data: {
+              progress: 90,
+              status: "Salvataggio dati..."
+            }
+          });
+
+          // Complete
+          broadcastMessage({
+            type: "sgr_calculation_complete",
+            data: {
+              progress: 100,
+              status: "Calcolo completato!",
+              results: result.results,
+              month: result.month,
+              year: result.year
+            }
+          });
+
+        } catch (error) {
+          console.error("Error during SGR calculation:", error);
+          broadcastMessage({
+            type: "sgr_calculation_error",
+            data: {
+              status: "Errore durante il calcolo",
+              error: error instanceof Error ? error.message : "Unknown error"
+            }
+          });
+        }
+      }, 100);
+
+      // Return immediately with accepted status
+      res.status(202).json({
+        message: "SGR calculation started",
+        status: "processing"
+      });
+
+    } catch (error) {
+      console.error("Error triggering SGR calculation:", error);
+      res.status(500).json({ message: "Failed to trigger SGR calculation" });
     }
   }
 }
