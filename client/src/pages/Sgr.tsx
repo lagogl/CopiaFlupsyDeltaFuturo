@@ -434,8 +434,7 @@ export default function Sgr() {
                         dataKey={size.name}
                         stroke={sizeColors[index % sizeColors.length]}
                         strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
+                        dot={false}
                         name={size.name}
                         connectNulls
                       />
@@ -800,8 +799,7 @@ export default function Sgr() {
                       dataKey="temperatura"
                       stroke="#ef4444"
                       strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
+                      dot={false}
                       name="Temperatura"
                       connectNulls
                     />
@@ -811,8 +809,7 @@ export default function Sgr() {
                       dataKey="pH"
                       stroke="#3b82f6"
                       strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
+                      dot={false}
                       name="pH"
                       connectNulls
                     />
@@ -822,8 +819,7 @@ export default function Sgr() {
                       dataKey="ammoniaca"
                       stroke="#f59e0b"
                       strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
+                      dot={false}
                       name="Ammoniaca"
                       connectNulls
                     />
@@ -833,8 +829,7 @@ export default function Sgr() {
                       dataKey="ossigeno"
                       stroke="#10b981"
                       strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
+                      dot={false}
                       name="Ossigeno"
                       connectNulls
                     />
@@ -844,8 +839,7 @@ export default function Sgr() {
                       dataKey="salinita"
                       stroke="#8b5cf6"
                       strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
+                      dot={false}
                       name="Salinità"
                       connectNulls
                     />
