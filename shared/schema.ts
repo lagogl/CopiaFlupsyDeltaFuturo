@@ -1145,3 +1145,103 @@ export type InsertDdt = z.infer<typeof insertDdtSchema>;
 
 export type DdtRiga = typeof ddtRighe.$inferSelect;
 export type InsertDdtRiga = z.infer<typeof insertDdtRigheSchema>;
+
+// ========== AI GROWTH VARIABILITY ANALYSIS ==========
+
+// Storico analisi eseguite
+export const growthAnalysisRuns = pgTable("growth_analysis_runs", {
+  id: serial("id").primaryKey(),
+  executedAt: timestamp("executed_at").notNull().defaultNow(),
+  dateFrom: date("date_from"),
+  dateTo: date("date_to"),
+  flupsyIds: text("flupsy_ids"), // Array di ID serializzato come JSON
+  analysisTypes: text("analysis_types"), // Array di tipi analisi serializzato come JSON
+  status: text("status").notNull().default("completed"), // running, completed, failed
+  datasetSize: integer("dataset_size"), // Numero operazioni analizzate
+  results: jsonb("results"), // Risultati completi dell'analisi
+  insights: text("insights").array(), // Insights AI testuali
+  errorMessage: text("error_message"),
+});
+
+// Profili crescita per cestello (cluster assignment)
+export const basketGrowthProfiles = pgTable("basket_growth_profiles", {
+  id: serial("id").primaryKey(),
+  basketId: integer("basket_id").notNull(),
+  analysisRunId: integer("analysis_run_id"), // Riferimento all'analisi che ha generato questo profilo
+  growthCluster: text("growth_cluster"), // 'fast', 'average', 'slow'
+  sgrDeviation: real("sgr_deviation"), // Deviazione percentuale dal SGR medio
+  confidenceScore: real("confidence_score"), // 0-1, confidenza della classificazione
+  influencingFactors: jsonb("influencing_factors"), // Fattori che influenzano la crescita
+  positionScore: real("position_score"), // Score posizione FLUPSY (0-100)
+  densityScore: real("density_score"), // Score densità (0-100)
+  supplierScore: real("supplier_score"), // Score supplier lotto (0-100)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+// Analisi impatto vagliature (selection bias)
+export const screeningImpactAnalysis = pgTable("screening_impact_analysis", {
+  id: serial("id").primaryKey(),
+  screeningId: integer("screening_id").notNull(), // Riferimento all'operazione di vagliatura
+  analysisRunId: integer("analysis_run_id"), // Riferimento all'analisi
+  basketId: integer("basket_id"), // Cestello analizzato
+  animalsSold: integer("animals_sold"), // Animali venduti (sopra taglia)
+  animalsRepositioned: integer("animals_repositioned"), // Animali riposizionati (sotto taglia)
+  avgSgrBefore: real("avg_sgr_before"), // SGR medio prima vagliatura
+  avgSgrAfter: real("avg_sgr_after"), // SGR medio dopo vagliatura
+  selectionBias: real("selection_bias"), // Bias percentuale (differenza SGR)
+  fastGrowersRemoved: integer("fast_growers_removed"), // Stima animali veloci rimossi
+  slowGrowersRetained: integer("slow_growers_retained"), // Stima animali lenti mantenuti
+  distributionBefore: jsonb("distribution_before"), // Distribuzione crescita pre-vagliatura
+  distributionAfter: jsonb("distribution_after"), // Distribuzione crescita post-vagliatura
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Distribuzione crescita per taglia/lotto/periodo
+export const growthDistributions = pgTable("growth_distributions", {
+  id: serial("id").primaryKey(),
+  analysisRunId: integer("analysis_run_id"),
+  sizeId: integer("size_id"), // Taglia
+  lotId: integer("lot_id"), // Lotto
+  month: integer("month"), // Mese (1-12)
+  year: integer("year"),
+  sampleSize: integer("sample_size"), // Numero operazioni analizzate
+  meanSgr: real("mean_sgr"), // Media SGR
+  medianSgr: real("median_sgr"), // Mediana SGR
+  stdDeviation: real("std_deviation"), // Deviazione standard
+  percentile25: real("percentile_25"), // 25° percentile
+  percentile50: real("percentile_50"), // 50° percentile (mediana)
+  percentile75: real("percentile_75"), // 75° percentile
+  percentile90: real("percentile_90"), // 90° percentile
+  minSgr: real("min_sgr"),
+  maxSgr: real("max_sgr"),
+  distributionType: text("distribution_type"), // 'normal', 'skewed', 'bimodal'
+  rawData: jsonb("raw_data"), // Dati grezzi per visualizzazioni
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Insert schemas
+export const insertGrowthAnalysisRunSchema = createInsertSchema(growthAnalysisRuns)
+  .omit({ id: true, executedAt: true });
+
+export const insertBasketGrowthProfileSchema = createInsertSchema(basketGrowthProfiles)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertScreeningImpactAnalysisSchema = createInsertSchema(screeningImpactAnalysis)
+  .omit({ id: true, createdAt: true });
+
+export const insertGrowthDistributionSchema = createInsertSchema(growthDistributions)
+  .omit({ id: true, createdAt: true });
+
+// Types
+export type GrowthAnalysisRun = typeof growthAnalysisRuns.$inferSelect;
+export type InsertGrowthAnalysisRun = z.infer<typeof insertGrowthAnalysisRunSchema>;
+
+export type BasketGrowthProfile = typeof basketGrowthProfiles.$inferSelect;
+export type InsertBasketGrowthProfile = z.infer<typeof insertBasketGrowthProfileSchema>;
+
+export type ScreeningImpactAnalysis = typeof screeningImpactAnalysis.$inferSelect;
+export type InsertScreeningImpactAnalysis = z.infer<typeof insertScreeningImpactAnalysisSchema>;
+
+export type GrowthDistribution = typeof growthDistributions.$inferSelect;
+export type InsertGrowthDistribution = z.infer<typeof insertGrowthDistributionSchema>;

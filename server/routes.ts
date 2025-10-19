@@ -195,6 +195,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', giacenzeModule.giacenzeRoutes);
   console.log('✅ Modulo GIACENZE registrato su /api/giacenze/*');
 
+  // Registra il modulo AI GROWTH VARIABILITY ANALYSIS
+  const growthVariabilityModule = await import('./modules/ai-growth-variability/growth-variability.routes');
+  app.use('/api/growth-variability', growthVariabilityModule.default);
+  console.log('✅ Modulo AI GROWTH VARIABILITY registrato su /api/growth-variability/*');
+
   // Registra il modulo DATABASE
   const databaseModule = await import('./modules/system/database');
   app.use('/api/database', databaseModule.databaseRoutes);
