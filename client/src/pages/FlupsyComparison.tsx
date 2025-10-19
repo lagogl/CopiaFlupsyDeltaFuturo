@@ -337,6 +337,103 @@ export default function FlupsyComparison() {
         return (a.position || 0) - (b.position || 0);
       });
   }, [baskets, selectedFlupsyId]);
+
+  // Calcola i totalizzatori basati sulla modalità selezionata
+  const totals = useMemo(() => {
+    if (!fluspyBaskets || fluspyBaskets.length === 0) {
+      return {
+        targetReached: 0,
+        targetReachedCount: 0,
+        targetByDate: 0,
+        targetByDateCount: 0,
+        outOfTarget: 0,
+        outOfTargetCount: 0,
+        total: 0,
+        totalCount: 0
+      };
+    }
+
+    let targetReached = 0;
+    let targetReachedCount = 0;
+    let targetByDate = 0;
+    let targetByDateCount = 0;
+    let outOfTarget = 0;
+    let outOfTargetCount = 0;
+    let total = 0;
+    let totalCount = 0;
+
+    fluspyBaskets.forEach(basket => {
+      const latestOperation = getLatestOperationForBasket(basket.id);
+      
+      if (!latestOperation || !latestOperation.animalsPerKg || !latestOperation.animalCount) {
+        return;
+      }
+
+      const animalCount = latestOperation.animalCount;
+      total += animalCount;
+      totalCount++;
+
+      if (currentTabId === 'data-futuro') {
+        // Modalità Data Futura: verifica se raggiunge il target entro i giorni selezionati
+        const futureWeight = calculateFutureWeight(basket.id, daysInFuture);
+        if (futureWeight) {
+          const futureSize = getTargetSizeForWeight(futureWeight, sizes);
+          const targetSize = sizes?.find(s => s.code === targetSizeCode);
+          
+          if (futureSize && targetSize) {
+            // Estrai il numero dalla taglia (es. TP-3000 -> 3000)
+            const futureSizeNum = parseInt(futureSize.code.replace('TP-', ''));
+            const targetSizeNum = parseInt(targetSizeCode.replace('TP-', ''));
+            
+            // Controlla se raggiunge o supera il target
+            if (futureSizeNum <= targetSizeNum) {
+              targetByDate += animalCount;
+              targetByDateCount++;
+            } else {
+              outOfTarget += animalCount;
+              outOfTargetCount++;
+            }
+          }
+        }
+      } else {
+        // Modalità Taglia Target: verifica se può raggiungere la taglia target
+        const daysToTarget = getDaysToReachTargetSize(basket.id, targetSizeCode);
+        const currentWeight = 1000000 / latestOperation.animalsPerKg;
+        const currentSize = getTargetSizeForWeight(currentWeight, sizes);
+        
+        if (currentSize?.code === targetSizeCode) {
+          // Già nella taglia target
+          targetReached += animalCount;
+          targetReachedCount++;
+        } else if (daysToTarget !== null) {
+          // Raggiungerà il target
+          targetReached += animalCount;
+          targetReachedCount++;
+          
+          // Controlla se lo raggiungerà entro i giorni specificati
+          if (daysToTarget <= daysInFuture) {
+            targetByDate += animalCount;
+            targetByDateCount++;
+          }
+        } else {
+          // Non raggiungerà il target
+          outOfTarget += animalCount;
+          outOfTargetCount++;
+        }
+      }
+    });
+
+    return {
+      targetReached,
+      targetReachedCount,
+      targetByDate,
+      targetByDateCount,
+      outOfTarget,
+      outOfTargetCount,
+      total,
+      totalCount
+    };
+  }, [fluspyBaskets, currentTabId, daysInFuture, targetSizeCode, sizes, operations]);
   
   // Ottiene le dimensioni delle carte dei cestelli in base al livello di zoom
   const getBasketCardSize = () => {
@@ -830,6 +927,56 @@ export default function FlupsyComparison() {
       return;
     }
 
+    // Prepara i dati per il foglio "Totalizzazioni"
+    const totalData = [
+      {
+        'Metrica': 'Animali che centrano target (qualsiasi data)',
+        'Valore': totals.targetReached.toLocaleString('it-IT'),
+        'Cestelli': totals.targetReachedCount
+      },
+      {
+        'Metrica': `Animali che centrano target entro ${daysInFuture} giorni`,
+        'Valore': totals.targetByDate.toLocaleString('it-IT'),
+        'Cestelli': totals.targetByDateCount
+      },
+      {
+        'Metrica': 'Animali fuori target',
+        'Valore': totals.outOfTarget.toLocaleString('it-IT'),
+        'Cestelli': totals.outOfTargetCount
+      },
+      {
+        'Metrica': 'Totale animali',
+        'Valore': totals.total.toLocaleString('it-IT'),
+        'Cestelli': totals.totalCount
+      },
+      {},
+      {
+        'Metrica': 'FLUPSY',
+        'Valore': selectedFlupsy.name,
+        'Cestelli': '-'
+      },
+      {
+        'Metrica': 'Target Taglia',
+        'Valore': targetSizeCode,
+        'Cestelli': '-'
+      },
+      {
+        'Metrica': 'Giorni Proiezione',
+        'Valore': daysInFuture,
+        'Cestelli': '-'
+      },
+      {
+        'Metrica': 'Modalità',
+        'Valore': currentTabId === 'data-futuro' ? 'Data Futura' : 'Taglia Target',
+        'Cestelli': '-'
+      },
+      {
+        'Metrica': 'Data Report',
+        'Valore': format(new Date(), 'dd/MM/yyyy HH:mm'),
+        'Cestelli': '-'
+      }
+    ];
+
     // Prepara i dati per il foglio "Data Futura"
     const futureData = fluspyBaskets.map(basket => {
       const latestOperation = getLatestOperationForBasket(basket.id);
@@ -921,6 +1068,73 @@ export default function FlupsyComparison() {
     // Crea il workbook
     const wb = XLSX.utils.book_new();
     
+    // Crea il foglio "Totalizzazioni" (primo foglio)
+    const wsTotal = XLSX.utils.json_to_sheet(totalData);
+    XLSX.utils.book_append_sheet(wb, wsTotal, 'Totalizzazioni');
+    
+    // Crea il foglio "Dettaglio Cestelli"
+    const detailData = fluspyBaskets.map(basket => {
+      const latestOperation = getLatestOperationForBasket(basket.id);
+      const cycle = getCycleForBasket(basket.id);
+      
+      if (!latestOperation || !latestOperation.animalsPerKg) {
+        return {
+          'Cestello': basket.physicalNumber,
+          'Animali': 'N/A',
+          'Peso Attuale': 'N/A',
+          'Taglia Attuale': 'N/A',
+          'Peso Previsto': 'N/A',
+          'Taglia Prevista': 'N/A',
+          'Giorni Target': 'N/A',
+          'Raggiunge Target': 'N/A',
+          'Note': 'Nessun dato disponibile'
+        };
+      }
+
+      const currentWeight = 1000000 / latestOperation.animalsPerKg;
+      const currentSize = getTargetSizeForWeight(currentWeight, sizes);
+      const futureWeight = calculateFutureWeight(basket.id, daysInFuture);
+      const futureSize = futureWeight ? getTargetSizeForWeight(futureWeight, sizes) : null;
+      const daysToTarget = getDaysToReachTargetSize(basket.id, targetSizeCode);
+      
+      let raggiungeTarget = 'No';
+      let note = 'Fuori target';
+      
+      if (currentTabId === 'data-futuro') {
+        if (futureSize) {
+          const futureSizeNum = parseInt(futureSize.code.replace('TP-', ''));
+          const targetSizeNum = parseInt(targetSizeCode.replace('TP-', ''));
+          if (futureSizeNum <= targetSizeNum) {
+            raggiungeTarget = 'Sì';
+            note = 'Target centrato';
+          }
+        }
+      } else {
+        if (currentSize?.code === targetSizeCode) {
+          raggiungeTarget = 'Sì (già raggiunta)';
+          note = 'Taglia già raggiunta';
+        } else if (daysToTarget !== null) {
+          raggiungeTarget = 'Sì';
+          note = `Raggiungerà il target in ${daysToTarget} giorni`;
+        }
+      }
+
+      return {
+        'Cestello': basket.physicalNumber,
+        'Animali': latestOperation.animalCount?.toLocaleString('it-IT') || 'N/A',
+        'Peso Attuale': `${Math.round(currentWeight)} mg`,
+        'Taglia Attuale': currentSize?.code || 'N/A',
+        'Peso Previsto': futureWeight ? `${Math.round(futureWeight)} mg` : 'N/A',
+        'Taglia Prevista': futureSize?.code || 'N/A',
+        'Giorni Target': daysToTarget !== null ? daysToTarget : '-',
+        'Raggiunge Target': raggiungeTarget,
+        'Note': note
+      };
+    });
+    
+    const wsDetail = XLSX.utils.json_to_sheet(detailData);
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'Dettaglio Cestelli');
+    
     // Crea il foglio "Data Futura"
     const wsFuture = XLSX.utils.json_to_sheet(futureData);
     XLSX.utils.book_append_sheet(wb, wsFuture, `Previsione ${daysInFuture} giorni`);
@@ -930,7 +1144,7 @@ export default function FlupsyComparison() {
     XLSX.utils.book_append_sheet(wb, wsTarget, `Taglia ${targetSizeCode}`);
 
     // Genera il file e scaricalo
-    const fileName = `Report_${selectedFlupsy.name}_${format(new Date(), 'dd-MM-yyyy')}.xlsx`;
+    const fileName = `Confronto-Flupsy_${selectedFlupsy.name}_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -1132,6 +1346,77 @@ export default function FlupsyComparison() {
                 </div>
               ) : (
                 <div>
+                  {/* Pannello Totalizzatori */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    {/* Card Target Raggiunto */}
+                    <Card className="border-2 border-green-200 bg-green-50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-green-700 flex items-center">
+                          🎯 Target Raggiunto
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-green-900">
+                          {totals.targetReached.toLocaleString('it-IT')}
+                        </div>
+                        <p className="text-xs text-green-600 mt-1">
+                          animali ({totals.targetReachedCount} {totals.targetReachedCount === 1 ? 'cestello' : 'cestelli'})
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Card Target Entro Data */}
+                    <Card className="border-2 border-yellow-200 bg-yellow-50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-yellow-700 flex items-center">
+                          📅 Target Entro {daysInFuture}g
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-yellow-900">
+                          {totals.targetByDate.toLocaleString('it-IT')}
+                        </div>
+                        <p className="text-xs text-yellow-600 mt-1">
+                          animali ({totals.targetByDateCount} {totals.targetByDateCount === 1 ? 'cestello' : 'cestelli'})
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Card Fuori Target */}
+                    <Card className="border-2 border-red-200 bg-red-50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-red-700 flex items-center">
+                          ⚠️ Fuori Target
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-red-900">
+                          {totals.outOfTarget.toLocaleString('it-IT')}
+                        </div>
+                        <p className="text-xs text-red-600 mt-1">
+                          animali ({totals.outOfTargetCount} {totals.outOfTargetCount === 1 ? 'cestello' : 'cestelli'})
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Card Totale */}
+                    <Card className="border-2 border-gray-200 bg-gray-50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-gray-700 flex items-center">
+                          📦 Totale Animali
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-gray-900">
+                          {totals.total.toLocaleString('it-IT')}
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          in {totals.totalCount} {totals.totalCount === 1 ? 'cestello' : 'cestelli'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
                   {/* Mostra dettagli sul turno di visualizzazione */}
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center">
