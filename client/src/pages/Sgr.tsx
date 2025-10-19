@@ -6,6 +6,9 @@ import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import SgrForm from '@/components/SgrForm';
 import SgrGiornalieriForm from '@/components/SgrGiornalieriForm';
 import GrowthPredictionChart from '@/components/GrowthPredictionChart';
+import MultiSizeGrowthComparisonChart from '@/components/MultiSizeGrowthComparisonChart';
 import { useWebSocketMessage } from '@/lib/websocket';
 
 export default function Sgr() {
@@ -24,6 +28,8 @@ export default function Sgr() {
   const [projectionDays, setProjectionDays] = useState(60); // 60 giorni default
   const [bestVariation, setBestVariation] = useState(20); // +20% default
   const [worstVariation, setWorstVariation] = useState(30); // -30% default
+  const [selectedSizeId, setSelectedSizeId] = useState<number | null>(null); // Taglia selezionata per previsioni
+  const [compareMultipleSizes, setCompareMultipleSizes] = useState(false); // Confronta più taglie
   
   // SGR Per Taglia calculation states
   const [isCalculating, setIsCalculating] = useState(false);
@@ -60,17 +66,60 @@ export default function Sgr() {
     queryKey: ['/api/sizes'],
   });
   
-  // Get current month's SGR
-  const getCurrentMonthSgr = () => {
+  // Get current month's SGR based on selected size
+  const getCurrentMonthSgr = (sizeId?: number | null) => {
     const today = new Date();
     const currentMonthName = monthOrder[today.getMonth()];
+    
+    // Use SGR Per Taglia if size is selected
+    const targetSizeId = sizeId !== undefined ? sizeId : selectedSizeId;
+    if (targetSizeId && sgrPerTaglia) {
+      const sgrForSize = sgrPerTaglia.find(
+        (sgr: any) => sgr.month.toLowerCase() === currentMonthName && sgr.sizeId === targetSizeId
+      );
+      if (sgrForSize?.calculatedSgr) {
+        return sgrForSize.calculatedSgr;
+      }
+    }
+    
+    // Fallback to generic SGR if no size-specific SGR found
     const currentSgr = sgrs?.find(sgr => sgr.month.toLowerCase() === currentMonthName);
-    return currentSgr?.percentage || 60; // Default to 60% if not found
+    return currentSgr?.percentage || 4.1; // Default to current month value
+  };
+  
+  // Prepare data for multi-size comparison
+  const getSizesWithSgr = () => {
+    if (!sizes || !sgrPerTaglia) return [];
+    
+    const today = new Date();
+    const currentMonthName = monthOrder[today.getMonth()];
+    
+    return sizes
+      .map((size: any) => {
+        const sgrForSize = sgrPerTaglia.find(
+          (sgr: any) => sgr.month.toLowerCase() === currentMonthName && sgr.sizeId === size.id
+        );
+        
+        if (!sgrForSize?.calculatedSgr) return null;
+        
+        return {
+          sizeId: size.id,
+          sizeName: size.name,
+          sgrPercentage: sgrForSize.calculatedSgr,
+          color: size.color || '#3b82f6'
+        };
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        const aNum = parseInt(a.sizeName.split('-')[1] || '0');
+        const bNum = parseInt(b.sizeName.split('-')[1] || '0');
+        return aNum - bNum;
+      });
   };
   
   // Query per le proiezioni di crescita
   const { data: growthPrediction, isLoading: isLoadingPrediction, refetch: refetchPrediction } = useQuery({
-    queryKey: ['/api/growth-prediction', currentWeightForPrediction, getCurrentMonthSgr(), projectionDays, bestVariation, worstVariation],
+    queryKey: ['/api/growth-prediction', currentWeightForPrediction, selectedSizeId, getCurrentMonthSgr(), projectionDays, bestVariation, worstVariation],
     queryFn: () => apiRequest({ 
       url: `/api/growth-prediction?currentWeight=${currentWeightForPrediction}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`, 
       method: 'GET' 
@@ -1050,7 +1099,14 @@ export default function Sgr() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              {isLoadingPrediction ? (
+              {compareMultipleSizes ? (
+                <MultiSizeGrowthComparisonChart
+                  currentWeight={currentWeightForPrediction}
+                  measurementDate={new Date()}
+                  sizesWithSgr={getSizesWithSgr()}
+                  projectionDays={projectionDays}
+                />
+              ) : isLoadingPrediction ? (
                 <div className="h-80 bg-white rounded-lg shadow flex items-center justify-center">
                   <p className="text-gray-500">Caricamento delle previsioni...</p>
                 </div>
@@ -1082,6 +1138,53 @@ export default function Sgr() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Taglia</label>
+                      <Select 
+                        value={selectedSizeId?.toString() || ""} 
+                        onValueChange={(value) => setSelectedSizeId(value ? Number(value) : null)}
+                        disabled={compareMultipleSizes}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona una taglia" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sizes?.sort((a: any, b: any) => {
+                            const aNum = parseInt(a.name.split('-')[1] || '0');
+                            const bNum = parseInt(b.name.split('-')[1] || '0');
+                            return aNum - bNum;
+                          }).map((size: any) => (
+                            <SelectItem key={size.id} value={size.id.toString()}>
+                              {size.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">
+                        {compareMultipleSizes ? (
+                          'Confronto multiplo attivo - tutte le taglie mostrate'
+                        ) : selectedSizeId ? (
+                          <>SGR specifico: <strong>{getCurrentMonthSgr()?.toFixed(2)}%</strong> (da dati storici)</>
+                        ) : (
+                          'Seleziona una taglia per usare SGR specifico'
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="compare-sizes" 
+                        checked={compareMultipleSizes}
+                        onCheckedChange={(checked) => setCompareMultipleSizes(checked as boolean)}
+                      />
+                      <Label 
+                        htmlFor="compare-sizes"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Confronta più taglie contemporaneamente
+                      </Label>
+                    </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Peso attuale (mg)</label>
                       <Input 
