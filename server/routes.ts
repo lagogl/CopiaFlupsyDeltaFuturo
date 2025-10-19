@@ -4416,6 +4416,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`DEBUG: Nessun dato valido per calcolare il peso, impossibile fare previsioni accurate`);
       }
       
+      // Determina il sizeId basandosi sull'animalsPerKg dell'ultima misurazione
+      let sizeId: number | undefined = undefined;
+      if (lastMeasurement.animalsPerKg) {
+        const allSizes = await storage.getAllSizes();
+        const matchingSize = allSizes.find(size => {
+          const minBound = size.minAnimalsPerKg || 0;
+          const maxBound = size.maxAnimalsPerKg || Infinity;
+          return lastMeasurement.animalsPerKg! >= minBound && lastMeasurement.animalsPerKg! <= maxBound;
+        });
+        if (matchingSize) {
+          sizeId = matchingSize.id;
+          console.log(`DEBUG: Taglia identificata: ${matchingSize.name} (ID ${sizeId}) per ${lastMeasurement.animalsPerKg} animali/kg`);
+        }
+      }
+      
       // Ottiene l'SGR mensile corretto per il periodo (prende quello del database o usa quello calcolato)
       let sgrPercentage;
       const lastMeasurementDate = new Date(lastMeasurement.date);
@@ -4435,13 +4450,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sgrPercentage = 1; // 1% giornaliero
       }
       
-      // Ottieni dati previsionali usando il storage
+      // Ottieni dati previsionali usando il storage (con sizeId per usare sgr_per_taglia)
       const predictionData = await storage.calculateGrowthPrediction(
         currentWeight,
         lastMeasurementDate,
         days,
         sgrPercentage,
-        { best: bestVariation, worst: worstVariation }
+        { best: bestVariation, worst: worstVariation },
+        sizeId
       );
       
       // Estendi con dati aggiuntivi
