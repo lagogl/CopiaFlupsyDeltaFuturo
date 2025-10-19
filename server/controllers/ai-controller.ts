@@ -158,6 +158,19 @@ export function registerAIRoutes(app: Express) {
       const totalLots = basketPredictions.reduce((sum, bp) => sum + bp.lotCount, 0);
       const avgAnimalsPerBasket = basketPredictions.reduce((sum, bp) => sum + bp.totalAnimals, 0) / basketPredictions.length;
 
+      // Calcola confidenza media CORRETTA: media di tutti i giorni di tutti i cestelli
+      let totalConfidence = 0;
+      let totalPredictions = 0;
+      basketPredictions.forEach(bp => {
+        if (bp.prediction?.predictions) {
+          bp.prediction.predictions.forEach(pred => {
+            totalConfidence += pred.confidence || 0;
+            totalPredictions++;
+          });
+        }
+      });
+      const avgConfidence = totalPredictions > 0 ? totalConfidence / totalPredictions : 0;
+
       res.json({
         success: true,
         prediction: {
@@ -173,8 +186,7 @@ export function registerAIRoutes(app: Express) {
           summary: {
             totalBaskets: basketsToAnalyze.length,
             analyzedBaskets: basketPredictions.length,
-            avgGrowthRate: basketPredictions.reduce((sum, bp) => 
-              sum + (bp.prediction?.predictions?.[0]?.confidence || 0), 0) / basketPredictions.length,
+            avgGrowthRate: avgConfidence,
             insights: [
               `Analisi completata per ${basketPredictions.length} cestelli (${mixedBasketsCount} con lotti misti)`,
               `${totalLots} lotti totali coinvolti nell'analisi`,
