@@ -22,4 +22,7 @@ router.delete("/sgr-giornalieri/:id", (req, res) => sgrController.deleteSgrGiorn
 router.get("/sgr-per-taglia", (req, res) => sgrController.getAllSgrPerTaglia(req, res));
 router.post("/sgr-per-taglia/calculate", (req, res) => sgrController.triggerSgrCalculation(req, res));
 
+// Alias route for recalculation (for backward compatibility)
+router.post("/sgr-calculation/recalculate", (req, res) => sgrController.triggerSgrCalculation(req, res));
+
 export default router;

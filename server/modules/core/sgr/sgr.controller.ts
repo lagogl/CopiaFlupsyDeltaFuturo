@@ -255,6 +255,7 @@ export class SgrController {
 
   /**
    * POST /api/sgr-per-taglia/calculate
+   * POST /api/sgr-calculation/recalculate (alias)
    * Manually trigger SGR calculation with WebSocket progress updates
    */
   async triggerSgrCalculation(req: Request, res: Response) {
@@ -266,11 +267,7 @@ export class SgrController {
       // Send initial WebSocket event
       broadcastMessage({
         type: "sgr_calculation_start",
-        data: {
-          month: month || 'current',
-          progress: 0,
-          status: "Inizializzazione calcolo SGR..."
-        }
+        data: {}
       });
 
       // Trigger calculation in background
@@ -278,43 +275,31 @@ export class SgrController {
         try {
           // Progress: Loading operations
           broadcastMessage({
-            type: "sgr_calculation_progress",
+            type: "sgr_calculation_operations_loaded",
             data: {
-              progress: 20,
-              status: "Recupero operazioni storiche..."
+              totalOperations: 0 // Will be updated during calculation
             }
           });
 
           const result = await sgrScheduler.triggerManualCalculation(month);
 
-          // Progress: Size calculations
+          // Progress: Size calculations completed
           const sizeCount = result.results.length;
           for (let i = 0; i < sizeCount; i++) {
             broadcastMessage({
-              type: "sgr_calculation_progress",
+              type: "sgr_calculation_size_complete",
               data: {
-                progress: 40 + (i / sizeCount) * 40,
-                status: `Calcolo SGR Taglia ${i + 1}/${sizeCount}...`,
-                currentSize: result.results[i].sizeName
+                completedSizes: i + 1,
+                totalSizes: sizeCount,
+                sizeName: result.results[i].sizeName
               }
             });
           }
-
-          // Progress: Saving
-          broadcastMessage({
-            type: "sgr_calculation_progress",
-            data: {
-              progress: 90,
-              status: "Salvataggio dati..."
-            }
-          });
 
           // Complete
           broadcastMessage({
             type: "sgr_calculation_complete",
             data: {
-              progress: 100,
-              status: "Calcolo completato!",
               results: result.results,
               month: result.month,
               year: result.year
@@ -326,7 +311,6 @@ export class SgrController {
           broadcastMessage({
             type: "sgr_calculation_error",
             data: {
-              status: "Errore durante il calcolo",
               error: error instanceof Error ? error.message : "Unknown error"
             }
           });
