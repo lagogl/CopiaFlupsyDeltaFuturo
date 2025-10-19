@@ -1695,6 +1695,10 @@ export class DbStorage implements IStorage {
     let currentBestWeight = currentWeight;
     let currentWorstWeight = currentWeight;
     
+    // Traccia i cambiamenti di SGR mese per mese
+    let currentMonth = -1;
+    let lastSgrUsed = -1;
+    
     for (let day = 0; day <= days; day++) {
       const date = new Date(measurementDate);
       date.setDate(date.getDate() + day);
@@ -1703,6 +1707,17 @@ export class DbStorage implements IStorage {
         // Ottieni l'SGR per questo giorno specifico
         const dailySgrPercentage = getSgrForDate(date);
         const dailySgr = dailySgrPercentage / 100;
+        
+        // Log quando cambia il mese (per debug)
+        if (date.getMonth() !== currentMonth) {
+          currentMonth = date.getMonth();
+          if (lastSgrUsed !== dailySgrPercentage) {
+            const monthNames = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 
+                               'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+            console.log(`📅 Mese ${monthNames[currentMonth]}: SGR ${dailySgrPercentage.toFixed(2)}% (giorno ${day}, peso ${Math.round(currentTheoreticalWeight)} mg)`);
+            lastSgrUsed = dailySgrPercentage;
+          }
+        }
         
         // Calculate best and worst case scenarios
         const bestDailySgr = dailySgr * (1 + variationPercentages.best / 100);
