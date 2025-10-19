@@ -166,6 +166,30 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     }
     
     try {
+      // Verifica permessi NFC prima di avviare la scansione
+      if ('permissions' in navigator && 'NDEFReader' in window) {
+        try {
+          // @ts-ignore - TypeScript non conosce la permission "nfc"
+          const permissionStatus = await navigator.permissions.query({ name: "nfc" });
+          console.log("📋 Stato permesso NFC:", permissionStatus.state);
+          
+          if (permissionStatus.state === "prompt") {
+            // Prima scansione - mostra messaggio informativo
+            toast({
+              title: "📱 Permesso NFC richiesto",
+              description: "Quando richiesto dal browser, clicca 'Consenti'. Questo dialog apparirà solo la prima volta.",
+              duration: 4000,
+            });
+          } else if (permissionStatus.state === "denied") {
+            handleNFCError('Permesso NFC negato. Abilita NFC nelle impostazioni del browser e riprova.');
+            setIsScanning(false);
+            return;
+          }
+        } catch (permError) {
+          console.log("⚠️ Impossibile verificare permessi NFC (normale su alcuni browser)");
+        }
+      }
+
       // Usa Web NFC API nativa del dispositivo mobile
       if ('NDEFReader' in window) {
         console.log('📱 Usando lettore NFC integrato del dispositivo...');
@@ -441,6 +465,17 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                     <AlertCircleIcon className="h-4 w-4" />
                     <AlertTitle>Errore di scansione</AlertTitle>
                     <AlertDescription>{scanError}</AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Messaggio informativo */}
+                {isMobile && nfcMode === 'native' && (
+                  <Alert className="mt-6">
+                    <InfoIcon className="h-4 w-4" />
+                    <AlertTitle>📱 Prima scansione</AlertTitle>
+                    <AlertDescription>
+                      Il browser potrebbe richiedere il permesso NFC. Clicca "Consenti" quando appare il messaggio. Questo dialog verrà mostrato solo la prima volta.
+                    </AlertDescription>
                   </Alert>
                 )}
                 

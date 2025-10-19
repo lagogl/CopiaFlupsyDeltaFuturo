@@ -86,16 +86,48 @@ export default function NFCReader({ onRead, onError }: NFCReaderProps) {
 
   const startNativeNFCReader = async () => {
     try {
+      // Controlla se i permessi NFC sono già stati concessi
+      if ('permissions' in navigator) {
+        try {
+          // @ts-ignore - TypeScript non conosce la permission "nfc"
+          const permissionStatus = await navigator.permissions.query({ name: "nfc" });
+          console.log("📋 Stato permesso NFC:", permissionStatus.state);
+          
+          if (permissionStatus.state === "denied") {
+            onError("Permesso NFC negato. Abilita NFC nelle impostazioni del browser.");
+            return;
+          }
+        } catch (permError) {
+          console.log("⚠️ Impossibile verificare permessi NFC (normale su alcuni browser)");
+        }
+      }
+
       // @ts-ignore - TypeScript non conosce l'API NDEFReader
       const ndef = new window.NDEFReader();
       
+      // Gestione visibilità pagina - pausa NFC se la pagina va in background
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          console.log("📱 Pagina nascosta - NFC in pausa");
+        } else {
+          console.log("📱 Pagina visibile - NFC attivo");
+        }
+      };
+      
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      
       // Iniziamo la scansione
       await ndef.scan();
-      console.log("Scansione NFC nativa avviata");
+      console.log("✅ Scansione NFC nativa avviata");
       
       // Handler per la lettura
       ndef.onreading = (event: any) => {
-        console.log("Tag NFC letto:", event);
+        console.log("📱 Tag NFC letto:", event);
+        
+        // Vibrazione feedback se disponibile
+        if ('vibrate' in navigator) {
+          navigator.vibrate(100);
+        }
         
         // Analizza il messaggio NDEF
         const message = event.message;
@@ -114,16 +146,29 @@ export default function NFCReader({ onRead, onError }: NFCReaderProps) {
         }
         
         onRead(records);
+        
+        // Cleanup listener visibilità dopo lettura
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
       };
       
       // Handler per gli errori
       ndef.onerror = (event: any) => {
-        console.error("Errore NFC:", event);
+        console.error("❌ Errore NFC:", event);
         onError(event.message || 'Errore sconosciuto NFC');
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
       };
     } catch (error) {
-      console.error("Errore avvio scansione NFC nativa:", error);
-      onError(error instanceof Error ? error.message : 'Impossibile avviare la scansione NFC nativa');
+      console.error("❌ Errore avvio scansione NFC nativa:", error);
+      const errorMsg = error instanceof Error ? error.message : 'Impossibile avviare la scansione NFC nativa';
+      
+      // Messaggi di errore più chiari per l'utente
+      if (errorMsg.includes("not allowed")) {
+        onError("Permesso NFC richiesto. Clicca 'Consenti' quando richiesto dal browser.");
+      } else if (errorMsg.includes("not supported")) {
+        onError("NFC non supportato su questo dispositivo.");
+      } else {
+        onError(errorMsg);
+      }
     }
   };
   
