@@ -592,30 +592,9 @@ export class AIService {
         return AutonomousAIService.predictiveGrowth(basketId, targetSizeId, days);
       }
 
-      // Usa DeepSeek per analisi predittiva avanzata
-      const prompt = `
-        Analizza la crescita di molluschi in acquacoltura per il cestello ID: ${basketId}
-        
-        Fornisci predizioni di crescita per ${days} giorni considerando:
-        - Condizioni ambientali stagionali
-        - Fattori di crescita specifici per mitili
-        - Mortalità naturale e stress ambientale
-        - Target size: ${targetSizeId ? `TP-${targetSizeId}` : 'standard commerciale'}
-        
-        Restituisci un JSON con formato:
-        {
-          "predictions": [
-            {
-              "days": numero,
-              "predictedWeight": peso_in_grammi,
-              "predictedAnimalsPerKg": numero_animali,
-              "confidence": valore_0_a_1
-            }
-          ],
-          "insights": ["insight1", "insight2"],
-          "recommendations": ["raccomandazione1", "raccomandazione2"]
-        }
-      `;
+      // MIGLIORE APPROCCIO: Usa servizio autonomo (con dati reali) e lascia che DeepSeek arricchisca solo gli insights
+      console.log('🤖 Recupero predizioni con dati reali dal servizio autonomo...');
+      return AutonomousAIService.predictiveGrowth(basketId, targetSizeId, days);
 
       const response = await aiClient.chat.completions.create({
         model: AI_MODEL,

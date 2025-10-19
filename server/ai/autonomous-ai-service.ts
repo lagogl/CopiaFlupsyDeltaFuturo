@@ -1,6 +1,7 @@
 // Sistema AI autonomo semplificato - senza dipendenze esterne
 import { db } from '../db';
-import { sizes } from '../../shared/schema';
+import { sizes, operations } from '../../shared/schema';
+import { eq, desc } from 'drizzle-orm';
 
 /**
  * Sistema AI Autonomo FLUPSY - Algoritmi interni di analisi intelligente
@@ -80,10 +81,34 @@ export class AutonomousAIService {
       // Recupera le taglie dal database per la mappatura
       const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
       
+      // Recupera l'ultima operazione del cestello per avere dati reali
+      const lastOperation = await db.select()
+        .from(operations)
+        .where(eq(operations.basketId, basketId))
+        .orderBy(desc(operations.date))
+        .limit(1);
+      
+      // Usa dati reali se disponibili, altrimenti usa valori di default
+      let currentWeight = 0; // grammi
+      let currentAnimalsPerKg = 0;
+      let currentAnimalCount = 0;
+      
+      if (lastOperation.length > 0) {
+        const op = lastOperation[0];
+        currentWeight = op.totalWeight || 0; // totalWeight è già in grammi
+        currentAnimalsPerKg = op.animalsPerKg || 0;
+        currentAnimalCount = op.animalCount || 0;
+        console.log(`📊 Dati reali cestello ${basketId}: ${currentWeight}g, ${currentAnimalsPerKg}/kg, ${currentAnimalCount} animali`);
+      } else {
+        // Valori di default solo se non ci sono operazioni
+        currentWeight = 1000; // 1kg in grammi
+        currentAnimalsPerKg = 1000;
+        currentAnimalCount = 1000;
+        console.log(`⚠️ Nessuna operazione per cestello ${basketId}, uso valori di default`);
+      }
+      
       // Algoritmo di crescita predittiva autonomo (simulazione realistica)
       const predictions = [];
-      let currentWeight = 50 + Math.random() * 200; // Peso base realistico (grammi)
-      let currentAnimalsPerKg = 800 + Math.random() * 1200; // Animali per kg realistici
       
       const baseGrowthRate = 2.5 + Math.random() * 2; // 2.5-4.5% crescita giornaliera
       const baseMortalityRate = 0.3 + Math.random() * 0.7; // 0.3-1% mortalità giornaliera
@@ -100,6 +125,9 @@ export class AutonomousAIService {
         const weightGrowth = currentWeight * (dailyGrowthRate / 100) * (1 - dailyMortalityRate / 100);
         currentWeight += weightGrowth;
         
+        // Aggiorna numero di animali considerando mortalità
+        currentAnimalCount = Math.max(0, currentAnimalCount * (1 - dailyMortalityRate / 100));
+        
         // Calcola animali per kg considerando crescita e mortalità
         const animalGrowthFactor = 1 + (dailyGrowthRate / 100) * 0.8; // Crescita individuale
         currentAnimalsPerKg = Math.max(50, currentAnimalsPerKg / animalGrowthFactor * (1 - dailyMortalityRate / 100));
@@ -110,8 +138,8 @@ export class AutonomousAIService {
           currentAnimalsPerKg <= (s.maxAnimalsPerKg || Infinity)
         );
         
-        // Calcola numero totale di animali (peso in kg × animali per kg)
-        const totalAnimals = Math.round((currentWeight / 1000) * currentAnimalsPerKg);
+        // Usa il numero di animali aggiornato
+        const totalAnimals = Math.round(currentAnimalCount);
         
         predictions.push({
           days: day,
