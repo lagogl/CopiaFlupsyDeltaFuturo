@@ -36,60 +36,52 @@ export function registerAIRoutes(app: Express) {
       let basketsToAnalyze: any[] = [];
       
       if (flupsyId) {
-        // Analisi per FLUPSY intera - cestelli con composizione lotti misti
+        // Analisi per FLUPSY intera - recupera cestelli attivi (supporta sia lotti singoli che misti)
         basketsToAnalyze = await db.select({
           basketId: baskets.id,
           physicalNumber: baskets.physicalNumber,
           flupsyId: baskets.flupsyId,
           state: baskets.state,
           cycleId: cycles.id,
-          flupsyName: flupsys.name,
-          lotCount: sql<number>`COUNT(DISTINCT ${basketLotComposition.lotId})`,
-          totalAnimals: sql<number>`SUM(${basketLotComposition.animalCount})`,
-          avgPercentage: sql<number>`AVG(${basketLotComposition.percentage})`
+          cycleLotId: cycles.lotId,
+          flupsyName: flupsys.name
         })
           .from(baskets)
           .innerJoin(cycles, eq(baskets.id, cycles.basketId))
-          .innerJoin(basketLotComposition, eq(cycles.id, basketLotComposition.cycleId))
           .innerJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
           .where(and(
             eq(baskets.flupsyId, flupsyId),
             eq(cycles.state, 'active')
-          ))
-          .groupBy(baskets.id, baskets.physicalNumber, baskets.flupsyId, baskets.state, cycles.id, flupsys.name);
-        console.log(`🔍 Trovati ${basketsToAnalyze.length} cestelli CON COMPOSIZIONE MISTA per FLUPSY ${flupsyId}`);
+          ));
+        console.log(`🔍 Trovati ${basketsToAnalyze.length} cestelli attivi per FLUPSY ${flupsyId}`);
       } else if (basketId) {
-        // Analisi per singolo cestello con composizione dettagliata
+        // Analisi per singolo cestello
         basketsToAnalyze = await db.select({
           basketId: baskets.id,
           physicalNumber: baskets.physicalNumber,
           flupsyId: baskets.flupsyId,
           state: baskets.state,
           cycleId: cycles.id,
-          flupsyName: flupsys.name,
-          lotCount: sql<number>`COUNT(DISTINCT ${basketLotComposition.lotId})`,
-          totalAnimals: sql<number>`SUM(${basketLotComposition.animalCount})`,
-          avgPercentage: sql<number>`AVG(${basketLotComposition.percentage})`
+          cycleLotId: cycles.lotId,
+          flupsyName: flupsys.name
         })
           .from(baskets)
           .innerJoin(cycles, eq(baskets.id, cycles.basketId))
-          .innerJoin(basketLotComposition, eq(cycles.id, basketLotComposition.cycleId))
           .innerJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
-          .where(eq(baskets.id, basketId))
-          .groupBy(baskets.id, baskets.physicalNumber, baskets.flupsyId, baskets.state, cycles.id, flupsys.name);
-        console.log(`🔍 Analisi singolo cestello ${basketId} con composizione mista`);
+          .where(eq(baskets.id, basketId));
+        console.log(`🔍 Analisi singolo cestello ${basketId}`);
       }
 
       if (basketsToAnalyze.length === 0) {
         return res.status(404).json({ success: false, error: 'Nessun cestello con lotti attivi trovato' });
       }
 
-      // Analisi AI potenziata per cestelli con lotti misti
+      // Analisi AI per cestelli (supporta sia lotti singoli che misti)
       const basketPredictions = [];
       for (const basket of basketsToAnalyze) {
         
-        // Recupera composizione dettagliata lotti per questo cestello
-        const lotComposition = await db.select({
+        // Recupera composizione lotti: prima prova con basketLotComposition (lotti misti), poi usa il lotId del ciclo (lotto singolo)
+        let lotComposition = await db.select({
           lotId: basketLotComposition.lotId,
           animalCount: basketLotComposition.animalCount,
           percentage: basketLotComposition.percentage,
@@ -101,6 +93,33 @@ export function registerAIRoutes(app: Express) {
           .from(basketLotComposition)
           .innerJoin(lots, eq(basketLotComposition.lotId, lots.id))
           .where(eq(basketLotComposition.basketId, basket.basketId));
+        
+        // Se non ci sono lotti misti, usa il lotto singolo dal ciclo
+        if (lotComposition.length === 0 && basket.cycleLotId) {
+          const singleLot = await db.select({
+            id: lots.id,
+            supplier: lots.supplier,
+            supplierLotNumber: lots.supplierLotNumber,
+            arrivalDate: lots.arrivalDate,
+            totalMortality: lots.totalMortality,
+            animalCount: lots.animalCount
+          })
+            .from(lots)
+            .where(eq(lots.id, basket.cycleLotId))
+            .limit(1);
+          
+          if (singleLot.length > 0) {
+            lotComposition = [{
+              lotId: singleLot[0].id,
+              animalCount: singleLot[0].animalCount,
+              percentage: 100,
+              supplier: singleLot[0].supplier,
+              supplierLotNumber: singleLot[0].supplierLotNumber,
+              arrivalDate: singleLot[0].arrivalDate,
+              totalMortality: singleLot[0].totalMortality
+            }];
+          }
+        }
         
         // Calcola metriche avanzate per lotti misti
         const mixedLotMetrics = {
