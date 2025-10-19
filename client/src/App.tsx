@@ -62,6 +62,8 @@ import ScreeningDetail from "@/pages/ScreeningDetail";
 import LotsAnalytics from "@/pages/LotsAnalytics";
 import MixedLotsAnalytics from "@/pages/MixedLotsAnalytics";
 import LotLedgerStatistics from "@/pages/LotLedgerStatistics";
+// Importazione AI Growth Variability Analysis
+import GrowthVariabilityAnalysis from "@/pages/GrowthVariabilityAnalysis";
 // Operazioni Avanzate rimosse per ottimizzazione prestazioni
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
@@ -126,6 +128,7 @@ function Router() {
       <ProtectedRoute path="/ai-dashboard" component={AIDashboard}/>
       <ProtectedRoute path="/ai-report-generator" component={AIReportGenerator}/>
       <ProtectedRoute path="/giacenze-range" component={GiacenzeRange}/>
+      <ProtectedRoute path="/growth-variability-analysis" component={GrowthVariabilityAnalysis}/>
       
       {/* Redirezione per pagine rimosse */}
       <Route path="/tp3000-forecast">
