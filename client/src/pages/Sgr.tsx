@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import SgrForm from '@/components/SgrForm';
 import SgrGiornalieriForm from '@/components/SgrGiornalieriForm';
 import GrowthPredictionChart from '@/components/GrowthPredictionChart';
-import { connectWebSocket, disconnectWebSocket, onWebSocketMessage } from '@/lib/websocket';
+import { useWebSocketMessage } from '@/lib/websocket';
 
 export default function Sgr() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,33 +127,33 @@ export default function Sgr() {
     }
   });
 
-  // WebSocket listener for SGR calculation progress
-  useEffect(() => {
-    const unsubscribe = onWebSocketMessage((event) => {
-      if (event.type === 'sgr_calculation_start') {
-        setIsCalculating(true);
-        setCalculationProgress(0);
-        setCalculationStatus('Inizio calcolo SGR...');
-      } else if (event.type === 'sgr_calculation_operations_loaded') {
-        setCalculationProgress(20);
-        setCalculationStatus(`Caricate ${event.data?.totalOperations || 0} operazioni`);
-      } else if (event.type === 'sgr_calculation_size_complete') {
-        const progress = 20 + (event.data?.completedSizes / event.data?.totalSizes) * 70;
-        setCalculationProgress(progress);
-        setCalculationStatus(`Completata taglia ${event.data?.sizeName} (${event.data?.completedSizes}/${event.data?.totalSizes})`);
-      } else if (event.type === 'sgr_calculation_complete') {
-        setCalculationProgress(100);
-        setCalculationStatus('Calcolo completato!');
-        setTimeout(() => {
-          setIsCalculating(false);
-          setCalculationProgress(0);
-          setCalculationStatus('');
-        }, 2000);
-      }
-    });
+  // WebSocket listeners for SGR calculation progress
+  useWebSocketMessage('sgr_calculation_start', () => {
+    setIsCalculating(true);
+    setCalculationProgress(0);
+    setCalculationStatus('Inizio calcolo SGR...');
+  });
 
-    return () => unsubscribe();
-  }, []);
+  useWebSocketMessage('sgr_calculation_operations_loaded', (data: any) => {
+    setCalculationProgress(20);
+    setCalculationStatus(`Caricate ${data?.totalOperations || 0} operazioni`);
+  });
+
+  useWebSocketMessage('sgr_calculation_size_complete', (data: any) => {
+    const progress = 20 + (data?.completedSizes / data?.totalSizes) * 70;
+    setCalculationProgress(progress);
+    setCalculationStatus(`Completata taglia ${data?.sizeName} (${data?.completedSizes}/${data?.totalSizes})`);
+  });
+
+  useWebSocketMessage('sgr_calculation_complete', () => {
+    setCalculationProgress(100);
+    setCalculationStatus('Calcolo completato!');
+    setTimeout(() => {
+      setIsCalculating(false);
+      setCalculationProgress(0);
+      setCalculationStatus('');
+    }, 2000);
+  });
 
   // Handle SGR recalculation
   const handleRecalculateSgr = () => {
