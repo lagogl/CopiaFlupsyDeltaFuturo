@@ -33,12 +33,22 @@ async function populateDatabase() {
     // 1. USERS
     console.log("\n📋 1. POPOLAMENTO UTENTI...");
     const hashedPassword = await bcrypt.hash("password123", 10);
-    const usersData = await db.insert(users).values([
-      { username: "admin", password: hashedPassword, role: "admin", language: "it" },
-      { username: "operatore1", password: hashedPassword, role: "user", language: "it" },
-      { username: "viewer", password: hashedPassword, role: "visitor", language: "en" }
-    ]).returning();
-    console.log(`✅ ${usersData.length} utenti creati`);
+    let usersData = [];
+    try {
+      usersData = await db.insert(users).values([
+        { username: "admin", password: hashedPassword, role: "admin", language: "it" },
+        { username: "operatore1", password: hashedPassword, role: "user", language: "it" },
+        { username: "viewer", password: hashedPassword, role: "visitor", language: "en" }
+      ]).returning();
+      console.log(`✅ ${usersData.length} utenti creati`);
+    } catch (error: any) {
+      if (error.code === '23505') {
+        console.log("⚠️  Utenti già esistenti - skip");
+        usersData = await db.select().from(users).limit(3);
+      } else {
+        throw error;
+      }
+    }
     addToReport("UTENTI", usersData.map(u => ({ id: u.id, username: u.username, role: u.role })));
 
     // 2. LOTS (6 lotti con dati realistici)
@@ -134,6 +144,7 @@ async function populateDatabase() {
     addToReport("CICLI", cyclesData);
 
     // Aggiorna basket con currentCycleId
+    const { eq } = await import("drizzle-orm");
     for (const cycle of cyclesData.filter(c => c.state === "active")) {
       await db.update(baskets)
         .set({ 
@@ -141,7 +152,7 @@ async function populateDatabase() {
           state: "active",
           cycleCode: `${cycle.basketId}-${cycle.lotId}-${new Date(cycle.startDate).toISOString().slice(2, 7).replace('-', '')}`
         })
-        .where({ id: cycle.basketId });
+        .where(eq(baskets.id, cycle.basketId));
     }
 
     // 4. OPERATIONS (6+ mesi di storico con varie operazioni)
