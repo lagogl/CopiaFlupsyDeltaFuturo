@@ -43,6 +43,7 @@ export interface MenuTranslations {
     export: string;
     aiDashboard: string;
     aiReportGenerator: string;
+    aiGrowthVariability: string;
     statistics: string;
     lotsAnalytics: string;
     lotLedgerStatistics: string;
@@ -105,6 +106,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       export: "Esportazione",
       aiDashboard: "AI Dashboard",
       aiReportGenerator: "Generatore Report AI",
+      aiGrowthVariability: "AI Variabilità Crescita",
       statistics: "Statistiche",
       lotsAnalytics: "Analisi Lotti",
       lotLedgerStatistics: "Statistiche Lot Ledger",
@@ -163,6 +165,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       export: "Export",
       aiDashboard: "AI Dashboard",
       aiReportGenerator: "AI Report Generator",
+      aiGrowthVariability: "AI Growth Variability",
       statistics: "Statistics",
       lotsAnalytics: "Lots Analytics",
       lotLedgerStatistics: "Lot Ledger Statistics",
