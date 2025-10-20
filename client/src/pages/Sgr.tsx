@@ -96,18 +96,29 @@ export default function Sgr() {
   
   // Prepare data for multi-size comparison
   const getSizesWithSgr = () => {
-    if (!sizes || !sgrPerTaglia) return [];
+    if (!sizes) return [];
     
     const today = new Date(projectionStartDate);
     const currentMonthName = monthOrder[today.getMonth()];
     
+    // Fallback SGR generico se non ci sono dati per taglia
+    const fallbackSgr = sgrs?.find(sgr => sgr.month.toLowerCase() === currentMonthName);
+    const fallbackSgrValue = fallbackSgr?.percentage || 4.1;
+    
     return sizes
       .map((size: any) => {
-        const sgrForSize = sgrPerTaglia.find(
-          (sgr: any) => sgr.month.toLowerCase() === currentMonthName && sgr.sizeId === size.id
-        );
+        // Cerca prima SGR specifico per taglia
+        let sgrValue = fallbackSgrValue;
         
-        if (!sgrForSize?.calculatedSgr) return null;
+        if (sgrPerTaglia) {
+          const sgrForSize = sgrPerTaglia.find(
+            (sgr: any) => sgr.month.toLowerCase() === currentMonthName && sgr.sizeId === size.id
+          );
+          
+          if (sgrForSize?.calculatedSgr) {
+            sgrValue = sgrForSize.calculatedSgr;
+          }
+        }
         
         // Calcola il peso medio per questa taglia
         const minAnimals = size.minAnimalsPerKg || 0;
@@ -122,7 +133,7 @@ export default function Sgr() {
         return {
           sizeId: size.id,
           sizeName: size.name,
-          sgrPercentage: sgrForSize.calculatedSgr,
+          sgrPercentage: sgrValue,
           color: size.color || '#3b82f6',
           averageWeight: avgWeight
         };
