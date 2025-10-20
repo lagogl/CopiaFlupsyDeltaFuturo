@@ -28,7 +28,6 @@ import FlupsyComparison from "@/pages/FlupsyComparison";
 import FlupsyComparisonEnhanced from "@/pages/FlupsyComparisonEnhanced";
 import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
-import NFCScan from "@/pages/NFCScan";
 import NFCTagManager from "@/pages/NFCTagManager";
 import NFCPrimaAttivazione from "@/pages/NFCPrimaAttivazione";
 import GrowJourney from "@/pages/GrowJourney";
@@ -111,8 +110,6 @@ function Router() {
       <ProtectedRoute path="/sgr" component={Sgr}/>
       <ProtectedRoute path="/settings" component={Settings} requiredRole="admin" />
       <ProtectedRoute path="/test" component={TestView}/>
-      <ProtectedRoute path="/nfc-scan" component={NFCScan}/>
-      <ProtectedRoute path="/nfc-scan/basket/:id" component={NFCScan}/>
       <ProtectedRoute path="/nfc-prima-attivazione" component={NFCPrimaAttivazione}/>
       <ProtectedRoute path="/nfc-tags" component={NFCTagManager}/>
       <ProtectedRoute path="/gestione-tag-nfc" component={NFCTagManager}/>

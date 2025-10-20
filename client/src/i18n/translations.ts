@@ -31,7 +31,6 @@ export interface MenuTranslations {
     screeningWithMap: string;
     screeningHistory: string;
     nfcFirstActivation: string;
-    flupsyScanMobile: string;
     flupsyUnits: string;
     flupsyComparison: string;
     growthPath: string;
@@ -94,7 +93,6 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       screeningWithMap: "Vagliatura con Mappa",
       screeningHistory: "Storico Vagliature",
       nfcFirstActivation: "Prima Attivazione NFC",
-      flupsyScanMobile: "FlupsyScan Mobile",
       flupsyUnits: "Unità FLUPSY",
       flupsyComparison: "Confronto FLUPSY",
       growthPath: "Percorso di Crescita",
@@ -153,7 +151,6 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       screeningWithMap: "Screening with Map",
       screeningHistory: "Screening History",
       nfcFirstActivation: "NFC First Activation",
-      flupsyScanMobile: "FlupsyScan Mobile",
       flupsyUnits: "FLUPSY Units",
       flupsyComparison: "FLUPSY Comparison",
       growthPath: "Growth Path",
