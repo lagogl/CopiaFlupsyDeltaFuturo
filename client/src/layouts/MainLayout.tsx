@@ -184,12 +184,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-primary text-white shadow-md z-10">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-1 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img 
               src="/mito-logo.png" 
               alt="MITO SRL Logo" 
-              className="h-16 w-16 object-contain"
+              className="h-[92px] w-[92px] object-contain -my-3"
             />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
