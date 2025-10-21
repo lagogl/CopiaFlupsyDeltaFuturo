@@ -189,7 +189,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <img 
               src="/mito-logo.png" 
               alt="MITO SRL Logo" 
-              className="h-[92px] w-[92px] object-contain -my-3"
+              className="h-[100px] w-[100px] object-contain -my-4"
             />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
