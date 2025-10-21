@@ -7,6 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertTriangle, BarChart3, TrendingUp, Split, Zap } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 
+interface LotComposition {
+  lotId: number;
+  percentage: number;
+  animalCount: number;
+  supplier: string;
+  lotNumber: string;
+  totalMortality: number;
+}
+
 interface MixedBasketComposition {
   basketId: number;
   cycleId: number;
@@ -15,7 +24,7 @@ interface MixedBasketComposition {
   flupsyName: string;
   lotCount: number;
   totalAnimals: number;
-  compositions: string;
+  compositions: LotComposition[];
   estimatedMortalityRate: number;
   riskLevel: 'basso' | 'medio' | 'alto';
 }
@@ -256,9 +265,27 @@ const MixedLotsAnalytics: React.FC = () => {
                       
                       <div className="bg-muted/50 rounded p-3 mb-3">
                         <h4 className="font-medium text-sm mb-2">Composizione Lotti:</h4>
-                        <p className="text-sm leading-relaxed">
-                          {basket.compositions}
-                        </p>
+                        <div className="space-y-2">
+                          {basket.compositions.map((comp, idx) => (
+                            <div key={comp.lotId} className="text-sm flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">L{comp.lotId}</span>
+                                <span className="text-muted-foreground">{comp.supplier}</span>
+                                {comp.lotNumber && (
+                                  <span className="text-xs text-muted-foreground">({comp.lotNumber})</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {(comp.percentage * 100).toFixed(1)}%
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {comp.animalCount.toLocaleString()} pz
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                       
                       <div className="flex items-center justify-between text-sm">
