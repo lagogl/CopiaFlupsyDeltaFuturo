@@ -2699,26 +2699,22 @@ export default function SpreadsheetOperations() {
                                           </div>
                                         )}
 
-                                        {/* Alert lotti misti - solo se cestello potrebbe averli */}
+                                        {/* Alert lotti misti - verifica dalle note */}
                                         {(() => {
-                                          // Verifica se questo cestello potrebbe avere lotti misti
-                                          // (cestelli con più operazioni di selezione/vagliatura)
-                                          const basketOps = ((operations as any[]) || [])
-                                            .filter((op: any) => op.basketId === row.basketId);
-                                          const hasScreeningOps = basketOps.some((op: any) => 
-                                            op.type === 'vagliatura' || op.type === 'selezione-vendita'
-                                          );
+                                          // Verifica se questo cestello contiene lotti misti
+                                          // Il sistema aggiunge "LOTTO MISTO" nelle note quando crea cestelli da vagliatura
+                                          const isMixedLot = row.notes?.includes('LOTTO MISTO');
                                           
-                                          if (hasScreeningOps) {
+                                          if (isMixedLot) {
                                             return (
                                               <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
                                                 <div className="flex items-center gap-2">
-                                                  <span className="text-blue-600">ℹ️</span>
-                                                  <span className="font-semibold text-xs text-blue-800">Lotti Misti Possibili</span>
+                                                  <span className="text-blue-600">⚠️</span>
+                                                  <span className="font-semibold text-xs text-blue-800">Lotto Misto Rilevato</span>
                                                 </div>
                                                 <p className="text-xs text-blue-700 mt-1">
-                                                  Questo cestello potrebbe contenere più lotti a seguito di operazioni di vagliatura/selezione.
-                                                  Consulta "Analytics Lotti Misti" per dettagli completi.
+                                                  Questo cestello contiene più lotti a seguito di operazioni di vagliatura/selezione.
+                                                  Consulta "Analytics Lotti Misti" per la composizione completa.
                                                 </p>
                                               </div>
                                             );
