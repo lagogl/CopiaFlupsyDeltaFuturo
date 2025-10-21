@@ -56,6 +56,7 @@ import { registerIntegrationsRoutes } from "./modules/integrations/integrations.
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 import { checkDatabaseIntegrityHandler } from "./controllers/database-integrity-controller";
 import fattureInCloudRouter from "./controllers/fatture-in-cloud-controller";
+import { getBasketLotComposition } from "./services/basket-lot-composition.service";
 
 // Importazione del router per le API esterne
 // API esterne disabilitate
@@ -2182,6 +2183,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const formattedDate = format(new Date(date), 'yyyy-MM-dd');
         
+        // 🎯 LOTTI MISTI: Arricchire note se il cestello ha lotti misti
+        let operationNotes = notes || null;
+        const lotComposition = await getBasketLotComposition(basketId, cycleId);
+        
+        if (lotComposition && lotComposition.length > 1) {
+          console.log(`🎯 BYPASS MISURA - Cestello ${basketId} ha ${lotComposition.length} lotti - COMPOSIZIONE MISTA`);
+          
+          // Costruisci descrizione lotti misti con dettagli
+          const lotDetails = await Promise.all(
+            lotComposition.map(async (comp: any) => {
+              const lot = await storage.getLot(comp.lotId);
+              return {
+                supplier: lot?.supplier || 'N/D',
+                percentage: comp.percentage?.toFixed(1) || '0',
+                animalCount: comp.animalCount || 0
+              };
+            })
+          );
+          
+          const lotSummary = lotDetails
+            .map(l => `${l.supplier} (${l.percentage}% - ${l.animalCount} animali)`)
+            .join(' + ');
+          
+          const mixedLotNote = `LOTTO MISTO: ${lotSummary}`;
+          operationNotes = operationNotes 
+            ? `${operationNotes}\n${mixedLotNote}` 
+            : mixedLotNote;
+          
+          console.log(`🎯 BYPASS MISURA - Note arricchite: ${operationNotes}`);
+        }
+        
         // Crea operazione misura senza .returning() per evitare deadlock
         await db.insert(schema.operations).values({
           basketId,
@@ -2191,7 +2223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: formattedDate,
           animalCount: animalCount || null,
           totalWeight: totalWeight || null,
-          notes: notes || null
+          notes: operationNotes
         });
         
         console.log("🎉 OPERAZIONE MISURA CREATA - Cestello:", basketId, "Ciclo attivo:", cycleId);
@@ -2619,12 +2651,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Create the operation - Formatta la data nel formato corretto per il database
-        const operationData = {
+        let operationData = {
           ...parsedData.data,
           date: format(parsedData.data.date, 'yyyy-MM-dd'),
           // Manteniamo il conteggio originale degli animali (inclusi i morti)
           animalCount: parsedData.data.animalCount
         };
+        
+        // 🎯 LOTTI MISTI: Arricchire note per operazioni peso/misura se il cestello ha lotti misti
+        if (type === 'peso' || type === 'misura') {
+          console.log(`🎯 Operazione ${type} - Verifico presenza lotti misti per cestello ${basketId}`);
+          const lotComposition = await getBasketLotComposition(basketId, cycleId);
+          
+          if (lotComposition && lotComposition.length > 1) {
+            console.log(`🎯 Cestello ${basketId} ha ${lotComposition.length} lotti - COMPOSIZIONE MISTA`);
+            
+            // Costruisci descrizione lotti misti con dettagli
+            const lotDetails = await Promise.all(
+              lotComposition.map(async (comp: any) => {
+                const lot = await storage.getLot(comp.lotId);
+                return {
+                  supplier: lot?.supplier || 'N/D',
+                  percentage: comp.percentage?.toFixed(1) || '0',
+                  animalCount: comp.animalCount || 0
+                };
+              })
+            );
+            
+            const lotSummary = lotDetails
+              .map(l => `${l.supplier} (${l.percentage}% - ${l.animalCount} animali)`)
+              .join(' + ');
+            
+            const mixedLotNote = `LOTTO MISTO: ${lotSummary}`;
+            
+            // Aggiunge alle note esistenti o crea nuove note
+            const existingNotes = operationData.notes || '';
+            operationData.notes = existingNotes 
+              ? `${existingNotes}\n${mixedLotNote}` 
+              : mixedLotNote;
+            
+            console.log(`🎯 Note arricchite: ${operationData.notes}`);
+          } else {
+            console.log(`🎯 Cestello ${basketId} ha ${lotComposition?.length || 0} lotti - SINGOLO LOTTO`);
+          }
+        }
         
         console.log("CREAZIONE OPERAZIONE STANDARD - Dati:", JSON.stringify(operationData, null, 2));
         

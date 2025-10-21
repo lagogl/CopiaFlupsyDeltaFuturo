@@ -2635,7 +2635,8 @@ export default function SpreadsheetOperations() {
                             <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center gap-1 cursor-help">
                               {(() => {
                                 const lot = ((lots as any[]) || []).find((l: any) => l.id === (row.lotId || 1));
-                                const isMixedLot = row.notes?.includes('LOTTO MISTO');
+                                // Verifica lotti misti dai dati lotComposition (più affidabile delle note)
+                                const isMixedLot = row.lotComposition && row.lotComposition.length > 1;
                                 
                                 return (
                                   <>
