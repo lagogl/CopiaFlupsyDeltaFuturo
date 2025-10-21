@@ -2183,18 +2183,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const formattedDate = format(new Date(date), 'yyyy-MM-dd');
         
-        // 🎯 LOTTI MISTI: Arricchire note se il cestello ha lotti misti
+        // 🎯 LOTTI MISTI: Arricchire note e metadata se il cestello ha lotti misti
         let operationNotes = notes || null;
+        let operationMetadata = null;
         const lotComposition = await getBasketLotComposition(basketId, cycleId);
         
         if (lotComposition && lotComposition.length > 1) {
           console.log(`🎯 BYPASS MISURA - Cestello ${basketId} ha ${lotComposition.length} lotti - COMPOSIZIONE MISTA`);
           
-          // Costruisci descrizione lotti misti con dettagli
+          // Trova lotto dominante (quello con maggior percentuale)
+          const dominantLot = lotComposition.reduce((max, comp) => 
+            (comp.percentage || 0) > (max.percentage || 0) ? comp : max
+          , lotComposition[0]);
+          
+          // Costruisci descrizione lotti misti con dettagli per le note
           const lotDetails = await Promise.all(
             lotComposition.map(async (comp: any) => {
               const lot = await storage.getLot(comp.lotId);
               return {
+                lotId: comp.lotId,
                 supplier: lot?.supplier || 'N/D',
                 percentage: comp.percentage?.toFixed(1) || '0',
                 animalCount: comp.animalCount || 0
@@ -2211,7 +2218,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${operationNotes}\n${mixedLotNote}` 
             : mixedLotNote;
           
+          // 🎯 METADATA: Aggiungi metadata strutturati per tracciamento completo
+          operationMetadata = JSON.stringify({
+            isMixed: true,
+            dominantLot: dominantLot.lotId,
+            lotCount: lotComposition.length,
+            composition: lotDetails.map(l => ({
+              lotId: l.lotId,
+              percentage: parseFloat(l.percentage),
+              animalCount: l.animalCount
+            }))
+          });
+          
           console.log(`🎯 BYPASS MISURA - Note arricchite: ${operationNotes}`);
+          console.log(`🎯 BYPASS MISURA - Metadata aggiunti: ${operationMetadata}`);
         }
         
         // Crea operazione misura senza .returning() per evitare deadlock
@@ -2223,7 +2243,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: formattedDate,
           animalCount: animalCount || null,
           totalWeight: totalWeight || null,
-          notes: operationNotes
+          notes: operationNotes,
+          metadata: operationMetadata
         });
         
         console.log("🎉 OPERAZIONE MISURA CREATA - Cestello:", basketId, "Ciclo attivo:", cycleId);
