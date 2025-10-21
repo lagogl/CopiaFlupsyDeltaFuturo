@@ -186,16 +186,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <header className="bg-primary text-white shadow-md z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
+            <img 
+              src="/mito-logo.png" 
+              alt="MITO SRL Logo" 
+              className="h-16 w-16 object-contain"
+            />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-1 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-white">
               <Menu className="h-6 w-6" />
             </button>
-            <img 
-              src="/mito-logo.png" 
-              alt="MITO SRL Logo" 
-              className="h-12 w-12 object-contain"
-            />
             <h1 className="text-xl font-condensed font-bold">{translations.title}</h1>
           </div>
           <div className="flex-1 flex justify-center">
