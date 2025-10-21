@@ -2639,21 +2639,108 @@ export default function SpreadsheetOperations() {
                               })()}
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="text-sm">
+                          <TooltipContent className="max-w-md p-0 border-0 shadow-lg">
+                            <div className="bg-white rounded-lg border shadow-xl overflow-hidden">
                               {(() => {
                                 const lot = ((lots as any[]) || []).find((l: any) => l.id === (row.lotId || 1));
                                 if (lot) {
                                   return (
-                                    <div className="space-y-1">
-                                      <div><strong>Lotto L{lot.id}</strong></div>
-                                      <div>Fornitore: {lot.supplier}</div>
-                                      <div>Data arrivo: {new Date(lot.arrivalDate).toLocaleDateString('it-IT')}</div>
-                                      {lot.supplierLotNumber && <div>Lotto fornitore: {lot.supplierLotNumber}</div>}
-                                    </div>
+                                    <>
+                                      {/* Header */}
+                                      <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-3">
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
+                                            📦
+                                          </div>
+                                          <div>
+                                            <h4 className="font-semibold text-sm">Lotto L{lot.id}</h4>
+                                            <p className="text-xs opacity-90">{lot.supplier}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Contenuto */}
+                                      <div className="p-4 space-y-3">
+                                        {/* Informazioni principali lotto */}
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                          <div className="bg-blue-50 p-2 rounded">
+                                            <div className="text-gray-600">Data arrivo</div>
+                                            <div className="font-semibold text-blue-600">
+                                              {new Date(lot.arrivalDate).toLocaleDateString('it-IT')}
+                                            </div>
+                                          </div>
+                                          {lot.quality && (
+                                            <div className="bg-green-50 p-2 rounded">
+                                              <div className="text-gray-600">Qualità</div>
+                                              <div className="font-semibold text-green-600 capitalize">{lot.quality}</div>
+                                            </div>
+                                          )}
+                                          {lot.animalCount && (
+                                            <div className="bg-purple-50 p-2 rounded">
+                                              <div className="text-gray-600">Animali lotto</div>
+                                              <div className="font-semibold text-purple-600">
+                                                {formatNumberWithSeparators(lot.animalCount)}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {lot.weight && (
+                                            <div className="bg-orange-50 p-2 rounded">
+                                              <div className="text-gray-600">Peso lotto</div>
+                                              <div className="font-semibold text-orange-600">{formatNumberWithSeparators(lot.weight)}g</div>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Lotto fornitore */}
+                                        {lot.supplierLotNumber && (
+                                          <div className="p-2 bg-gray-50 rounded border-l-4 border-gray-400">
+                                            <div className="text-xs text-gray-600">Lotto fornitore</div>
+                                            <div className="text-sm font-medium text-gray-800">{lot.supplierLotNumber}</div>
+                                          </div>
+                                        )}
+
+                                        {/* Alert lotti misti - solo se cestello potrebbe averli */}
+                                        {(() => {
+                                          // Verifica se questo cestello potrebbe avere lotti misti
+                                          // (cestelli con più operazioni di selezione/vagliatura)
+                                          const basketOps = ((operations as any[]) || [])
+                                            .filter((op: any) => op.basketId === row.basketId);
+                                          const hasScreeningOps = basketOps.some((op: any) => 
+                                            op.type === 'vagliatura' || op.type === 'selezione-vendita'
+                                          );
+                                          
+                                          if (hasScreeningOps) {
+                                            return (
+                                              <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-blue-600">ℹ️</span>
+                                                  <span className="font-semibold text-xs text-blue-800">Lotti Misti Possibili</span>
+                                                </div>
+                                                <p className="text-xs text-blue-700 mt-1">
+                                                  Questo cestello potrebbe contenere più lotti a seguito di operazioni di vagliatura/selezione.
+                                                  Consulta "Analytics Lotti Misti" per dettagli completi.
+                                                </p>
+                                              </div>
+                                            );
+                                          }
+                                        })()}
+
+                                        {/* Note */}
+                                        {lot.notes && (
+                                          <div className="pt-2 border-t">
+                                            <div className="text-xs text-gray-600 font-medium">Note</div>
+                                            <div className="text-xs text-gray-700 mt-1">{lot.notes}</div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </>
                                   );
                                 }
-                                return <div>Informazioni lotto non disponibili</div>;
+                                return (
+                                  <div className="p-4">
+                                    <div className="text-sm text-gray-500">Informazioni lotto non disponibili</div>
+                                  </div>
+                                );
                               })()}
                             </div>
                           </TooltipContent>
