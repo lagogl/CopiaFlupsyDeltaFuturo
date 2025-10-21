@@ -2137,7 +2137,7 @@ export default function SpreadsheetOperations() {
                   <div style={{width: '60px'}} className="px-1 py-1.5 border-r">P.Med(mg)</div>
                   <div style={{width: '50px'}} className="px-1 py-1.5 border-r">Ult.Op</div>
                   {/* COLONNA LOTTO - OBBLIGATORIO */}
-                  <div style={{width: '90px'}} className="px-1 py-1.5 border-r bg-yellow-50">Lotto*</div>
+                  <div style={{width: '120px'}} className="px-1 py-1.5 border-r bg-yellow-50 truncate">Lotto*</div>
                   <div style={{width: '70px'}} className="px-1 py-1.5 border-r">Animali</div>
                   <div style={{width: '80px'}} className="px-1 py-1.5 border-r">Peso Tot (g)</div>
                   <div style={{width: '65px'}} className="px-1 py-1.5 border-r">Anim/kg</div>
@@ -2628,7 +2628,7 @@ export default function SpreadsheetOperations() {
                     </div>
 
                     {/* CAMPO LOTTO - NON MODIFICABILE */}
-                    <div style={{width: '90px'}} className="px-1 py-1 border-r bg-gray-100">
+                    <div style={{width: '120px'}} className="px-1 py-1 border-r bg-gray-100">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
