@@ -111,7 +111,7 @@ import {
   ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target, Check,
   ArrowUpDown, ArrowDownUp, MoreVertical, MapPin, ArrowRightCircle,
   BarChart3, Hash, Ruler, Activity, Edit, Trash, Info, FileText, 
-  ChevronDown, ChevronUp, Beaker, ShoppingCart, Scissors
+  ChevronDown, ChevronUp, Beaker, ShoppingCart, Scissors, Smartphone, Monitor, User
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -126,6 +126,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { monthlyToDaily } from '@/lib/utils';
 import OperationForm from '@/components/OperationFormCompact';
@@ -2647,51 +2648,128 @@ export default function Operations() {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <Eye className={`h-5 w-5 ${(() => {
-                                      // Rileva lotti misti: controlla note o metadata
-                                      const hasMixedLot = op.notes?.includes('LOTTO MISTO') || 
-                                        (op.metadata && typeof op.metadata === 'string' && op.metadata.includes('"isMixed":true')) ||
-                                        (op.metadata && typeof op.metadata === 'object' && op.metadata.isMixed === true);
-                                      return hasMixedLot ? 'text-amber-500' : 'text-primary';
-                                    })()}`} />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent className={`${op.notes && op.notes.length > 100 ? 'max-w-2xl' : 'max-w-md'}`}>
-                                  <div className="space-y-1">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="hover:bg-blue-50 transition-colors"
+                                  data-testid="button-view-operation-details"
+                                >
+                                  <Eye className={`h-5 w-5 ${(() => {
+                                    // Rileva lotti misti: controlla note o metadata
+                                    const hasMixedLot = op.notes?.includes('LOTTO MISTO') || 
+                                      (op.metadata && typeof op.metadata === 'string' && op.metadata.includes('"isMixed":true')) ||
+                                      (op.metadata && typeof op.metadata === 'object' && op.metadata.isMixed === true);
+                                    return hasMixedLot ? 'text-amber-500' : 'text-blue-600';
+                                  })()}`} />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent 
+                                className={`${op.notes && op.notes.length > 100 ? 'w-[500px]' : 'w-[380px]'} p-0 shadow-lg border-2`}
+                                align="start"
+                                side="left"
+                              >
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-lg">
+                                  {/* Header */}
+                                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-t-lg">
+                                    <div className="flex items-center gap-2">
+                                      <Info className="h-5 w-5" />
+                                      <h3 className="font-semibold text-lg">Dettagli Operazione</h3>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Content */}
+                                  <div className="p-4 space-y-3">
+                                    {/* Fonte */}
                                     {op.source && (
-                                      <div>
-                                        <strong>Fonte:</strong>{' '}
+                                      <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-100">
                                         {op.source === 'mobile_nfc' ? (
-                                          <span className="text-blue-600 font-medium">📱 App Mobile NFC</span>
+                                          <>
+                                            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                                              <Smartphone className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Fonte</p>
+                                              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mt-0.5">App Mobile NFC</p>
+                                            </div>
+                                          </>
                                         ) : (
-                                          <span className="text-gray-600">💻 Desktop Manager</span>
+                                          <>
+                                            <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                              <Monitor className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Fonte</p>
+                                              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-0.5">Desktop Manager</p>
+                                            </div>
+                                          </>
                                         )}
                                       </div>
                                     )}
+                                    
+                                    {/* Operatore */}
                                     {op.source === 'mobile_nfc' && op.notes && (() => {
-                                      // Cerca pattern nome operatore: "... - NomeOperatore" o "NomeOperatore -..."
                                       const operatorMatch = op.notes.match(/[-–]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*(?:\||$)/);
                                       if (operatorMatch) {
-                                        return <div><strong>Operatore:</strong> {operatorMatch[1]}</div>;
+                                        return (
+                                          <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-green-100">
+                                            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                                              <User className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Operatore</p>
+                                              <p className="text-sm font-semibold text-green-700 dark:text-green-300 mt-0.5">{operatorMatch[1]}</p>
+                                            </div>
+                                          </div>
+                                        );
                                       }
                                     })()}
+                                    
+                                    {/* Mortalità */}
                                     {op.mortalityRate != null && (
-                                      <div><strong>Mortalità:</strong> {op.mortalityRate.toFixed(1)}%</div>
+                                      <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-red-100">
+                                        <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                                          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Mortalità</p>
+                                          <p className="text-sm font-semibold text-red-700 dark:text-red-300 mt-0.5">{op.mortalityRate.toFixed(1)}%</p>
+                                        </div>
+                                      </div>
                                     )}
+                                    
+                                    {/* Note */}
                                     {op.notes && (
-                                      <div className="whitespace-pre-wrap"><strong>Note:</strong> {op.notes}</div>
+                                      <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-amber-100">
+                                        <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg flex-shrink-0">
+                                          <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Note</p>
+                                          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{op.notes}</p>
+                                        </div>
+                                      </div>
                                     )}
+                                    
+                                    {/* Messaggio quando non ci sono info */}
                                     {!op.mortalityRate && !op.notes && !op.source && (
-                                      <div>Nessuna informazione aggiuntiva disponibile</div>
+                                      <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                        <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                        <p className="text-sm">Nessuna informazione aggiuntiva disponibile</p>
+                                      </div>
                                     )}
                                   </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                                  
+                                  {/* Footer hint per mobile */}
+                                  <div className="bg-gray-50 dark:bg-gray-800/50 px-4 py-2 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                      💡 Su smartphone: tocca l'icona occhio per vedere i dettagli
+                                    </p>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
