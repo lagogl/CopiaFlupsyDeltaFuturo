@@ -487,8 +487,16 @@ export async function getMixedLotsComposition(req: Request, res: Response) {
     
     const startTime = Date.now();
     
+    // Costruisci le condizioni WHERE
+    const whereConditions = [eq(cycles.state, 'active')];
+    
+    // Applica filtro FLUPSY se specificato
+    if (flupsyId && flupsyId !== 'all') {
+      whereConditions.push(eq(baskets.flupsyId, parseInt(flupsyId as string)));
+    }
+    
     // Trova cestelli con composizione mista (più lotti)
-    const mixedBasketsQuery = db
+    const mixedBaskets = await db
       .select({
         basketId: basketLotComposition.basketId,
         cycleId: basketLotComposition.cycleId,
@@ -508,16 +516,9 @@ export async function getMixedLotsComposition(req: Request, res: Response) {
       .innerJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
       .innerJoin(cycles, eq(basketLotComposition.cycleId, cycles.id))
       .innerJoin(lots, eq(basketLotComposition.lotId, lots.id))
-      .where(eq(cycles.state, 'active'))
+      .where(and(...whereConditions))
       .groupBy(basketLotComposition.basketId, basketLotComposition.cycleId, baskets.physicalNumber, baskets.flupsyId, flupsys.name)
       .having(sql`COUNT(DISTINCT ${basketLotComposition.lotId}) > 1`);
-    
-    // Applica filtro FLUPSY se specificato
-    if (flupsyId && flupsyId !== 'all') {
-      mixedBasketsQuery.where(eq(baskets.flupsyId, parseInt(flupsyId as string)));
-    }
-    
-    const mixedBaskets = await mixedBasketsQuery;
     
     // Calcola distribuzione mortalità per composizione mista
     const mortalityByComposition = await Promise.all(
