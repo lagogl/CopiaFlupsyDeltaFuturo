@@ -99,6 +99,7 @@ interface Operation {
   mortalityRate: number | null;
   notes: string | null;
   metadata: any | null;
+  source?: string | null;
   basket?: Basket;
   cycle?: Cycle;
   size?: Size | null;
@@ -2661,13 +2662,30 @@ export default function Operations() {
                                 </TooltipTrigger>
                                 <TooltipContent className={`${op.notes && op.notes.length > 100 ? 'max-w-2xl' : 'max-w-md'}`}>
                                   <div className="space-y-1">
+                                    {op.source && (
+                                      <div>
+                                        <strong>Fonte:</strong>{' '}
+                                        {op.source === 'mobile_nfc' ? (
+                                          <span className="text-blue-600 font-medium">📱 App Mobile NFC</span>
+                                        ) : (
+                                          <span className="text-gray-600">💻 Desktop Manager</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    {op.source === 'mobile_nfc' && op.notes && (() => {
+                                      // Cerca pattern nome operatore: "... - NomeOperatore" o "NomeOperatore -..."
+                                      const operatorMatch = op.notes.match(/[-–]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*(?:\||$)/);
+                                      if (operatorMatch) {
+                                        return <div><strong>Operatore:</strong> {operatorMatch[1]}</div>;
+                                      }
+                                    })()}
                                     {op.mortalityRate != null && (
                                       <div><strong>Mortalità:</strong> {op.mortalityRate.toFixed(1)}%</div>
                                     )}
                                     {op.notes && (
                                       <div className="whitespace-pre-wrap"><strong>Note:</strong> {op.notes}</div>
                                     )}
-                                    {!op.mortalityRate && !op.notes && (
+                                    {!op.mortalityRate && !op.notes && !op.source && (
                                       <div>Nessuna informazione aggiuntiva disponibile</div>
                                     )}
                                   </div>
