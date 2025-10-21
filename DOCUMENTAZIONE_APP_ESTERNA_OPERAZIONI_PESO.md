@@ -49,8 +49,13 @@ Il database ha **2 trigger PostgreSQL** che lavorano in background:
 
 Quando l'app inserisce un'operazione di tipo `peso`, `misura` o `prima-attivazione`:
 
+**STEP 1: Calcolo Campi Derivati (SEMPRE, per tutte le operazioni)**
+1. **`average_weight`**: calcolato automaticamente come `(total_weight * 1000) / animal_count` (peso medio in milligrammi)
+2. **`animals_per_kg`**: se non specificato, calcolato come `(animal_count / total_weight) * 1000`
+
+**STEP 2: Arricchimento Metadata Lotti Misti (solo se cestello misto)**
 1. **Verifica automaticamente** se il cestello è misto (composto da più lotti)
-2. **Se il cestello è misto**, popola automaticamente 2 campi:
+2. **Se il cestello è misto**, popola automaticamente 2 campi aggiuntivi:
    - `notes` (testo leggibile): esempio `"LOTTO MISTO: Taylor (68.1% - 12255 animali) + Ecotapes Zeeland (31.9% - 5745 animali)"`
    - `metadata` (JSON): struttura completa della composizione lotti
 3. **Se il cestello NON è misto**, `notes` e `metadata` rimangono `NULL` (come prima)
@@ -63,9 +68,53 @@ Se in futuro qualcuno tentasse di modificare un'operazione già arricchita:
 
 ---
 
-## 📊 Struttura Campi Nuovi (Opzionali)
+## 📊 Campi Calcolati Automaticamente
 
-### Campo `notes` (text, nullable)
+### Campi Sempre Calcolati (per tutte le operazioni)
+
+#### Campo `average_weight` (real, nullable)
+
+**Calcolato automaticamente** quando presenti `total_weight > 0` e `animal_count > 0`:
+
+```
+average_weight = (total_weight * 1000) / animal_count  // mg per animale
+```
+
+Esempi:
+- 2500g / 15000 animali = **166.67 mg** per animale
+- 2000g / 12000 animali = **166.67 mg** per animale
+
+**Casi speciali (protezione division-by-zero):**
+- Se `animal_count = 0` → `average_weight` rimane `NULL`
+- Se `total_weight = 0` → `average_weight` rimane `NULL`
+- Se valori NULL → `average_weight` rimane `NULL`
+
+⚠️ **L'app NON deve** scrivere questo campo manualmente. Il trigger lo gestisce automaticamente.
+
+#### Campo `animals_per_kg` (integer, nullable)
+
+**Calcolato automaticamente se non specificato** quando presenti `animal_count > 0` e `total_weight > 0`:
+
+```
+animals_per_kg = (animal_count / total_weight) * 1000
+```
+
+Esempio: 12000 animali / 2000g * 1000 = **6000 animali/kg**
+
+**Casi speciali (protezione division-by-zero):**
+- Se `animal_count = 0` → `animals_per_kg` rimane `NULL`
+- Se `total_weight = 0` → `animals_per_kg` rimane `NULL`
+- Se valori NULL → `animals_per_kg` rimane `NULL`
+- Se già specificato dall'utente → trigger NON lo ricalcola
+
+✅ **L'app può** specificare questo valore manualmente se lo conosce già (in tal caso il trigger non lo ricalcola).
+⚠️ Se omesso, il trigger lo calcola automaticamente (solo con valori validi >0).
+
+---
+
+### Campi per Cestelli Misti (solo se >1 lotto)
+
+#### Campo `notes` (text, nullable)
 
 Testo leggibile per operatori:
 
@@ -117,17 +166,32 @@ L'elenco può cambiare dinamicamente quando nuovi cestelli vengono configurati c
 
 ## ✅ Raccomandazioni per l'App Esterna
 
-### 1. NON Modificare `notes` e `metadata`
+### 1. NON Modificare Campi Calcolati Automaticamente
 
 ```sql
--- ❌ NON FARE - Il trigger sovrascrive automaticamente
-INSERT INTO operations (..., notes, metadata) 
-VALUES (..., 'mio testo', '{"mio": "json"}');
+-- ❌ NON FARE - Il trigger calcola/sovrascrive automaticamente
+INSERT INTO operations (
+  ..., 
+  average_weight,  -- ❌ NON specificare
+  notes,           -- ❌ NON specificare  
+  metadata         -- ❌ NON specificare
+) 
+VALUES (..., 166.67, 'mio testo', '{"mio": "json"}');
 
--- ✅ FARE - Lascia che il trigger gestisca automaticamente
-INSERT INTO operations (type, basket_id, cycle_id, date, ...) 
-VALUES ('peso', 3, 34, '2025-11-05', ...);
+-- ✅ FARE - Lascia che il trigger calcoli automaticamente
+INSERT INTO operations (
+  type, basket_id, cycle_id, date,
+  animal_count, total_weight, animals_per_kg,  -- ✅ questi sì
+  dead_count, mortality_rate, source
+) 
+VALUES ('peso', 3, 34, '2025-11-05', 15000, 2500, 6000, 20, 0.0013, 'mobile_nfc');
 ```
+
+**Campi gestiti automaticamente dal trigger:**
+- `average_weight` → sempre calcolato
+- `animals_per_kg` → calcolato se non specificato
+- `notes` → popolato solo se cestello misto
+- `metadata` → popolato solo se cestello misto
 
 ### 2. Identificare Correttamente la Fonte
 

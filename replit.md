@@ -50,10 +50,14 @@ Preferred communication style: Simple, everyday language.
 - **Spreadsheet Operations Module**: Mobile-first, editable cell interface for rapid data entry, real-time validation, auto-save, batch operations, dynamic size calculation, intelligent performance-based sorting, and visual performance indicators.
 - **Operation Workflow**: Validated user operations are processed server-side, trigger WebSocket notifications, and update inventory calculations. All operations include source tracking to distinguish desktop manager operations from mobile NFC app operations.
 - **Operation Source Tracking**: Database field `source` (enum: 'desktop_manager' | 'mobile_nfc') identifies operation origin. Desktop operations default to 'desktop_manager', mobile NFC operations use 'mobile_nfc'. Implemented across all 13 operation INSERT statements in 6 critical backend files.
-- **Mixed-Lot Basket Tracking System**: Comprehensive automatic metadata enrichment for Ruditapes philippinarum operations on mixed-lot baskets. Implemented via dual PostgreSQL triggers ensuring automatic enrichment and immutability protection.
-  - **Trigger Architecture**: Two-stage database trigger system for complete audit trail protection:
-    - `trigger_enrich_mixed_lot_metadata` (BEFORE INSERT): Auto-enriches metadata/notes on operation creation
+- **Mixed-Lot Basket Tracking System**: Comprehensive automatic metadata enrichment for Ruditapes philippinarum operations on mixed-lot baskets. Implemented via dual PostgreSQL triggers ensuring automatic enrichment, derived field calculation, and immutability protection.
+  - **Trigger Architecture**: Two-stage database trigger system for complete data integrity:
+    - `trigger_enrich_mixed_lot_metadata` (BEFORE INSERT): Auto-calculates derived fields (average_weight, animals_per_kg) and enriches metadata/notes on operation creation
     - `trigger_protect_mixed_lot_metadata` (BEFORE UPDATE): Enforces immutability, prevents metadata/notes modification after initial enrichment
+  - **Derived Fields Calculation**: INSERT trigger automatically calculates:
+    - `average_weight = (total_weight * 1000) / animal_count` (mg per animal) - only when values > 0
+    - `animals_per_kg = (animal_count / total_weight) * 1000` - only when values > 0 and not user-specified
+    - Division-by-zero protection: returns NULL for zero/NULL inputs (production-safe)
   - **Automatic Enrichment**: INSERT trigger intercepts all peso/misura/prima-attivazione operations, queries basket_lot_composition table, and auto-populates metadata and notes fields for mixed-lot baskets.
   - **Metadata Structure**: JSON format `{isMixed: true, dominantLot: lotId, lotCount: number, composition: [{lotId, percentage, animalCount}]}` capturing complete proportional distribution and composition.
   - **Human-Readable Notes**: Auto-generated format "LOTTO MISTO: Taylor (68.1% - 12255 animali) + Ecotapes Zeeland (31.9% - 5745 animali)" for immediate operator comprehension.
