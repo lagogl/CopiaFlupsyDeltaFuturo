@@ -45,6 +45,7 @@ export interface MenuTranslations {
     aiGrowthVariability: string;
     statistics: string;
     lotsAnalytics: string;
+    mixedLotsAnalytics: string;
     lotLedgerStatistics: string;
     sgrIndices: string;
     salesReports: string;
@@ -107,6 +108,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       aiGrowthVariability: "AI Variabilità Crescita",
       statistics: "Statistiche",
       lotsAnalytics: "Analisi Lotti",
+      mixedLotsAnalytics: "Analytics Lotti Misti",
       lotLedgerStatistics: "Statistiche Lot Ledger",
       sgrIndices: "Indici SGR",
       salesReports: "Report di Vendita",
@@ -165,6 +167,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       aiGrowthVariability: "AI Growth Variability",
       statistics: "Statistics",
       lotsAnalytics: "Lots Analytics",
+      mixedLotsAnalytics: "Mixed Lots Analytics",
       lotLedgerStatistics: "Lot Ledger Statistics",
       sgrIndices: "SGR Indices",
       salesReports: "Sales Reports",
