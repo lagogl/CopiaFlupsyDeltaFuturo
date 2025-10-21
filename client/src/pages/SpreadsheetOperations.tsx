@@ -2632,10 +2632,23 @@ export default function SpreadsheetOperations() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center cursor-help truncate">
+                            <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center gap-1 cursor-help">
                               {(() => {
                                 const lot = ((lots as any[]) || []).find((l: any) => l.id === (row.lotId || 1));
-                                return lot ? lot.supplier : `L${row.lotId || '1'}`;
+                                const isMixedLot = row.notes?.includes('LOTTO MISTO');
+                                
+                                return (
+                                  <>
+                                    {isMixedLot && (
+                                      <span className="text-amber-500 font-bold flex-shrink-0" title="Lotto Misto">
+                                        ⚠
+                                      </span>
+                                    )}
+                                    <span className="truncate">
+                                      {lot ? lot.supplier : `L${row.lotId || '1'}`}
+                                    </span>
+                                  </>
+                                );
                               })()}
                             </div>
                           </TooltipTrigger>
