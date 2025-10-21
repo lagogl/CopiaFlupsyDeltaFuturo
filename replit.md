@@ -60,7 +60,8 @@ Preferred communication style: Simple, everyday language.
     - Division-by-zero protection: returns NULL for zero/NULL inputs (production-safe)
   - **Automatic Enrichment**: INSERT trigger intercepts all peso/misura/prima-attivazione operations, queries basket_lot_composition table, and auto-populates metadata and notes fields for mixed-lot baskets.
   - **Metadata Structure**: JSON format `{isMixed: true, dominantLot: lotId, lotCount: number, composition: [{lotId, percentage, animalCount}]}` capturing complete proportional distribution and composition.
-  - **Human-Readable Notes**: Auto-generated format "LOTTO MISTO: Taylor (68.1% - 12255 animali) + Ecotapes Zeeland (31.9% - 5745 animali)" for immediate operator comprehension.
+  - **Operator Notes Preservation**: Mobile NFC app can specify custom notes which are preserved and combined with mixed-lot info: `"Operator note | LOTTO MISTO: composition"`. For non-mixed baskets or when no custom notes provided, behavior unchanged.
+  - **Human-Readable Notes**: Auto-generated format "LOTTO MISTO: Taylor (68.1% - 12255 animali) + Ecotapes Zeeland (31.9% - 5745 animali)" for immediate operator comprehension, prefixed with operator custom notes if provided.
   - **Guaranteed Immutability**: UPDATE trigger preserves original metadata/notes values, preventing accidental or malicious modification via API, service layer, or direct SQL. Audit trail cannot be tampered with after creation.
   - **Complete Audit Trail**: Every operation on mixed baskets receives immutable snapshot of lot composition at operation time, enabling historical traceability and regulatory compliance.
   - **Performance**: Database-side execution ensures zero overhead on Node.js application, no TypeScript compilation dependencies, atomic transaction consistency, and independence from hot-reload issues.

@@ -116,11 +116,25 @@ Esempio: 12000 animali / 2000g * 1000 = **6000 animali/kg**
 
 #### Campo `notes` (text, nullable)
 
-Testo leggibile per operatori:
+⭐ **PRESERVA NOTE OPERATORE**: Se l'app specifica note personalizzate, vengono **combinate** con info lotti misti:
+
+**Esempi:**
 
 ```
-LOTTO MISTO: Taylor (68.1% - 12255 animali) + Ecotapes Zeeland (31.9% - 5745 animali)
+# Caso 1: App inserisce note personalizzate
+INSERT: notes = "Controllare qualità domani - Davide"
+RISULTATO: "Controllare qualità domani - Davide | LOTTO MISTO: Taylor (68.1% - 12255 animali) + Ecotapes Zeeland (31.9% - 5745 animali)"
+
+# Caso 2: App NON inserisce note
+INSERT: notes = NULL
+RISULTATO: "LOTTO MISTO: Taylor (68.1% - 12255 animali) + Ecotapes Zeeland (31.9% - 5745 animali)"
+
+# Caso 3: Cestello NON misto
+INSERT: notes = "Ottima crescita"
+RISULTATO: "Ottima crescita" (invariato)
 ```
+
+✅ **L'app PUÒ** scrivere note personalizzate nel campo `notes` - vengono preservate e combinate automaticamente con separatore " | ".
 
 ### Campo `metadata` (text/JSON, nullable)
 
@@ -146,7 +160,9 @@ Struttura JSON completa:
 }
 ```
 
-**⚠️ Importante:** L'app esterna **NON deve** tentare di scrivere questi campi manualmente. Il trigger li gestisce automaticamente.
+**⚠️ Importante:** L'app esterna **NON deve** tentare di scrivere il campo `metadata` manualmente. Il trigger lo gestisce automaticamente.
+
+⚠️ **Campo `notes`**: L'app **PUÒ** scrivere note personalizzate - verranno preservate e combinate con info lotti misti.
 
 ---
 
@@ -166,7 +182,7 @@ L'elenco può cambiare dinamicamente quando nuovi cestelli vengono configurati c
 
 ## ✅ Raccomandazioni per l'App Esterna
 
-### 1. NON Modificare Campi Calcolati Automaticamente
+### 1. NON Modificare Campi Calcolati Automaticamente (tranne `notes`)
 
 ```sql
 -- ❌ NON FARE - Il trigger calcola/sovrascrive automaticamente
