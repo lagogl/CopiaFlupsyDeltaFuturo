@@ -216,8 +216,10 @@ export class OperationsController {
    * Crea nuova operazione
    */
   async createOperation(req: Request, res: Response) {
+    console.log('🎯 CONTROLLER - createOperation chiamato:', JSON.stringify(req.body, null, 2));
     try {
       const operation = await operationsService.createOperation(req.body);
+      console.log('🎯 CONTROLLER - Operazione creata dal service:', JSON.stringify(operation, null, 2));
       res.status(201).json(operation);
     } catch (error) {
       console.error("Error creating operation:", error);

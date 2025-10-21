@@ -7,6 +7,7 @@ import { db } from '../../../db';
 import { operations, baskets, flupsys, lots, sizes, basketLotComposition, cycles } from '../../../../shared/schema';
 import { sql, eq, and, or, between, desc, inArray } from 'drizzle-orm';
 import { OperationsCache } from '../../../operations-cache-service';
+import { isBasketMixedLot, getBasketLotComposition } from '../../../services/basket-lot-composition.service';
 
 // Colonne per le query ottimizzate
 const OPERATION_COLUMNS = {
@@ -417,6 +418,53 @@ class OperationsService {
    * Crea una nuova operazione
    */
   async createOperation(data: any) {
+    console.log('🚀 CREATE OPERATION SERVICE - Ricevuto:', JSON.stringify(data, null, 2));
+    
+    // Arricchimento metadata e note per operazioni peso/misura su cestelli misti
+    if ((data.type === 'peso' || data.type === 'misura') && data.basketId) {
+      const isMixed = await isBasketMixedLot(data.basketId);
+      
+      if (isMixed) {
+        console.log(`✨ METADATA ENRICHMENT - Operazione ${data.type} su cestello misto #${data.basketId}`);
+        
+        const composition = await getBasketLotComposition(data.basketId);
+        
+        if (composition && composition.length > 0) {
+          // Calcola lotto dominante e conteggio lotti
+          const dominantLot = composition.reduce((prev, current) => 
+            (current.percentage > prev.percentage) ? current : prev
+          );
+          
+          // Genera metadata
+          const metadata = {
+            isMixed: true,
+            dominantLot: dominantLot.lotId,
+            lotCount: composition.length,
+            composition: composition.map(c => ({
+              lotId: c.lotId,
+              percentage: c.percentage,
+              animalCount: c.animalCount
+            }))
+          };
+          
+          // Genera note leggibili
+          const notesParts = composition.map(c => {
+            const lotName = c.lot?.supplier || `Lotto ${c.lotId}`;
+            const percentage = (c.percentage * 100).toFixed(1);
+            return `${lotName} (${percentage}% - ${c.animalCount} animali)`;
+          });
+          const notes = `LOTTO MISTO: ${notesParts.join(' + ')}`;
+          
+          console.log('METADATA ENRICHMENT - Metadata generati:', JSON.stringify(metadata, null, 2));
+          console.log('METADATA ENRICHMENT - Note generate:', notes);
+          
+          // Arricchisci data
+          data.metadata = metadata;
+          data.notes = notes;
+        }
+      }
+    }
+    
     const [newOperation] = await db
       .insert(operations)
       .values({

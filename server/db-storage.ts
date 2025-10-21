@@ -543,6 +543,48 @@ export class DbStorage implements IStorage {
     // Logging per debugging
     console.log("DB-STORAGE - createOperation - Received data:", JSON.stringify(operation, null, 2));
     
+    // ✨ ARRICCHIMENTO METADATA E NOTE PER LOTTI MISTI
+    if ((operation.type === 'peso' || operation.type === 'misura') && operation.basketId) {
+      const { isBasketMixedLot, getBasketLotComposition } = await import('./services/basket-lot-composition.service');
+      const isMixed = await isBasketMixedLot(operation.basketId);
+      
+      if (isMixed) {
+        console.log(`✨ DB-STORAGE METADATA ENRICHMENT - Operazione ${operation.type} su cestello misto #${operation.basketId}`);
+        
+        const composition = await getBasketLotComposition(operation.basketId);
+        
+        if (composition && composition.length > 0) {
+          const dominantLot = composition.reduce((prev, current) => 
+            (current.percentage > prev.percentage) ? current : prev
+          );
+          
+          const metadata = {
+            isMixed: true,
+            dominantLot: dominantLot.lotId,
+            lotCount: composition.length,
+            composition: composition.map(c => ({
+              lotId: c.lotId,
+              percentage: c.percentage,
+              animalCount: c.animalCount
+            }))
+          };
+          
+          const notesParts = composition.map(c => {
+            const lotName = c.lot?.supplier || `Lotto ${c.lotId}`;
+            const percentage = (c.percentage * 100).toFixed(1);
+            return `${lotName} (${percentage}% - ${c.animalCount} animali)`;
+          });
+          const notes = `LOTTO MISTO: ${notesParts.join(' + ')}`;
+          
+          console.log('DB-STORAGE - Metadata generati:', JSON.stringify(metadata, null, 2));
+          console.log('DB-STORAGE - Note generate:', notes);
+          
+          operation.metadata = metadata as any;
+          operation.notes = notes;
+        }
+      }
+    }
+    
     // Crea una copia dei dati per la manipolazione
     const operationData = { ...operation };
     
