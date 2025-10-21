@@ -2658,7 +2658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           animalCount: parsedData.data.animalCount
         };
         
-        // 🎯 LOTTI MISTI: Arricchire note per operazioni peso/misura se il cestello ha lotti misti
+        // 🎯 LOTTI MISTI: Arricchire note e metadata per operazioni peso/misura se il cestello ha lotti misti
         if (type === 'peso' || type === 'misura') {
           console.log(`🎯 Operazione ${type} - Verifico presenza lotti misti per cestello ${basketId}`);
           const lotComposition = await getBasketLotComposition(basketId, cycleId);
@@ -2666,11 +2666,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (lotComposition && lotComposition.length > 1) {
             console.log(`🎯 Cestello ${basketId} ha ${lotComposition.length} lotti - COMPOSIZIONE MISTA`);
             
-            // Costruisci descrizione lotti misti con dettagli
+            // Trova lotto dominante (quello con maggior percentuale)
+            const dominantLot = lotComposition.reduce((max, comp) => 
+              (comp.percentage || 0) > (max.percentage || 0) ? comp : max
+            , lotComposition[0]);
+            
+            // Costruisci descrizione lotti misti con dettagli per le note
             const lotDetails = await Promise.all(
               lotComposition.map(async (comp: any) => {
                 const lot = await storage.getLot(comp.lotId);
                 return {
+                  lotId: comp.lotId,
                   supplier: lot?.supplier || 'N/D',
                   percentage: comp.percentage?.toFixed(1) || '0',
                   animalCount: comp.animalCount || 0
@@ -2690,7 +2696,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? `${existingNotes}\n${mixedLotNote}` 
               : mixedLotNote;
             
+            // 🎯 METADATA: Aggiungi metadata strutturati per tracciamento completo
+            operationData.metadata = JSON.stringify({
+              isMixed: true,
+              dominantLot: dominantLot.lotId,
+              lotCount: lotComposition.length,
+              composition: lotDetails.map(l => ({
+                lotId: l.lotId,
+                percentage: parseFloat(l.percentage),
+                animalCount: l.animalCount
+              }))
+            });
+            
             console.log(`🎯 Note arricchite: ${operationData.notes}`);
+            console.log(`🎯 Metadata aggiunti: ${operationData.metadata}`);
           } else {
             console.log(`🎯 Cestello ${basketId} ha ${lotComposition?.length || 0} lotti - SINGOLO LOTTO`);
           }
