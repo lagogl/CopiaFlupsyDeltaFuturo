@@ -431,15 +431,53 @@ export default function AIReportGenerator() {
                 </div>
               ))}
 
-              {/* Loading indicator */}
-              {generateReportMutation.isPending && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                      <span className="text-sm text-gray-600">
-                        Sto analizzando la richiesta e generando il report...
-                      </span>
+              {/* Loading indicator migliorato */}
+              {(generateReportMutation.isPending || generateFromTemplateMutation.isPending) && (
+                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 rounded-lg p-4 border-2 border-purple-200 dark:border-purple-700 shadow-lg max-w-md">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Loader2 className="h-6 w-6 animate-spin text-purple-600 dark:text-purple-400" />
+                          <div className="absolute inset-0 animate-ping">
+                            <Sparkles className="h-6 w-6 text-purple-400 opacity-75" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                            Elaborazione in corso...
+                          </p>
+                          <p className="text-xs text-purple-700 dark:text-purple-300">
+                            L'AI sta analizzando la tua richiesta
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Barra di progresso animata */}
+                      <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse rounded-full"
+                             style={{ 
+                               width: '100%',
+                               animation: 'shimmer 1.5s ease-in-out infinite'
+                             }}
+                        />
+                      </div>
+                      
+                      {/* Steps di elaborazione */}
+                      <div className="space-y-1 text-xs text-purple-700 dark:text-purple-300">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-3 w-3 animate-pulse" />
+                          <span>Analisi richiesta con AI</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Database className="h-3 w-3 animate-pulse delay-100" />
+                          <span>Generazione query SQL ottimizzata</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-3 w-3 animate-pulse delay-200" />
+                          <span>Estrazione e formattazione dati</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
