@@ -145,7 +145,7 @@ function generateJSON(rows: any[], analysis: any): { buffer: Buffer; filename: s
  */
 async function generateReportHandler(req: Request, res: Response) {
   try {
-    const { prompt, format = 'excel' } = req.body;
+    const { prompt, format = 'excel', conversationHistory = [] } = req.body;
     
     // Valida formato
     const validFormats = ['excel', 'csv', 'json'];
@@ -185,6 +185,29 @@ async function generateReportHandler(req: Request, res: Response) {
     // Step 1: Ottieni schema database dinamico
     const dbSchema = await getDatabaseSchema();
     console.log(`📋 Schema caricato: ${dbSchema.tables.length} tabelle, ${dbSchema.relationships.length} relazioni`);
+    
+    // Costruisci contesto conversazionale se presente
+    let conversationContext = '';
+    if (conversationHistory.length > 0) {
+      conversationContext = '\n\nCONTESTO CONVERSAZIONALE PRECEDENTE:\n';
+      conversationHistory.forEach((msg: any, idx: number) => {
+        if (msg.role === 'user') {
+          conversationContext += `${idx + 1}. Utente: "${msg.content}"\n`;
+        } else if (msg.role === 'assistant') {
+          // Includi TUTTI i messaggi assistant, con o senza report
+          if (msg.report) {
+            conversationContext += `${idx + 1}. AI: Report generato "${msg.report.title}"\n`;
+          } else {
+            // Messaggi assistant senza report (errori, warnings, risposte testuali)
+            const shortContent = msg.content.length > 100 
+              ? msg.content.substring(0, 100) + '...' 
+              : msg.content;
+            conversationContext += `${idx + 1}. AI: ${shortContent}\n`;
+          }
+        }
+      });
+      console.log(`💬 Conversazione multi-turn: ${conversationHistory.length} messaggi precedenti`);
+    }
 
     // Step 2: Analizza richiesta e genera query SQL
     const analysisPrompt = `
@@ -192,8 +215,9 @@ Sei un esperto di database PostgreSQL e analisi dati per sistemi di acquacoltura
 
 SCHEMA DATABASE (aggiornato automaticamente):
 ${dbSchema.schemaText}
+${conversationContext}
 
-RICHIESTA UTENTE:
+RICHIESTA UTENTE CORRENTE:
 "${prompt}"
 
 COMPITI:

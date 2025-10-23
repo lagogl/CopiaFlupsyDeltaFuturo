@@ -64,10 +64,26 @@ export default function AIReportGenerator() {
 
   const generateReportMutation = useMutation({
     mutationFn: async (prompt: string) => {
+      // Prepara storico conversazionale (escludi messaggi di sistema)
+      const conversationHistory = messages
+        .filter(m => m.role !== 'system')
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+          report: m.report ? {
+            title: m.report.filename,
+            rowCount: 0 // Placeholder - backend usa solo title
+          } : undefined
+        }));
+      
       const response = await apiRequest({
         url: '/api/ai/generate-report',
         method: 'POST',
-        body: { prompt, format: exportFormat }
+        body: { 
+          prompt, 
+          format: exportFormat,
+          conversationHistory 
+        }
       });
       return response;
     },
@@ -119,10 +135,27 @@ export default function AIReportGenerator() {
   // Mutation per generare report da template
   const generateFromTemplateMutation = useMutation({
     mutationFn: async ({ templateId, parameters }: { templateId: string; parameters?: Record<string, any> }) => {
+      // Prepara storico conversazionale anche per template
+      const conversationHistory = messages
+        .filter(m => m.role !== 'system')
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+          report: m.report ? {
+            title: m.report.filename,
+            rowCount: 0
+          } : undefined
+        }));
+      
       const response = await apiRequest({
         url: '/api/ai/generate-from-template',
         method: 'POST',
-        body: { templateId, parameters, format: exportFormat }
+        body: { 
+          templateId, 
+          parameters, 
+          format: exportFormat,
+          conversationHistory 
+        }
       });
       return response;
     },
