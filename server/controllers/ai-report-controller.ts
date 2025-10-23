@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { getDatabaseSchema, getTableStats } from "../services/ai-report/schema-service";
 import { getAllTemplates, getTemplatesByCategory, getTemplateById, applyTemplateParameters } from "../services/ai-report/report-templates";
 import { getCachedQuery, setCachedQuery, invalidateQueryCache, getCacheStats, getCacheInfo } from "../services/ai-report/query-cache-service";
+import { generateDataInsights, formatInsightsForUser, createInsightsSheet } from "../services/ai-report/insights-service";
 
 const AI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_BASE_URL = 'https://api.deepseek.com';
@@ -346,7 +347,13 @@ Correggi la query e restituisci un JSON con:
       });
     }
 
-    // Step 3: Genera file nel formato richiesto
+    // Step 3: Genera insights AI dai dati
+    console.log('🤖 Generazione insights AI...');
+    const insights = await generateDataInsights(rows, analysis, aiClient!);
+    const insightsText = formatInsightsForUser(insights);
+    console.log(`✅ Insights generati: ${insights.patterns.length} pattern, ${insights.anomalies.length} anomalie, ${insights.trends.length} trend`);
+
+    // Step 4: Genera file nel formato richiesto
     let fileBuffer: Buffer;
     let filename: string;
     let mimeType: string;
@@ -403,6 +410,12 @@ Correggi la query e restituisci un JSON con:
         XLSX.utils.book_append_sheet(workbook, summarySheet, 'Riepilogo');
       }
 
+      // Aggiungi sheet insights AI
+      const insightsSheetData = createInsightsSheet(insights);
+      const insightsWorksheet = XLSX.utils.aoa_to_sheet(insightsSheetData);
+      XLSX.utils.book_append_sheet(workbook, insightsWorksheet, 'Insights AI');
+      console.log('📊 Sheet "Insights AI" aggiunto all\'Excel');
+
       fileBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       filename = `report_${timestamp}.xlsx`;
@@ -422,7 +435,7 @@ Correggi la query e restituisci un JSON con:
 
     res.json({
       success: true,
-      message: `Report ${format.toUpperCase()} generato con successo! ${rows.length} righe estratte.`,
+      message: `Report ${format.toUpperCase()} generato con successo! ${rows.length} righe estratte.${insightsText}`,
       report: {
         filename,
         downloadUrl: `data:${mimeType};base64,${base64File}`,
@@ -430,7 +443,8 @@ Correggi la query e restituisci un JSON con:
         rowCount: rows.length,
         title: analysis.reportTitle || 'Report Personalizzato',
         description: analysis.reportDescription || '',
-        format: format
+        format: format,
+        insights: insights // Includi insights nella risposta
       },
       validation: {
         warnings: validation.warnings,
