@@ -29,6 +29,63 @@ function initializeAIClient() {
 initializeAIClient();
 
 /**
+ * Validazione preventiva delle richieste AI
+ * Restituisce warnings e suggerimenti per migliorare la richiesta
+ */
+function validatePrompt(prompt: string): { isValid: boolean; warnings: string[]; suggestions: string[] } {
+  const warnings: string[] = [];
+  const suggestions: string[] = [];
+  
+  // Controllo lunghezza minima
+  if (prompt.length < 15) {
+    warnings.push('La richiesta è troppo breve');
+    suggestions.push('Aggiungi maggiori dettagli sulla tipologia di dati che desideri (es. periodo temporale, tipo di operazione, FLUPSY specifico)');
+  }
+  
+  // Controllo richieste troppo generiche
+  const genericPatterns = [
+    /^(mostra|visualizza|dammi|voglio)\s+(tutto|tutti|tutte|dati)$/i,
+    /^(lista|elenco)\s*$/i,
+    /^(report|dati|informazioni)\s*$/i
+  ];
+  
+  const isGeneric = genericPatterns.some(pattern => pattern.test(prompt.trim()));
+  if (isGeneric) {
+    warnings.push('La richiesta è troppo generica');
+    suggestions.push('Specifica cosa vuoi vedere: tipo di operazione (peso, misura, screening), periodo temporale (ultimo mese, anno corrente), raggruppamenti desiderati');
+  }
+  
+  // Controllo parole chiave del dominio
+  const domainKeywords = [
+    'operaz', 'cestel', 'lott', 'flupsy', 'cicl',
+    'peso', 'misura', 'screening', 'mortalit', 'crescita',
+    'sgr', 'taglia', 'animal', 'giorno', 'mese', 'anno',
+    'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+    'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+  ];
+  
+  const hasKeywords = domainKeywords.some(keyword => 
+    prompt.toLowerCase().includes(keyword)
+  );
+  
+  if (!hasKeywords) {
+    warnings.push('La richiesta non contiene parole chiave rilevanti');
+    suggestions.push('Usa termini specifici del sistema: operazioni, cestelli, lotti, FLUPSY, cicli, taglie, mortalità, crescita, etc.');
+  }
+  
+  // Controllo presenza periodo temporale
+  const hasTimeReference = /\b(ieri|oggi|settimana|mese|anno|giorno|ultim[aoi]|scors[aoi]|corrente|202\d)\b/i.test(prompt);
+  if (!hasTimeReference && prompt.length > 20) {
+    suggestions.push('Considera di specificare un periodo temporale (es. "ultimo mese", "anno corrente", "ottobre 2025")');
+  }
+  
+  // La richiesta è valida se non ci sono warnings critici
+  const isValid = warnings.length === 0;
+  
+  return { isValid, warnings, suggestions };
+}
+
+/**
  * Genera file CSV da array di righe
  */
 function generateCSV(rows: any[], analysis: any): { buffer: Buffer; filename: string } {
@@ -107,6 +164,15 @@ async function generateReportHandler(req: Request, res: Response) {
     }
 
     console.log('📊 AI REPORT REQUEST:', prompt.substring(0, 100) + '...');
+
+    // Validazione preventiva del prompt
+    const validation = validatePrompt(prompt);
+    if (validation.warnings.length > 0) {
+      console.log('⚠️ VALIDATION WARNINGS:', validation.warnings);
+    }
+    if (validation.suggestions.length > 0) {
+      console.log('💡 VALIDATION SUGGESTIONS:', validation.suggestions);
+    }
 
     // Verifica disponibilità AI
     if (!aiClient || !AI_API_KEY) {
@@ -325,6 +391,10 @@ Correggi la query e restituisci un JSON con:
         title: analysis.reportTitle || 'Report Personalizzato',
         description: analysis.reportDescription || '',
         format: format
+      },
+      validation: {
+        warnings: validation.warnings,
+        suggestions: validation.suggestions
       }
     });
 
@@ -388,6 +458,38 @@ export function registerAIReportRoutes(app: Express) {
         message: 'Schema aggiornato con successo',
         tables: schema.tables.length,
         lastUpdate: schema.lastUpdate
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * Valida un prompt prima dell'invio all'AI
+   */
+  app.post("/api/ai/validate-prompt", (req: Request, res: Response) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Prompt richiesto'
+        });
+      }
+      
+      const validation = validatePrompt(prompt);
+      
+      res.json({
+        success: true,
+        validation: {
+          isValid: validation.isValid,
+          warnings: validation.warnings,
+          suggestions: validation.suggestions
+        }
       });
     } catch (error: any) {
       res.status(500).json({
