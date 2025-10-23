@@ -39,6 +39,13 @@ Preferred communication style: Simple, everyday language.
   - **Dashboard**: "SGR Per Taglia" tab in /sgr page displaying size-specific SGR values, recalculation button with real-time progress bar, and statistics (monitored sizes, average SGR, total samples).
   - **Full System Integration**: SGR hierarchy implemented across all prediction modules including cycle predictions, FlupsyComparison module, and growth prediction API. Uses Italian month names for database lookups and measurement-date-based projections for consistency.
 - **AI Integration**: Hybrid system integrating DeepSeek-V3 for predictive growth analysis using real historical SGR data, anomaly detection, sustainability analysis, business analytics, and AI-enhanced performance scoring.
+- **AI Report Generator**: Advanced report generation module with 10 comprehensive features:
+  - **Dynamic Schema Auto-Generation**: Automatic database schema discovery (48 tables, 18 curated relationships) with fallback for missing foreign keys.
+  - **Pre-Configured Templates**: 10 ready-to-use templates across 5 categories (Performance, Quality, Forecast, Operations, Sales).
+  - **Multi-Format Export**: Excel (XLSX), CSV, JSON with dynamic MIME types and proper escaping.
+  - **Preventive Validation**: 4-check validation system (length, generic patterns, domain keywords, temporal context) with suggestions.
+  - **Conversational Memory**: Multi-turn chat support for iterative refinement, works for freeform and template-based requests.
+  - **Intelligent Query Caching**: SHA-256-based cache with 30-minute TTL, automatic invalidation via WebSocket when new operations arrive, real-time statistics dashboard (hit/miss ratio, cached queries count). Cache service with NodeCache backend, logging for debugging.
 - **Growth Prediction System**: Interactive growth forecasting with automatic weight calculation from size data, customizable projection start date, variable monthly SGR application, and intelligent decimal formatting for weights ranging from micrograms to grams. Formula: `peso_mg = 1,000,000 / media(animali_per_kg)`. Displays values with adaptive precision (6 decimals for <0.01mg, scientific notation for very small values).
 - **DDT System**: Generates transport documents for advanced sales with three-state tracking, immutable customer data snapshots, traceability, subtotals by size, and integration with Fatture in Cloud API. Includes sale reversal functionality.
 - **Dynamic Logo System**: Automated company logo integration in all PDF reports based on Fatture in Cloud Company ID.

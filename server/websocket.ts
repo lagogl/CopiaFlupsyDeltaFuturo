@@ -1,6 +1,7 @@
 // WebSocket server implementation for FLUPSY application
 import { Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import { invalidateAICache } from './controllers/ai-report-controller';
 
 // Notification types for real-time updates
 export const NOTIFICATION_TYPES = {
@@ -145,6 +146,12 @@ export function configureWebSocketServer(httpServer: Server) {
   // Broadcast operation notification
   const broadcastOperationNotification = (operation: any, action: 'created' | 'updated' | 'deleted' = 'created') => {
     const notification = formatOperationNotification(operation, action);
+    
+    // Invalida cache AI quando ci sono nuove operazioni
+    if (action === 'created' || action === 'updated' || action === 'deleted') {
+      invalidateAICache();
+    }
+    
     return broadcastMessage(notification.type, {
       operation,
       message: notification.message

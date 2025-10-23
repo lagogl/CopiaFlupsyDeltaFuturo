@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { sql } from "drizzle-orm";
 import { getDatabaseSchema, getTableStats } from "../services/ai-report/schema-service";
 import { getAllTemplates, getTemplatesByCategory, getTemplateById, applyTemplateParameters } from "../services/ai-report/report-templates";
+import { getCachedQuery, setCachedQuery, invalidateQueryCache, getCacheStats, getCacheInfo } from "../services/ai-report/query-cache-service";
 
 const AI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_BASE_URL = 'https://api.deepseek.com';
@@ -275,17 +276,26 @@ IMPORTANTE:
       });
     }
 
-    // Step 2: Esegui query SQL
-    console.log('🔍 EXECUTING SQL:', analysis.sqlQuery);
+    // Step 2: Controlla cache prima di eseguire query
+    const cachedResult = getCachedQuery(analysis.sqlQuery);
+    let rows: any[];
     
-    let queryResult;
-    try {
-      queryResult = await db.execute(sql.raw(analysis.sqlQuery));
-    } catch (sqlError: any) {
-      console.error('❌ SQL ERROR:', sqlError);
+    if (cachedResult) {
+      // Usa risultato dalla cache
+      rows = cachedResult.rows;
+      console.log(`✅ CACHE HIT: ${rows.length} righe estratte (cached at ${cachedResult.cachedAt})`);
+    } else {
+      // Esegui query SQL
+      console.log('🔍 EXECUTING SQL:', analysis.sqlQuery);
       
-      // Chiedi all'AI di correggere la query
-      const fixPrompt = `
+      let queryResult;
+      try {
+        queryResult = await db.execute(sql.raw(analysis.sqlQuery));
+      } catch (sqlError: any) {
+        console.error('❌ SQL ERROR:', sqlError);
+        
+        // Chiedi all'AI di correggere la query
+        const fixPrompt = `
 La query SQL ha generato questo errore:
 ${sqlError.message}
 
@@ -298,29 +308,35 @@ Correggi la query e restituisci un JSON con:
   "explanation": "Spiegazione della correzione"
 }
 `;
+        
+        const fixResponse = await aiClient.chat.completions.create({
+          model: AI_MODEL,
+          messages: [
+            { role: "system", content: "Sei un esperto SQL debugger." },
+            { role: "user", content: fixPrompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        });
+        
+        const fix = JSON.parse(fixResponse.choices[0].message.content || '{}');
+        console.log('🔧 AI FIX:', fix);
+        
+        if (fix.sqlQuery) {
+          queryResult = await db.execute(sql.raw(fix.sqlQuery));
+        } else {
+          throw sqlError;
+        }
+      }
+
+      rows = Array.isArray(queryResult) ? queryResult : queryResult.rows || [];
+      console.log(`✅ QUERY SUCCESS: ${rows.length} righe estratte`);
       
-      const fixResponse = await aiClient.chat.completions.create({
-        model: AI_MODEL,
-        messages: [
-          { role: "system", content: "Sei un esperto SQL debugger." },
-          { role: "user", content: fixPrompt }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1
-      });
-      
-      const fix = JSON.parse(fixResponse.choices[0].message.content || '{}');
-      console.log('🔧 AI FIX:', fix);
-      
-      if (fix.sqlQuery) {
-        queryResult = await db.execute(sql.raw(fix.sqlQuery));
-      } else {
-        throw sqlError;
+      // Salva in cache solo se ci sono risultati
+      if (rows.length > 0) {
+        setCachedQuery(analysis.sqlQuery, rows, analysis);
       }
     }
-
-    const rows = Array.isArray(queryResult) ? queryResult : queryResult.rows || [];
-    console.log(`✅ QUERY SUCCESS: ${rows.length} righe estratte`);
 
     if (rows.length === 0) {
       return res.json({
@@ -623,5 +639,52 @@ export function registerAIReportRoutes(app: Express) {
    */
   app.post("/api/ai/generate-report", generateReportHandler);
 
+  /**
+   * Ottieni statistiche cache query AI
+   */
+  app.get("/api/ai/cache/stats", (req: Request, res: Response) => {
+    try {
+      const stats = getCacheStats();
+      const info = getCacheInfo();
+      
+      res.json({
+        success: true,
+        stats,
+        cacheInfo: info
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * Invalida manualmente tutta la cache query AI
+   */
+  app.post("/api/ai/cache/invalidate", (req: Request, res: Response) => {
+    try {
+      invalidateQueryCache();
+      
+      res.json({
+        success: true,
+        message: 'Cache invalidata con successo'
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   console.log('✅ Route AI Report registrate con successo');
+}
+
+/**
+ * Esporta funzione per invalidare cache (chiamata da WebSocket)
+ */
+export function invalidateAICache() {
+  invalidateQueryCache();
 }

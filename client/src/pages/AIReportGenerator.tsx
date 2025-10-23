@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileSpreadsheet, Send, Download, Loader2, Sparkles, AlertCircle, Layers, TrendingUp, Activity, Calendar, GitCompare, Package, Users, DollarSign, CheckCircle, Clock, FileText, FileJson } from "lucide-react";
+import { FileSpreadsheet, Send, Download, Loader2, Sparkles, AlertCircle, Layers, TrendingUp, Activity, Calendar, GitCompare, Package, Users, DollarSign, CheckCircle, Clock, FileText, FileJson, Database, Zap, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -60,6 +60,29 @@ export default function AIReportGenerator() {
   // Carica template dal backend
   const { data: templatesData } = useQuery<{ success: boolean; templates: ReportTemplate[] }>({
     queryKey: ['/api/ai/templates']
+  });
+
+  // Carica statistiche cache
+  const { data: cacheStatsData, refetch: refetchCacheStats } = useQuery<{
+    success: boolean;
+    stats: { hits: number; misses: number; totalQueries: number; hitRate: number };
+    cacheInfo: { keys: number; ttl: number };
+  }>({
+    queryKey: ['/api/ai/cache/stats'],
+    refetchInterval: 5000 // Aggiorna ogni 5 secondi
+  });
+
+  // Mutation per invalidare cache
+  const invalidateCacheMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest({
+        url: '/api/ai/cache/invalidate',
+        method: 'POST'
+      });
+    },
+    onSuccess: () => {
+      refetchCacheStats();
+    }
   });
 
   const generateReportMutation = useMutation({
@@ -213,6 +236,68 @@ export default function AIReportGenerator() {
         description="Descrivi il report Excel che vuoi e l'AI lo genererà per te"
         icon={<Sparkles className="h-8 w-8" />}
       />
+
+      {/* Statistiche Cache */}
+      {cacheStatsData && (
+        <Card className="mt-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-purple-600" />
+                <CardTitle className="text-lg">Cache Intelligente Query</CardTitle>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => invalidateCacheMutation.mutate()}
+                disabled={invalidateCacheMutation.isPending}
+                data-testid="button-invalidate-cache"
+              >
+                {invalidateCacheMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">Query Totali</span>
+                <span className="text-2xl font-bold">{cacheStatsData.stats.totalQueries}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">Cache Hit</span>
+                <span className="text-2xl font-bold text-green-600">{cacheStatsData.stats.hits}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">Cache Miss</span>
+                <span className="text-2xl font-bold text-orange-600">{cacheStatsData.stats.misses}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">Hit Rate</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-purple-600">{cacheStatsData.stats.hitRate}%</span>
+                  {cacheStatsData.stats.hitRate > 50 && <Zap className="h-4 w-4 text-yellow-500" />}
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">Query Cached</span>
+                <span className="text-2xl font-bold text-blue-600">{cacheStatsData.cacheInfo.keys}</span>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                TTL: {Math.floor(cacheStatsData.cacheInfo.ttl / 60)} minuti
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Invalidazione automatica via WebSocket
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mt-6">
         <CardHeader>
