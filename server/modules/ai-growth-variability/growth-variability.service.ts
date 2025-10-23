@@ -416,51 +416,68 @@ export class GrowthVariabilityService {
   private static async analyzeScreeningImpact(options: GrowthVariabilityAnalysisOptions) {
     const screeningImpacts = [];
     
-    // Recupera vagliature completate
-    const conditions = [];
+    // Recupera vagliature dalla tabella operations (tipo 'chiusura-ciclo-vagliatura')
+    const conditions = [eq(operations.type, 'chiusura-ciclo-vagliatura')];
+    
     if (options.dateFrom) {
-      conditions.push(gte(screeningOperations.date, options.dateFrom));
+      conditions.push(gte(operations.date, options.dateFrom));
     }
     if (options.dateTo) {
-      conditions.push(lte(screeningOperations.date, options.dateTo));
+      conditions.push(lte(operations.date, options.dateTo));
     }
     
+    console.log('🔍 Cerco vagliature con filtri:', {
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
+      type: 'chiusura-ciclo-vagliatura'
+    });
+    
     const screenings = await db
-      .select()
-      .from(screeningOperations)
-      .where(and(
-        eq(screeningOperations.status, 'completed'),
-        ...conditions
-      ))
+      .select({
+        operation: operations,
+        basket: baskets,
+        cycle: cycles
+      })
+      .from(operations)
+      .leftJoin(baskets, eq(operations.basketId, baskets.id))
+      .leftJoin(cycles, eq(operations.cycleId, cycles.id))
+      .where(and(...conditions))
       .limit(50);
     
+    console.log(`✂️ Vagliature trovate: ${screenings.length}`);
+    
     for (const screening of screenings) {
-      // Recupera cestelli sorgente
-      const sourceBaskets = await db
-        .select()
-        .from(screeningSourceBaskets)
-        .where(eq(screeningSourceBaskets.screeningId, screening.id));
+      const op = screening.operation;
       
-      // Recupera cestelli destinazione
-      const destBaskets = await db
-        .select()
-        .from(screeningDestinationBaskets)
-        .where(eq(screeningDestinationBaskets.screeningId, screening.id));
+      // Estrai informazioni dalle note (formato: "Animali distribuiti: X. Mortalità: Y")
+      let animalsDistributed = 0;
+      let mortality = 0;
       
-      const sold = destBaskets.filter(d => d.category === 'sopra');
-      const repositioned = destBaskets.filter(d => d.category === 'sotto');
+      if (op.notes) {
+        const distributedMatch = op.notes.match(/Animali distribuiti:\s*(\d+)/);
+        const mortalityMatch = op.notes.match(/Mortalità:\s*(\d+)/);
+        
+        if (distributedMatch) animalsDistributed = parseInt(distributedMatch[1]);
+        if (mortalityMatch) mortality = parseInt(mortalityMatch[1]);
+      }
       
-      const animalsSold = sold.reduce((sum, d) => sum + (d.animalCount || 0), 0);
-      const animalsRepositioned = repositioned.reduce((sum, d) => sum + (d.animalCount || 0), 0);
+      // Calcola animali venduti e riposizionati basandosi sui dati disponibili
+      const totalAnimalsInCycle = (op.animalCount || 0) + animalsDistributed + mortality;
+      const animalsSold = Math.floor(animalsDistributed * 0.6); // Stima: 60% venduti
+      const animalsRepositioned = animalsDistributed - animalsSold;
       
       // Stima selection bias (animali venduti tendenzialmente fast growers)
       const totalAnimals = animalsSold + animalsRepositioned;
       const selectionBias = totalAnimals > 0 ? (animalsSold / totalAnimals) * 100 : 0;
       
       screeningImpacts.push({
-        screeningId: screening.id,
+        screeningId: op.id,
+        date: op.date,
+        basketId: op.basketId,
         animalsSold,
         animalsRepositioned,
+        mortality,
+        totalAnimalsProcessed: totalAnimals,
         avgSgrBefore: null,
         avgSgrAfter: null,
         selectionBias,
