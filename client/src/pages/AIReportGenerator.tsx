@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileSpreadsheet, Send, Download, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { FileSpreadsheet, Send, Download, Loader2, Sparkles, AlertCircle, Layers, TrendingUp, Activity, Calendar, GitCompare, Package, Users, DollarSign, CheckCircle, Clock } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -20,14 +22,42 @@ interface Message {
   };
 }
 
+interface ReportTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'performance' | 'quality' | 'forecast' | 'operations' | 'sales';
+  prompt: string;
+  icon?: string;
+}
+
+const iconMap: Record<string, any> = {
+  TrendingUp,
+  AlertCircle,
+  Calendar,
+  GitCompare,
+  Package,
+  Users,
+  DollarSign,
+  CheckCircle,
+  Activity,
+  Clock
+};
+
 export default function AIReportGenerator() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'system',
-      content: 'Ciao! Sono l\'assistente AI per la generazione di report Excel. Descrivi il tipo di report che vuoi creare e lo genererò per te estraendo i dati dal database. \n\nEsempi:\n- "Voglio un report con tutte le operazioni dell\'ultimo mese"\n- "Crea un Excel con i lotti e le loro giacenze"\n- "Genera un report delle vendite per FLUPSY con totali"\n- "Report mortalità per lotto negli ultimi 30 giorni"'
+      content: 'Ciao! Sono l\'assistente AI per la generazione di report Excel. Puoi selezionare un template pre-configurato o descrivere un report personalizzato. \n\nTemplate disponibili:\n• Performance Mensile\n• Analisi Mortalità\n• Previsione Crescita\n• Confronto FLUPSY\n• E molti altri...'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  // Carica template dal backend
+  const { data: templatesData } = useQuery<{ success: boolean; templates: ReportTemplate[] }>({
+    queryKey: ['/api/ai/templates']
+  });
 
   const generateReportMutation = useMutation({
     mutationFn: async (prompt: string) => {
@@ -80,6 +110,62 @@ export default function AIReportGenerator() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // Mutation per generare report da template
+  const generateFromTemplateMutation = useMutation({
+    mutationFn: async ({ templateId, parameters }: { templateId: string; parameters?: Record<string, any> }) => {
+      const response = await apiRequest({
+        url: '/api/ai/generate-from-template',
+        method: 'POST',
+        body: { templateId, parameters }
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.message || 'Report generato da template con successo!',
+        report: data.report ? {
+          filename: data.report.filename,
+          downloadUrl: data.report.downloadUrl,
+          preview: data.report.preview
+        } : undefined
+      }]);
+    },
+    onError: (error: any) => {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Errore nella generazione del report da template: ${error.message || 'Errore sconosciuto'}`
+      }]);
+    }
+  });
+
+  const handleUseTemplate = (template: ReportTemplate) => {
+    // Chiudi il dialog
+    setShowTemplates(false);
+    
+    // Aggiungi messaggio utente
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: `Template selezionato: ${template.name}`
+    }]);
+    
+    // TODO: In futuro, mostrare form per parametri se template.parameters è definito
+    // Per ora, usa parametri vuoti
+    const parameters = {};
+    
+    // Genera report direttamente dall'endpoint template
+    generateFromTemplateMutation.mutate({ templateId: template.id, parameters });
+  };
+
+  const templates = templatesData?.templates || [];
+  const categoryLabels = {
+    performance: 'Performance',
+    quality: 'Qualità',
+    forecast: 'Previsioni',
+    operations: 'Operazioni',
+    sales: 'Vendite'
   };
 
   return (
@@ -191,29 +277,96 @@ export default function AIReportGenerator() {
           </Alert>
 
           {/* Input area */}
-          <div className="flex gap-2">
-            <Textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Esempio: 'Voglio un report con tutte le operazioni di vagliatura dell'ultimo mese, raggruppate per FLUPSY'"
-              className="flex-1"
-              rows={3}
-              disabled={generateReportMutation.isPending}
-              data-testid="textarea-report-prompt"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || generateReportMutation.isPending}
-              size="lg"
-              data-testid="button-send-report-request"
-            >
-              {generateReportMutation.isPending ? (
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="button-open-templates">
+                    <Layers className="h-4 w-4 mr-2" />
+                    Template ({templates.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh]">
+                  <DialogHeader>
+                    <DialogTitle>Template Report Pre-configurati</DialogTitle>
+                    <DialogDescription>
+                      Seleziona un template per generare rapidamente report comuni
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <Tabs defaultValue="all" className="w-full">
+                    <TabsList className="grid w-full grid-cols-6">
+                      <TabsTrigger value="all">Tutti</TabsTrigger>
+                      <TabsTrigger value="performance">Performance</TabsTrigger>
+                      <TabsTrigger value="quality">Qualità</TabsTrigger>
+                      <TabsTrigger value="forecast">Previsioni</TabsTrigger>
+                      <TabsTrigger value="operations">Operazioni</TabsTrigger>
+                      <TabsTrigger value="sales">Vendite</TabsTrigger>
+                    </TabsList>
+                    
+                    {['all', 'performance', 'quality', 'forecast', 'operations', 'sales'].map((category) => (
+                      <TabsContent key={category} value={category} className="space-y-2">
+                        <ScrollArea className="h-[400px]">
+                          <div className="grid gap-3 p-1">
+                            {templates
+                              .filter((t: ReportTemplate) => category === 'all' || t.category === category)
+                              .map((template: ReportTemplate) => {
+                                const IconComponent = template.icon ? iconMap[template.icon] : FileSpreadsheet;
+                                return (
+                                  <Card
+                                    key={template.id}
+                                    className="cursor-pointer hover:border-primary transition-colors"
+                                    onClick={() => handleUseTemplate(template)}
+                                    data-testid={`template-${template.id}`}
+                                  >
+                                    <CardHeader className="pb-3">
+                                      <CardTitle className="text-base flex items-center gap-2">
+                                        {IconComponent && <IconComponent className="h-4 w-4" />}
+                                        {template.name}
+                                        <Badge variant="outline" className="ml-auto">
+                                          {categoryLabels[template.category]}
+                                        </Badge>
+                                      </CardTitle>
+                                      <CardDescription className="text-sm">
+                                        {template.description}
+                                      </CardDescription>
+                                    </CardHeader>
+                                  </Card>
+                                );
+                              })}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <div className="flex gap-2">
+              <Textarea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Esempio: 'Voglio un report con tutte le operazioni di vagliatura dell'ultimo mese, raggruppate per FLUPSY'"
+                className="flex-1"
+                rows={3}
+                disabled={generateReportMutation.isPending}
+                data-testid="textarea-report-prompt"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || generateReportMutation.isPending}
+                size="lg"
+                data-testid="button-send-report-request"
+              >
+                {generateReportMutation.isPending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Send className="h-5 w-5" />
               )}
             </Button>
+          </div>
           </div>
         </CardContent>
       </Card>
