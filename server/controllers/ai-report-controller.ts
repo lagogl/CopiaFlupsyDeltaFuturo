@@ -7,7 +7,6 @@ import { getDatabaseSchema, getTableStats } from "../services/ai-report/schema-s
 import { getAllTemplates, getTemplatesByCategory, getTemplateById, applyTemplateParameters } from "../services/ai-report/report-templates";
 import { getCachedQuery, setCachedQuery, invalidateQueryCache, getCacheStats, getCacheInfo } from "../services/ai-report/query-cache-service";
 import { generateDataInsights, formatInsightsForUser, createInsightsSheet } from "../services/ai-report/insights-service";
-import { executePipeline, validatePipeline, type PipelineStep } from "../services/ai-report/pipeline-service";
 
 const AI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_BASE_URL = 'https://api.deepseek.com';
