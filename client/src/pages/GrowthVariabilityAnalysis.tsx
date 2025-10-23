@@ -302,6 +302,7 @@ export default function GrowthVariabilityAnalysis() {
                 </div>
               </CardContent>
             </Card>
+            </TooltipProvider>
           </TabsContent>
 
           <TabsContent value="distribution" className="space-y-4">
@@ -412,6 +413,7 @@ export default function GrowthVariabilityAnalysis() {
                     </div>
                   ))}
                 </div>
+                </TooltipProvider>
               </CardContent>
             </Card>
           </TabsContent>
@@ -544,6 +546,7 @@ export default function GrowthVariabilityAnalysis() {
                       </div>
                     ))}
                 </div>
+                </TooltipProvider>
               </CardContent>
             </Card>
           </TabsContent>
@@ -578,8 +581,8 @@ export default function GrowthVariabilityAnalysis() {
                                     Percentuale di animali venduti rispetto al totale. 
                                     Calcolo: (Venduti ÷ Totale) × 100
                                   </p>
-                                  <p className="text-xs mt-1 text-yellow-200">
-                                    Un bias alto (&gt;70%) indica forte rimozione di animali performanti, 
+                                  <p className="text-xs mt-1 font-medium">
+                                    ⚠️ Un bias alto (&gt;70%) indica forte rimozione di animali performanti, 
                                     alterando la distribuzione residua.
                                   </p>
                                 </TooltipContent>
