@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileSpreadsheet, Send, Download, Loader2, Sparkles, AlertCircle, Layers, TrendingUp, Activity, Calendar, GitCompare, Package, Users, DollarSign, CheckCircle, Clock } from "lucide-react";
+import { FileSpreadsheet, Send, Download, Loader2, Sparkles, AlertCircle, Layers, TrendingUp, Activity, Calendar, GitCompare, Package, Users, DollarSign, CheckCircle, Clock, FileText, FileJson } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -19,6 +20,7 @@ interface Message {
     filename: string;
     downloadUrl: string;
     preview?: string;
+    format?: 'excel' | 'csv' | 'json';
   };
 }
 
@@ -48,11 +50,12 @@ export default function AIReportGenerator() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'system',
-      content: 'Ciao! Sono l\'assistente AI per la generazione di report Excel. Puoi selezionare un template pre-configurato o descrivere un report personalizzato. \n\nTemplate disponibili:\n• Performance Mensile\n• Analisi Mortalità\n• Previsione Crescita\n• Confronto FLUPSY\n• E molti altri...'
+      content: 'Ciao! Sono l\'assistente AI per la generazione di report. Puoi selezionare un template pre-configurato o descrivere un report personalizzato. \n\nTemplate disponibili:\n• Performance Mensile\n• Analisi Mortalità\n• Previsione Crescita\n• Confronto FLUPSY\n• E molti altri...\n\nFormati supportati: Excel, CSV, JSON'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'excel' | 'csv' | 'json'>('excel');
 
   // Carica template dal backend
   const { data: templatesData } = useQuery<{ success: boolean; templates: ReportTemplate[] }>({
@@ -64,7 +67,7 @@ export default function AIReportGenerator() {
       const response = await apiRequest({
         url: '/api/ai/generate-report',
         method: 'POST',
-        body: { prompt }
+        body: { prompt, format: exportFormat }
       });
       return response;
     },
@@ -76,7 +79,8 @@ export default function AIReportGenerator() {
         report: data.report ? {
           filename: data.report.filename,
           downloadUrl: data.report.downloadUrl,
-          preview: data.report.preview
+          preview: data.report.preview,
+          format: data.report.format || 'excel'
         } : undefined
       }]);
     },
@@ -118,7 +122,7 @@ export default function AIReportGenerator() {
       const response = await apiRequest({
         url: '/api/ai/generate-from-template',
         method: 'POST',
-        body: { templateId, parameters }
+        body: { templateId, parameters, format: exportFormat }
       });
       return response;
     },
@@ -129,7 +133,8 @@ export default function AIReportGenerator() {
         report: data.report ? {
           filename: data.report.filename,
           downloadUrl: data.report.downloadUrl,
-          preview: data.report.preview
+          preview: data.report.preview,
+          format: data.report.format || 'excel'
         } : undefined
       }]);
     },
@@ -213,38 +218,49 @@ export default function AIReportGenerator() {
                         <p className="whitespace-pre-wrap text-sm">{message.content}</p>
                         
                         {/* Mostra report se presente */}
-                        {message.report && (
-                          <div className="mt-3 p-3 bg-white rounded border space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-medium text-gray-900">
-                                  {message.report.filename}
-                                </span>
+                        {message.report && (() => {
+                          const format = message.report.format || 'excel';
+                          const formatConfig = {
+                            excel: { icon: FileSpreadsheet, label: 'Excel', color: 'text-green-600' },
+                            csv: { icon: FileText, label: 'CSV', color: 'text-blue-600' },
+                            json: { icon: FileJson, label: 'JSON', color: 'text-purple-600' }
+                          };
+                          const config = formatConfig[format];
+                          const Icon = config.icon;
+                          
+                          return (
+                            <div className="mt-3 p-3 bg-white rounded border space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Icon className={`h-4 w-4 ${config.color}`} />
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {message.report.filename}
+                                  </span>
+                                </div>
+                                <Badge variant="outline" className={config.color}>
+                                  {config.label}
+                                </Badge>
                               </div>
-                              <Badge variant="outline" className="text-green-600">
-                                Excel
-                              </Badge>
+                              
+                              {message.report.preview && (
+                                <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono">
+                                  <pre className="whitespace-pre-wrap">{message.report.preview}</pre>
+                                </div>
+                              )}
+                              
+                              <a
+                                href={message.report.downloadUrl}
+                                download={message.report.filename}
+                                className="inline-block"
+                              >
+                                <Button size="sm" className="w-full mt-2" variant="outline">
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Scarica Report {config.label}
+                                </Button>
+                              </a>
                             </div>
-                            
-                            {message.report.preview && (
-                              <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono">
-                                <pre className="whitespace-pre-wrap">{message.report.preview}</pre>
-                              </div>
-                            )}
-                            
-                            <a
-                              href={message.report.downloadUrl}
-                              download={message.report.filename}
-                              className="inline-block"
-                            >
-                              <Button size="sm" className="w-full mt-2" variant="outline">
-                                <Download className="h-4 w-4 mr-2" />
-                                Scarica Report Excel
-                              </Button>
-                            </a>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -341,6 +357,33 @@ export default function AIReportGenerator() {
                   </Tabs>
                 </DialogContent>
               </Dialog>
+            </div>
+            
+            {/* Selector formato export */}
+            <div className="flex items-center gap-3 pb-3 border-b">
+              <span className="text-sm font-medium text-muted-foreground">Formato Export:</span>
+              <ToggleGroup 
+                type="single" 
+                value={exportFormat} 
+                onValueChange={(value) => value && setExportFormat(value as 'excel' | 'csv' | 'json')}
+                data-testid="toggle-export-format"
+              >
+                <ToggleGroupItem value="excel" aria-label="Excel" data-testid="format-excel">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Excel
+                </ToggleGroupItem>
+                <ToggleGroupItem value="csv" aria-label="CSV" data-testid="format-csv">
+                  <FileText className="h-4 w-4 mr-2" />
+                  CSV
+                </ToggleGroupItem>
+                <ToggleGroupItem value="json" aria-label="JSON" data-testid="format-json">
+                  <FileJson className="h-4 w-4 mr-2" />
+                  JSON
+                </ToggleGroupItem>
+              </ToggleGroup>
+              <Badge variant="secondary" className="ml-auto">
+                {exportFormat.toUpperCase()}
+              </Badge>
             </div>
             
             <div className="flex gap-2">

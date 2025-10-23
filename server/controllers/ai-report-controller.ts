@@ -29,12 +29,75 @@ function initializeAIClient() {
 initializeAIClient();
 
 /**
+ * Genera file CSV da array di righe
+ */
+function generateCSV(rows: any[], analysis: any): { buffer: Buffer; filename: string } {
+  const header = Object.keys(rows[0] || {})
+    .map(key => analysis.columnTitles?.[key] || key);
+  
+  const csvRows = rows.map(row => 
+    Object.values(row).map(val => {
+      // Escape virgole e virgolette
+      const str = String(val || '');
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }).join(',')
+  );
+  
+  const csvContent = [header.join(','), ...csvRows].join('\n');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  
+  return {
+    buffer: Buffer.from(csvContent, 'utf-8'),
+    filename: `report_${timestamp}.csv`
+  };
+}
+
+/**
+ * Genera file JSON da array di righe
+ */
+function generateJSON(rows: any[], analysis: any): { buffer: Buffer; filename: string } {
+  const jsonData = {
+    reportTitle: analysis.reportTitle || 'Report Personalizzato',
+    reportDescription: analysis.reportDescription || '',
+    generatedAt: new Date().toISOString(),
+    totalRows: rows.length,
+    data: rows.map((row: any) => {
+      const mappedRow: any = {};
+      for (const [key, value] of Object.entries(row)) {
+        const italianTitle = analysis.columnTitles?.[key] || key;
+        mappedRow[italianTitle] = value;
+      }
+      return mappedRow;
+    })
+  };
+  
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  
+  return {
+    buffer: Buffer.from(JSON.stringify(jsonData, null, 2), 'utf-8'),
+    filename: `report_${timestamp}.json`
+  };
+}
+
+/**
  * Handler riusabile per generazione report AI
  * Usato sia da /api/ai/generate-report che da /api/ai/generate-from-template
  */
 async function generateReportHandler(req: Request, res: Response) {
   try {
-    const { prompt } = req.body;
+    const { prompt, format = 'excel' } = req.body;
+    
+    // Valida formato
+    const validFormats = ['excel', 'csv', 'json'];
+    if (!validFormats.includes(format)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Formato non valido. Formati supportati: ${validFormats.join(', ')}` 
+      });
+    }
 
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ 
@@ -177,52 +240,72 @@ Correggi la query e restituisci un JSON con:
       });
     }
 
-    // Step 3: Genera Excel
-    const workbook = XLSX.utils.book_new();
-    
-    // Prepara dati con titoli italiani
-    const excelData = rows.map((row: any) => {
-      const mappedRow: any = {};
-      for (const [key, value] of Object.entries(row)) {
-        const italianTitle = analysis.columnTitles?.[key] || key;
-        mappedRow[italianTitle] = value;
+    // Step 3: Genera file nel formato richiesto
+    let fileBuffer: Buffer;
+    let filename: string;
+    let mimeType: string;
+
+    if (format === 'csv') {
+      const csvResult = generateCSV(rows, analysis);
+      fileBuffer = csvResult.buffer;
+      filename = csvResult.filename;
+      mimeType = 'text/csv';
+      console.log(`📄 CSV generato: ${filename} (${rows.length} righe)`);
+      
+    } else if (format === 'json') {
+      const jsonResult = generateJSON(rows, analysis);
+      fileBuffer = jsonResult.buffer;
+      filename = jsonResult.filename;
+      mimeType = 'application/json';
+      console.log(`📋 JSON generato: ${filename} (${rows.length} righe)`);
+      
+    } else {
+      // Excel (default)
+      const workbook = XLSX.utils.book_new();
+      
+      // Prepara dati con titoli italiani
+      const excelData = rows.map((row: any) => {
+        const mappedRow: any = {};
+        for (const [key, value] of Object.entries(row)) {
+          const italianTitle = analysis.columnTitles?.[key] || key;
+          mappedRow[italianTitle] = value;
+        }
+        return mappedRow;
+      });
+
+      // Crea worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      // Imposta larghezza colonne automatica
+      const columnWidths = Object.keys(excelData[0] || {}).map(key => ({
+        wch: Math.max(key.length, 15)
+      }));
+      worksheet['!cols'] = columnWidths;
+
+      // Aggiungi worksheet al workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Dati');
+
+      // Aggiungi sheet di riepilogo se ci sono aggregazioni
+      if (analysis.aggregations && analysis.aggregations.length > 0) {
+        const summaryData = [{
+          'Report': analysis.reportTitle || 'Report Personalizzato',
+          'Descrizione': analysis.reportDescription || '',
+          'Data Generazione': new Date().toLocaleDateString('it-IT'),
+          'Totale Righe': rows.length
+        }];
+        const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Riepilogo');
       }
-      return mappedRow;
-    });
 
-    // Crea worksheet
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-
-    // Imposta larghezza colonne automatica
-    const columnWidths = Object.keys(excelData[0] || {}).map(key => ({
-      wch: Math.max(key.length, 15)
-    }));
-    worksheet['!cols'] = columnWidths;
-
-    // Aggiungi worksheet al workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Dati');
-
-    // Aggiungi sheet di riepilogo se ci sono aggregazioni
-    if (analysis.aggregations && analysis.aggregations.length > 0) {
-      const summaryData = [{
-        'Report': analysis.reportTitle || 'Report Personalizzato',
-        'Descrizione': analysis.reportDescription || '',
-        'Data Generazione': new Date().toLocaleDateString('it-IT'),
-        'Totale Righe': rows.length
-      }];
-      const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Riepilogo');
+      fileBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      filename = `report_${timestamp}.xlsx`;
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      console.log(`📊 Excel generato: ${filename} (${rows.length} righe)`);
     }
 
-    // Converti in buffer
-    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    
-    // Genera filename univoco
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `report_${timestamp}.xlsx`;
-
     // Converti buffer in base64 per trasmissione
-    const base64Excel = excelBuffer.toString('base64');
+    const base64File = fileBuffer.toString('base64');
 
     // Preview dei primi 3 record
     const preview = rows.slice(0, 3).map((row: any) => 
@@ -233,14 +316,15 @@ Correggi la query e restituisci un JSON con:
 
     res.json({
       success: true,
-      message: `Report generato con successo! ${rows.length} righe estratte.`,
+      message: `Report ${format.toUpperCase()} generato con successo! ${rows.length} righe estratte.`,
       report: {
         filename,
-        downloadUrl: `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64Excel}`,
+        downloadUrl: `data:${mimeType};base64,${base64File}`,
         preview: `Anteprima (prime 3 righe):\n\n${preview}\n\n... e altre ${rows.length - 3} righe`,
         rowCount: rows.length,
         title: analysis.reportTitle || 'Report Personalizzato',
-        description: analysis.reportDescription || ''
+        description: analysis.reportDescription || '',
+        format: format
       }
     });
 
