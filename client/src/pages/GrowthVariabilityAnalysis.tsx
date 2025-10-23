@@ -187,56 +187,89 @@ export default function GrowthVariabilityAnalysis() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Operazioni Analizzate
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-operations-count">
-                    {latestResults?.datasetSize || 0}
-                  </div>
-                </CardContent>
-              </Card>
+            <TooltipProvider>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      Operazioni Analizzate
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-3 w-3 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Numero di operazioni di misura/peso analizzate nel periodo selezionato</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-operations-count">
+                      {latestResults?.datasetSize || 0}
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Cestelli Profilati
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-baskets-count">
-                    {results?.basketProfiles?.length || 0}
-                  </div>
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      Cestelli Profilati
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-3 w-3 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Cestelli con profilo di crescita completo (classificati in cluster fast/average/slow)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-baskets-count">
+                      {results?.basketProfiles?.length || 0}
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Distribuzioni Calcolate
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-distributions-count">
-                    {results?.distributions?.length || 0}
-                  </div>
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      Distribuzioni Calcolate
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-3 w-3 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">Distribuzioni statistiche SGR per taglia/mese (media, mediana, deviazione standard, percentili)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-distributions-count">
+                      {results?.distributions?.length || 0}
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Vagliature Analizzate
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-screenings-count">
-                    {results?.screeningImpacts?.length || 0}
-                  </div>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      Vagliature Analizzate
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-3 w-3 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Operazioni di vagliatura con impatto sulla distribuzione di crescita</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-screenings-count">
+                      {results?.screeningImpacts?.length || 0}
+                    </div>
                 </CardContent>
               </Card>
             </div>
@@ -280,38 +313,101 @@ export default function GrowthVariabilityAnalysis() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {results?.distributions?.slice(0, 10).map((dist: any, idx: number) => (
-                    <div key={idx} className="p-4 border rounded-lg" data-testid={`distribution-item-${idx}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-medium">
-                          Taglia ID: {dist.sizeId} - Mese {dist.month}/{dist.year}
+                <TooltipProvider>
+                  <div className="space-y-4">
+                    {results?.distributions?.slice(0, 10).map((dist: any, idx: number) => (
+                      <div key={idx} className="p-4 border rounded-lg" data-testid={`distribution-item-${idx}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-medium">
+                            Taglia ID: {dist.sizeId} - Mese {dist.month}/{dist.year}
+                          </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="cursor-help">
+                                {dist.sampleSize} campioni
+                                <HelpCircle className="h-3 w-3 ml-1 inline" />
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Numero di misurazioni utilizzate per calcolare le statistiche</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                        <Badge variant="outline">{dist.sampleSize} campioni</Badge>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Media:</span>{" "}
-                          <span className="font-medium">{dist.meanSgr?.toFixed(3)}%</span>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                          <div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-muted-foreground cursor-help flex items-center gap-1">
+                                  Media:
+                                  <HelpCircle className="h-3 w-3" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Tasso di crescita medio della popolazione</p>
+                              </TooltipContent>
+                            </Tooltip>{" "}
+                            <span className="font-medium">{dist.meanSgr?.toFixed(3)}%</span>
+                          </div>
+                          <div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-muted-foreground cursor-help flex items-center gap-1">
+                                  Mediana:
+                                  <HelpCircle className="h-3 w-3" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Valore centrale (50° percentile) - più robusto agli outlier rispetto alla media</p>
+                              </TooltipContent>
+                            </Tooltip>{" "}
+                            <span className="font-medium">{dist.medianSgr?.toFixed(3)}%</span>
+                          </div>
+                          <div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-muted-foreground cursor-help flex items-center gap-1">
+                                  Std Dev:
+                                  <HelpCircle className="h-3 w-3" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">Deviazione standard - misura la variabilità della crescita. Valore alto = crescita disomogenea</p>
+                              </TooltipContent>
+                            </Tooltip>{" "}
+                            <span className="font-medium">±{dist.stdDeviation?.toFixed(3)}%</span>
+                          </div>
+                          <div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-muted-foreground cursor-help flex items-center gap-1">
+                                  Tipo:
+                                  <HelpCircle className="h-3 w-3" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Forma della distribuzione (normal, skewed, bimodal, uniform)</p>
+                              </TooltipContent>
+                            </Tooltip>{" "}
+                            <Badge variant="secondary">{dist.distributionType}</Badge>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Mediana:</span>{" "}
-                          <span className="font-medium">{dist.medianSgr?.toFixed(3)}%</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Std Dev:</span>{" "}
-                          <span className="font-medium">±{dist.stdDeviation?.toFixed(3)}%</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Tipo:</span>{" "}
-                          <Badge variant="secondary">{dist.distributionType}</Badge>
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Range: {dist.minSgr?.toFixed(3)}% - {dist.maxSgr?.toFixed(3)}% | 
-                        P25: {dist.percentile25?.toFixed(3)}% | 
-                        P75: {dist.percentile75?.toFixed(3)}% |
-                        P90: {dist.percentile90?.toFixed(3)}%
+                        <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help">Range</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Minimo e massimo SGR osservato</p>
+                            </TooltipContent>
+                          </Tooltip>: {dist.minSgr?.toFixed(3)}% - {dist.maxSgr?.toFixed(3)}% | 
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help">P25-P75-P90</span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">Percentili: 25% degli animali sotto P25, 75% sotto P75, 90% sotto P90</p>
+                            </TooltipContent>
+                          </Tooltip>: {dist.percentile25?.toFixed(3)}% | {dist.percentile75?.toFixed(3)}% | {dist.percentile90?.toFixed(3)}%
                       </div>
                     </div>
                   ))}
@@ -329,82 +425,124 @@ export default function GrowthVariabilityAnalysis() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <Card className="border-green-200 bg-green-50 dark:bg-green-950">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                        Fast Growers
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {results?.basketProfiles?.filter((p: any) => p.growthCluster === 'fast').length || 0}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Minus className="h-4 w-4 text-blue-600" />
-                        Average Growers
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {results?.basketProfiles?.filter((p: any) => p.growthCluster === 'average').length || 0}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <TrendingDown className="h-4 w-4 text-orange-600" />
-                        Slow Growers
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {results?.basketProfiles?.filter((p: any) => p.growthCluster === 'slow').length || 0}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {results?.basketProfiles?.slice(0, 50).map((profile: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className={`p-3 border rounded-lg ${
-                        profile.growthCluster === 'fast' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' :
-                        profile.growthCluster === 'slow' ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' :
-                        'border-blue-300 bg-blue-50/50 dark:bg-blue-950/20'
-                      }`}
-                      data-testid={`profile-item-${idx}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Cestello #{profile.basketId}</span>
-                          <Badge variant={
-                            profile.growthCluster === 'fast' ? 'default' :
-                            profile.growthCluster === 'slow' ? 'destructive' :
-                            'secondary'
-                          }>
-                            {profile.growthCluster}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {profile.sgrDeviation > 0 ? '+' : ''}{profile.sgrDeviation?.toFixed(1)}%
-                          </span>
+                <TooltipProvider>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <Card className="border-green-200 bg-green-50 dark:bg-green-950">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                          Fast Growers
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">Cestelli con crescita superiore alla media + 1 deviazione standard. Performance eccellente.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {results?.basketProfiles?.filter((p: any) => p.growthCluster === 'fast').length || 0}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Posizione: {profile.influencingFactors?.position?.row}-{profile.influencingFactors?.position?.position} | 
-                          Densità: {Math.round(profile.influencingFactors?.avgDensity || 0)}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Minus className="h-4 w-4 text-blue-600" />
+                          Average Growers
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">Cestelli con crescita nella norma (tra -1 e +1 deviazione standard dalla media).</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {results?.basketProfiles?.filter((p: any) => p.growthCluster === 'average').length || 0}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <TrendingDown className="h-4 w-4 text-orange-600" />
+                          Slow Growers
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">Cestelli con crescita inferiore alla media - 1 deviazione standard. Richiedono attenzione.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {results?.basketProfiles?.filter((p: any) => p.growthCluster === 'slow').length || 0}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {results?.basketProfiles?.slice(0, 50).map((profile: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`p-3 border rounded-lg ${
+                          profile.growthCluster === 'fast' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' :
+                          profile.growthCluster === 'slow' ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' :
+                          'border-blue-300 bg-blue-50/50 dark:bg-blue-950/20'
+                        }`}
+                        data-testid={`profile-item-${idx}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Cestello #{profile.basketId}</span>
+                            <Badge variant={
+                              profile.growthCluster === 'fast' ? 'default' :
+                              profile.growthCluster === 'slow' ? 'destructive' :
+                              'secondary'
+                            }>
+                              {profile.growthCluster}
+                            </Badge>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-sm text-muted-foreground cursor-help flex items-center gap-1">
+                                  {profile.sgrDeviation > 0 ? '+' : ''}{profile.sgrDeviation?.toFixed(1)}%
+                                  <HelpCircle className="h-3 w-3" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Deviazione dalla media del gruppo: distanza percentuale dalla crescita media</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            Posizione: {profile.influencingFactors?.position?.row}-{profile.influencingFactors?.position?.position} | 
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-help">
+                                  Densità: {Math.round(profile.influencingFactors?.avgDensity || 0)}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Densità media animali/kg nel cestello durante il periodo</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -426,25 +564,27 @@ export default function GrowthVariabilityAnalysis() {
                         <div key={idx} className="p-4 border rounded-lg" data-testid={`screening-impact-${idx}`}>
                           <div className="flex items-center justify-between mb-2">
                             <div className="font-medium">Vagliatura #{impact.selectionNumber || impact.screeningId}</div>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="outline" className="cursor-help">
-                                  Bias: {impact.selectionBias?.toFixed(1)}%
-                                  <HelpCircle className="h-3 w-3 ml-1 inline" />
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="font-semibold mb-1">Bias di Selezione</p>
-                                <p className="text-xs">
-                                  Percentuale di animali venduti rispetto al totale. 
-                                  Calcolo: (Venduti ÷ Totale) × 100
-                                </p>
-                                <p className="text-xs mt-1 text-yellow-200">
-                                  Un bias alto (&gt;70%) indica forte rimozione di animali performanti, 
-                                  alterando la distribuzione residua.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="outline">
+                                Bias: {impact.selectionBias?.toFixed(1)}%
+                              </Badge>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="font-semibold mb-1">Bias di Selezione</p>
+                                  <p className="text-xs">
+                                    Percentuale di animali venduti rispetto al totale. 
+                                    Calcolo: (Venduti ÷ Totale) × 100
+                                  </p>
+                                  <p className="text-xs mt-1 text-yellow-200">
+                                    Un bias alto (&gt;70%) indica forte rimozione di animali performanti, 
+                                    alterando la distribuzione residua.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                             <div>
