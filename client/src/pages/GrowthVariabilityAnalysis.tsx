@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Brain, 
@@ -18,7 +19,8 @@ import {
   Lightbulb,
   BarChart3,
   Scissors,
-  MapPin
+  MapPin,
+  HelpCircle
 } from "lucide-react";
 import { format } from "date-fns";
 
