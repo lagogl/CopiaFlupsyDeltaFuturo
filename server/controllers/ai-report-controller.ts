@@ -3,6 +3,7 @@ import { db } from "../db";
 import OpenAI from "openai";
 import * as XLSX from 'xlsx';
 import { sql } from "drizzle-orm";
+import { getDatabaseSchema, getTableStats } from "../services/ai-report/schema-service";
 
 const AI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_BASE_URL = 'https://api.deepseek.com';
@@ -26,53 +27,66 @@ function initializeAIClient() {
 
 initializeAIClient();
 
-// Schema database completo per l'AI
-const DATABASE_SCHEMA = `
-TABELLE PRINCIPALI:
-- flupsys: id, name, location, description, active, max_positions, production_center
-- baskets: id, physical_number, flupsy_id, cycle_code, state, current_cycle_id, row, position
-- operations: id, date, type, basket_id, cycle_id, size_id, sgr_id, lot_id, animal_count, total_weight, animals_per_kg, average_weight, dead_count, mortality_rate, notes, metadata
-- cycles: id, basket_id, lot_id, start_date, end_date, state
-- lots: id, arrival_date, supplier, supplier_lot_number, quality, animal_count, weight, size_id, notes, total_mortality, state, active
-- sizes: id, code, name, size_mm, min_animals_per_kg, max_animals_per_kg, notes, color
-- basket_lot_composition: id, basket_id, cycle_id, lot_id, animal_count, percentage
-- advanced_sales: id, sale_number, sale_date, customer_name, customer_address, customer_vat, total_amount, ddt_status, ddt_number, ddt_date, notes
-- sale_bags: id, sale_id, bag_number, size_id, quantity_kg, animals_per_kg, unit_price, total_price
-- sale_allocations: id, bag_id, basket_id, cycle_id, quantity_kg
-
-TIPI OPERAZIONE:
-prima-attivazione, pulizia, vagliatura, trattamento, misura, vendita, selezione-vendita, cessazione, peso, selezione-origine, dismissione, chiusura-ciclo-vagliatura
-
-STATI CICLO:
-active, closed
-
-STATI CESTA:
-available, active
-
-JOIN COMUNI:
-- operations JOIN baskets ON operations.basket_id = baskets.id
-- operations JOIN flupsys ON baskets.flupsy_id = flupsys.id
-- operations JOIN cycles ON operations.cycle_id = cycles.id
-- operations JOIN lots ON operations.lot_id = lots.id
-- operations JOIN sizes ON operations.size_id = sizes.id
-- basket_lot_composition JOIN lots ON basket_lot_composition.lot_id = lots.id
-- advanced_sales JOIN sale_bags ON advanced_sales.id = sale_bags.sale_id
-- sale_bags JOIN sale_allocations ON sale_bags.id = sale_allocations.bag_id
-
-NOTE IMPORTANTI:
-- I codici delle taglie seguono il formato TP-XXXX (es: TP-500, TP-3000, TP-10000)
-- Per confrontare le taglie, usa min_animals_per_kg e max_animals_per_kg (valori più bassi = animali più grandi)
-- TP-10000 ha min_animals_per_kg più basso di TP-500 (animali più grandi)
-- Per "taglia superiore o uguale a TP-3000" significa animali più grandi, quindi min_animals_per_kg più basso
-- I cicli possono essere sia 'active' che 'closed', assicurati di includerli entrambi se richiesto
-- Usa sempre TO_CHAR(date_column, 'DD/MM/YYYY') per formattare le date in formato leggibile
-`;
-
 /**
  * Controller per generazione report Excel con AI
  */
 export function registerAIReportRoutes(app: Express) {
+  console.log('🚀 REGISTRAZIONE ROUTE AI REPORT - INIZIO');
   
+  /**
+   * Visualizza schema database corrente
+   */
+  app.get("/api/ai/schema", async (req: Request, res: Response) => {
+    console.log('📊 GET /api/ai/schema chiamato');
+    try {
+      const includeStats = req.query.includeStats === 'true';
+      const schema = await getDatabaseSchema();
+      
+      const response: any = {
+        success: true,
+        schema: {
+          tables: schema.tables.length,
+          relationships: schema.relationships.length,
+          lastUpdate: schema.lastUpdate,
+          tableNames: schema.tables.map(t => t.name)
+        },
+        schemaText: schema.schemaText
+      };
+
+      // Stats opzionali (possono essere lenti su DB grandi)
+      if (includeStats) {
+        response.schema.stats = await getTableStats();
+      }
+      
+      res.json(response);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * Forza aggiornamento schema database
+   */
+  app.post("/api/ai/schema/refresh", async (req: Request, res: Response) => {
+    try {
+      const schema = await getDatabaseSchema(true); // Force refresh
+      res.json({
+        success: true,
+        message: 'Schema aggiornato con successo',
+        tables: schema.tables.length,
+        lastUpdate: schema.lastUpdate
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   /**
    * Endpoint principale per generazione report AI
    */
@@ -97,12 +111,16 @@ export function registerAIReportRoutes(app: Express) {
         });
       }
 
-      // Step 1: Analizza richiesta e genera query SQL
+      // Step 1: Ottieni schema database dinamico
+      const dbSchema = await getDatabaseSchema();
+      console.log(`📋 Schema caricato: ${dbSchema.tables.length} tabelle, aggiornato ${dbSchema.lastUpdate.toLocaleString('it-IT')}`);
+
+      // Step 2: Analizza richiesta e genera query SQL
       const analysisPrompt = `
 Sei un esperto di database PostgreSQL e analisi dati per sistemi di acquacoltura.
 
-SCHEMA DATABASE:
-${DATABASE_SCHEMA}
+SCHEMA DATABASE (aggiornato automaticamente):
+${dbSchema.schemaText}
 
 RICHIESTA UTENTE:
 "${prompt}"
@@ -292,4 +310,6 @@ Correggi la query e restituisci un JSON con:
       });
     }
   });
+
+  console.log('✅ Route AI Report registrate con successo');
 }
