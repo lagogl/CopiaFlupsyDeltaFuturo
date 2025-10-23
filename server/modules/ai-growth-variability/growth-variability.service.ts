@@ -5,9 +5,9 @@ import {
   cycles, 
   lots, 
   sizes, 
-  screeningOperations,
-  screeningSourceBaskets,
-  screeningDestinationBaskets,
+  selections,
+  selectionSourceBaskets,
+  selectionDestinationBaskets,
   growthAnalysisRuns,
   basketGrowthProfiles,
   screeningImpactAnalysis,
@@ -416,67 +416,69 @@ export class GrowthVariabilityService {
   private static async analyzeScreeningImpact(options: GrowthVariabilityAnalysisOptions) {
     const screeningImpacts = [];
     
-    // Recupera vagliature dalla tabella operations (tipo 'chiusura-ciclo-vagliatura')
-    const conditions = [eq(operations.type, 'chiusura-ciclo-vagliatura')];
+    // Recupera vagliature dalla tabella selections
+    const conditions = [
+      eq(selections.status, 'completed'),
+      eq(selections.purpose, 'vagliatura')
+    ];
     
     if (options.dateFrom) {
-      conditions.push(gte(operations.date, options.dateFrom));
+      conditions.push(gte(selections.date, options.dateFrom));
     }
     if (options.dateTo) {
-      conditions.push(lte(operations.date, options.dateTo));
+      conditions.push(lte(selections.date, options.dateTo));
     }
     
     console.log('🔍 Cerco vagliature con filtri:', {
       dateFrom: options.dateFrom,
       dateTo: options.dateTo,
-      type: 'chiusura-ciclo-vagliatura'
+      purpose: 'vagliatura',
+      status: 'completed'
     });
     
-    const screenings = await db
-      .select({
-        operation: operations,
-        basket: baskets,
-        cycle: cycles
-      })
-      .from(operations)
-      .leftJoin(baskets, eq(operations.basketId, baskets.id))
-      .leftJoin(cycles, eq(operations.cycleId, cycles.id))
+    const selectionsList = await db
+      .select()
+      .from(selections)
       .where(and(...conditions))
       .limit(50);
     
-    console.log(`✂️ Vagliature trovate: ${screenings.length}`);
+    console.log(`✂️ Vagliature trovate: ${selectionsList.length}`);
     
-    for (const screening of screenings) {
-      const op = screening.operation;
+    // Processa ogni vagliatura
+    for (const selection of selectionsList) {
+      // Recupera cestelli destinazione
+      const destBaskets = await db
+        .select()
+        .from(selectionDestinationBaskets)
+        .where(eq(selectionDestinationBaskets.selectionId, selection.id));
       
-      // Estrai informazioni dalle note (formato: "Animali distribuiti: X. Mortalità: Y")
-      let animalsDistributed = 0;
-      let mortality = 0;
-      
-      if (op.notes) {
-        const distributedMatch = op.notes.match(/Animali distribuiti:\s*(\d+)/);
-        const mortalityMatch = op.notes.match(/Mortalità:\s*(\d+)/);
-        
-        if (distributedMatch) animalsDistributed = parseInt(distributedMatch[1]);
-        if (mortalityMatch) mortality = parseInt(mortalityMatch[1]);
+      if (destBaskets.length === 0) {
+        console.log(`⚠️ Vagliatura #${selection.selectionNumber}: nessun cestello destinazione trovato`);
+        continue;
       }
       
-      // Calcola animali venduti e riposizionati basandosi sui dati disponibili
-      const totalAnimalsInCycle = (op.animalCount || 0) + animalsDistributed + mortality;
-      const animalsSold = Math.floor(animalsDistributed * 0.6); // Stima: 60% venduti
-      const animalsRepositioned = animalsDistributed - animalsSold;
+      // Calcola totali raggruppando per destinationType
+      const sold = destBaskets.filter(d => d.destinationType === 'sold');
+      const repositioned = destBaskets.filter(d => d.destinationType === 'placed');
       
-      // Stima selection bias (animali venduti tendenzialmente fast growers)
+      const animalsSold = sold.reduce((sum, d) => sum + (d.animalCount || 0), 0);
+      const animalsRepositioned = repositioned.reduce((sum, d) => sum + (d.animalCount || 0), 0);
+      
+      // Calcola mortalità dai cestelli destinazione
+      const totalMortality = destBaskets.reduce((sum, d) => sum + (d.deadCount || 0), 0);
+      
       const totalAnimals = animalsSold + animalsRepositioned;
       const selectionBias = totalAnimals > 0 ? (animalsSold / totalAnimals) * 100 : 0;
       
+      console.log(`✅ Vagliatura #${selection.selectionNumber}: ${animalsSold} venduti, ${animalsRepositioned} riposizionati, ${totalMortality} morti`);
+      
       screeningImpacts.push({
-        screeningId: op.id,
-        date: op.date,
-        basketId: op.basketId,
+        screeningId: selection.id,
+        selectionNumber: selection.selectionNumber,
+        date: selection.date,
         animalsSold,
         animalsRepositioned,
-        mortality,
+        mortality: totalMortality,
         totalAnimalsProcessed: totalAnimals,
         avgSgrBefore: null,
         avgSgrAfter: null,
