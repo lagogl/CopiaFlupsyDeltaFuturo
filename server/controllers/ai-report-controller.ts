@@ -7,6 +7,7 @@ import { getDatabaseSchema, getTableStats } from "../services/ai-report/schema-s
 import { getAllTemplates, getTemplatesByCategory, getTemplateById, applyTemplateParameters } from "../services/ai-report/report-templates";
 import { getCachedQuery, setCachedQuery, invalidateQueryCache, getCacheStats, getCacheInfo } from "../services/ai-report/query-cache-service";
 import { generateDataInsights, formatInsightsForUser, createInsightsSheet } from "../services/ai-report/insights-service";
+import { executePipeline, validatePipeline, type PipelineStep } from "../services/ai-report/pipeline-service";
 
 const AI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_BASE_URL = 'https://api.deepseek.com';
@@ -692,6 +693,15 @@ export function registerAIReportRoutes(app: Express) {
       });
     }
   });
+
+  /**
+   * DISABLED: Pipeline endpoint disabilitato per motivi di sicurezza
+   * La pipeline è disponibile solo come servizio interno per future estensioni
+   * 
+   * Per abilitarla: implementare validazione SQL robusta con parser AST
+   * o limitare accesso solo ad utenti autenticati interni
+   */
+  // app.post("/api/ai/execute-pipeline", ...)  // DISABLED
 
   console.log('✅ Route AI Report registrate con successo');
 }
