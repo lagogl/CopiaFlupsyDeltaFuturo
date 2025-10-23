@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,16 +46,50 @@ const iconMap: Record<string, any> = {
   Clock
 };
 
-export default function AIReportGenerator() {
-  const [messages, setMessages] = useState<Message[]>([
+const STORAGE_KEY = 'ai-report-chat-history';
+
+const getInitialMessages = (): Message[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Errore caricamento cronologia chat:', error);
+  }
+  
+  // Messaggio di benvenuto di default
+  return [
     {
       role: 'system',
       content: 'Ciao! Sono l\'assistente AI per la generazione di report. Puoi selezionare un template pre-configurato o descrivere un report personalizzato. \n\nTemplate disponibili:\n• Performance Mensile\n• Analisi Mortalità\n• Previsione Crescita\n• Confronto FLUPSY\n• E molti altri...\n\nFormati supportati: Excel, CSV, JSON'
     }
-  ]);
+  ];
+};
+
+export default function AIReportGenerator() {
+  const [messages, setMessages] = useState<Message[]>(getInitialMessages);
   const [inputMessage, setInputMessage] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
   const [exportFormat, setExportFormat] = useState<'excel' | 'csv' | 'json'>('excel');
+
+  // Salva messaggi in localStorage ogni volta che cambiano
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch (error) {
+      console.error('Errore salvataggio cronologia chat:', error);
+    }
+  }, [messages]);
+
+  // Funzione per cancellare la cronologia
+  const clearChatHistory = () => {
+    const welcomeMessage: Message = {
+      role: 'system',
+      content: 'Ciao! Sono l\'assistente AI per la generazione di report. Puoi selezionare un template pre-configurato o descrivere un report personalizzato. \n\nTemplate disponibili:\n• Performance Mensile\n• Analisi Mortalità\n• Previsione Crescita\n• Confronto FLUPSY\n• E molti altri...\n\nFormati supportati: Excel, CSV, JSON'
+    };
+    setMessages([welcomeMessage]);
+  };
 
   // Carica template dal backend
   const { data: templatesData } = useQuery<{ success: boolean; templates: ReportTemplate[] }>({
@@ -233,8 +267,6 @@ export default function AIReportGenerator() {
     <div className="container mx-auto p-4 max-w-5xl">
       <PageHeader
         title="Generatore Report AI"
-        description="Descrivi il report Excel che vuoi e l'AI lo genererà per te"
-        icon={<Sparkles className="h-8 w-8" />}
       />
 
       {/* Statistiche Cache */}
@@ -301,14 +333,28 @@ export default function AIReportGenerator() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-purple-600" />
-            Chat AI per Report Excel
-          </CardTitle>
-          <CardDescription>
-            Descrivi in linguaggio naturale il report che vuoi generare. L'AI analizzerà la richiesta, 
-            estrarrà i dati dal database e creerà un file Excel pronto per il download.
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5 text-purple-600" />
+                Chat AI per Report Excel
+              </CardTitle>
+              <CardDescription className="mt-1.5">
+                Descrivi in linguaggio naturale il report che vuoi generare. L'AI analizzerà la richiesta, 
+                estrarrà i dati dal database e creerà un file Excel pronto per il download.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearChatHistory}
+              title="Cancella cronologia chat"
+              data-testid="button-clear-chat"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Cancella Chat
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Area messaggi */}
