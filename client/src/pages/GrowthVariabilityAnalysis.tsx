@@ -420,34 +420,100 @@ export default function GrowthVariabilityAnalysis() {
               </CardHeader>
               <CardContent>
                 {results?.screeningImpacts?.length > 0 ? (
-                  <div className="space-y-3">
-                    {results.screeningImpacts.map((impact: any, idx: number) => (
-                      <div key={idx} className="p-4 border rounded-lg" data-testid={`screening-impact-${idx}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium">Vagliatura #{impact.screeningId}</div>
-                          <Badge variant="outline">Bias: {impact.selectionBias?.toFixed(1)}%</Badge>
+                  <TooltipProvider>
+                    <div className="space-y-3">
+                      {results.screeningImpacts.map((impact: any, idx: number) => (
+                        <div key={idx} className="p-4 border rounded-lg" data-testid={`screening-impact-${idx}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-medium">Vagliatura #{impact.selectionNumber || impact.screeningId}</div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="cursor-help">
+                                  Bias: {impact.selectionBias?.toFixed(1)}%
+                                  <HelpCircle className="h-3 w-3 ml-1 inline" />
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="font-semibold mb-1">Bias di Selezione</p>
+                                <p className="text-xs">
+                                  Percentuale di animali venduti rispetto al totale. 
+                                  Calcolo: (Venduti ÷ Totale) × 100
+                                </p>
+                                <p className="text-xs mt-1 text-yellow-200">
+                                  Un bias alto (&gt;70%) indica forte rimozione di animali performanti, 
+                                  alterando la distribuzione residua.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-muted-foreground cursor-help flex items-center gap-1">
+                                    Venduti
+                                    <HelpCircle className="h-3 w-3" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Animali venduti (sopravaglio) durante questa vagliatura</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <div className="font-medium text-green-600">{impact.animalsSold?.toLocaleString()}</div>
+                            </div>
+                            <div>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-muted-foreground cursor-help flex items-center gap-1">
+                                    Riposizionati
+                                    <HelpCircle className="h-3 w-3" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Animali riposizionati (sottovaglio) per crescita ulteriore</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <div className="font-medium text-blue-600">{impact.animalsRepositioned?.toLocaleString()}</div>
+                            </div>
+                            <div>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-muted-foreground cursor-help flex items-center gap-1">
+                                    Fast Rimossi
+                                    <HelpCircle className="h-3 w-3" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="text-xs">
+                                    Stima animali a crescita rapida rimossi dalla popolazione (≈70% dei venduti).
+                                    Riduce la variabilità genetica residua.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <div className="font-medium text-orange-600">{impact.fastGrowersRemoved?.toLocaleString()}</div>
+                            </div>
+                            <div>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-muted-foreground cursor-help flex items-center gap-1">
+                                    Slow Mantenuti
+                                    <HelpCircle className="h-3 w-3" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="text-xs">
+                                    Stima animali a crescita lenta trattenuti (≈80% dei riposizionati).
+                                    Concentra la popolazione su individui più lenti.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <div className="font-medium text-purple-600">{impact.slowGrowersRetained?.toLocaleString()}</div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                          <div>
-                            <div className="text-muted-foreground">Venduti</div>
-                            <div className="font-medium text-green-600">{impact.animalsSold?.toLocaleString()}</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">Riposizionati</div>
-                            <div className="font-medium text-blue-600">{impact.animalsRepositioned?.toLocaleString()}</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">Fast Rimossi</div>
-                            <div className="font-medium text-orange-600">{impact.fastGrowersRemoved?.toLocaleString()}</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">Slow Mantenuti</div>
-                            <div className="font-medium text-purple-600">{impact.slowGrowersRetained?.toLocaleString()}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </TooltipProvider>
                 ) : (
                   <div className="text-center text-muted-foreground py-8">
                     Nessuna vagliatura analizzata nel periodo selezionato
