@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
   - **Dashboard**: "SGR Per Taglia" tab in /sgr page displaying size-specific SGR values, recalculation button with real-time progress bar, and statistics (monitored sizes, average SGR, total samples).
   - **Full System Integration**: SGR hierarchy implemented across all prediction modules including cycle predictions, FlupsyComparison module, and growth prediction API. Uses Italian month names for database lookups and measurement-date-based projections for consistency.
 - **AI Integration**: Hybrid system integrating DeepSeek-V3 for predictive growth analysis using real historical SGR data, anomaly detection, sustainability analysis, business analytics, and AI-enhanced performance scoring.
+  - **AI Data Management**: Database reset operations include automatic deletion of AI analysis data (screening_impact_analysis, basket_growth_profiles, growth_distributions, growth_analysis_runs) when resetting vagliature data via Settings > Database > "Azzeramento Dati Vagliatura".
 - **AI Report Generator**: Advanced report generation module with 10 comprehensive features:
   - **Dynamic Schema Auto-Generation**: Automatic database schema discovery (48 tables, 18 curated relationships) with fallback for missing foreign keys.
   - **Pre-Configured Templates**: 10 ready-to-use templates across 5 categories (Performance, Quality, Forecast, Operations, Sales).

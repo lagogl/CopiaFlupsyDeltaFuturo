@@ -4874,31 +4874,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usiamo il metodo corretto per le transazioni
       await db.transaction(async (tx) => {
         try {
-          // 1. Elimina i riferimenti ai lotti per le ceste di destinazione
+          console.log("Avvio azzeramento dati vagliatura...");
+          
+          // 1. Elimina i dati delle analisi AI legate alle vagliature
+          await tx.execute(sql`DELETE FROM screening_impact_analysis`);
+          console.log("Eliminate analisi impatto vagliature (AI)");
+          
+          await tx.execute(sql`DELETE FROM basket_growth_profiles`);
+          console.log("Eliminati profili crescita cestelli (AI)");
+          
+          await tx.execute(sql`DELETE FROM growth_distributions`);
+          console.log("Eliminate distribuzioni crescita (AI)");
+          
+          await tx.execute(sql`DELETE FROM growth_analysis_runs`);
+          console.log("Eliminate esecuzioni analisi crescita (AI)");
+          
+          // 2. Elimina i riferimenti ai lotti per le ceste di destinazione
           await tx.execute(sql`DELETE FROM screening_lot_references`);
+          console.log("Eliminati riferimenti ai lotti");
           
-          // 2. Elimina lo storico delle relazioni tra ceste di origine e destinazione
+          // 3. Elimina lo storico delle relazioni tra ceste di origine e destinazione
           await tx.execute(sql`DELETE FROM screening_basket_history`);
+          console.log("Eliminato storico delle relazioni tra ceste");
           
-          // 3. Elimina le ceste di destinazione
+          // 4. Elimina le ceste di destinazione
           await tx.execute(sql`DELETE FROM screening_destination_baskets`);
+          console.log("Eliminate ceste di destinazione");
           
-          // 4. Elimina le ceste di origine
+          // 5. Elimina le ceste di origine
           await tx.execute(sql`DELETE FROM screening_source_baskets`);
+          console.log("Eliminate ceste di origine");
           
-          // 5. Elimina le composizioni lotti misti creati dalle vagliature
+          // 6. Elimina le composizioni lotti misti creati dalle vagliature
           await tx.execute(sql`DELETE FROM basket_lot_composition`);
+          console.log("Eliminate composizioni lotti misti");
           
-          // 6. Elimina le operazioni di vagliatura
+          // 7. Elimina le operazioni di vagliatura
           await tx.execute(sql`DELETE FROM screening_operations`);
+          console.log("Eliminate operazioni di vagliatura");
           
-          // 7. Resettiamo le sequenze degli ID
+          // 8. Resettiamo le sequenze degli ID
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_impact_analysis_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS basket_growth_profiles_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS growth_distributions_id_seq RESTART WITH 1`);
+          await tx.execute(sql`ALTER SEQUENCE IF EXISTS growth_analysis_runs_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`);
           await tx.execute(sql`ALTER SEQUENCE IF EXISTS basket_lot_composition_id_seq RESTART WITH 1`);
+          console.log("Reset delle sequenze ID completato");
           
           return true; // Successo - commit implicito
         } catch (error) {

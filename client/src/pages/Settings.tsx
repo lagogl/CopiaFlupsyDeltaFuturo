@@ -94,7 +94,7 @@ export default function Settings() {
       if (response.ok) {
         toast({
           title: "Azzeramento completato",
-          description: "Tutte le operazioni di vagliatura e i dati correlati sono stati eliminati correttamente.",
+          description: "Tutte le operazioni di vagliatura, le analisi AI e i dati correlati sono stati eliminati correttamente.",
         });
         setResetPassword("");
       } else {
@@ -628,7 +628,8 @@ export default function Settings() {
                     <h3 className="text-lg font-medium mb-1">Azzeramento Dati Vagliatura</h3>
                     <p className="text-sm text-gray-500">
                       Elimina tutte le operazioni di vagliatura, le ceste di origine e destinazione, 
-                      le composizioni lotti misti, i riferimenti ai lotti e lo storico delle relazioni tra ceste.
+                      le composizioni lotti misti, i riferimenti ai lotti, lo storico delle relazioni tra ceste 
+                      e tutte le analisi AI di crescita e variabilità.
                       I contatori verranno ripristinati a 1.
                     </p>
                   </div>
@@ -645,6 +646,7 @@ export default function Settings() {
                         <DialogDescription>
                           Stai per eliminare TUTTI i dati relativi alle vagliature. Questa azione:
                           <ul className="list-disc list-inside my-2 space-y-1">
+                            <li>Eliminerà tutte le analisi AI di crescita e variabilità</li>
                             <li>Eliminerà tutte le operazioni di vagliatura</li>
                             <li>Eliminerà tutte le ceste di origine e destinazione</li>
                             <li>Eliminerà le composizioni lotti misti create dalle vagliature</li>
